@@ -49,8 +49,9 @@ export function createApp() {
     origin(origin, callback) {
       // Allow same-origin/tooling requests without an Origin header.
       if (!origin) return callback(null, true);
-      if (env.clientOrigins.includes(origin)) return callback(null, true);
-      logger.warn('Blocked CORS origin', { origin });
+      const cleanOrigin = origin.replace(/\/+$/, '');
+      if (env.clientOrigins.includes(cleanOrigin) || env.clientOrigins.includes(origin)) return callback(null, true);
+      logger.warn('Blocked CORS origin', { origin, cleanOrigin, allowed: env.clientOrigins });
       return callback(new Error(`Origin ${origin} is not allowed by CORS.`));
     },
     credentials: true,

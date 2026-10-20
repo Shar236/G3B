@@ -17,25 +17,25 @@ import Pathways from '../components/Pathways.jsx'
 import PathwayFinder from '../components/PathwayFinder.jsx'
 import KnowledgeHub from '../components/KnowledgeHub.jsx'
 import Insights from '../components/Insights.jsx'
+import defaultHomeData from '../data/defaultHomeContent.js'
 
 /** The public G3B Education homepage, rebuilt from the supplied content. */
 export default function Home() {
   const { data } = useSiteContent()
   const location = useLocation()
-  const {
-    content,
-    settings,
-    stats,
-    whyFeatures,
-    certifications,
-    services,
-    destinations,
-    gallery,
-    testimonials,
-    videos,
-    processSteps,
-    enquiryOptions,
-  } = data || {}
+  const activeData = data || defaultHomeData
+  const content = activeData.content || defaultHomeData.content
+  const settings = activeData.settings || defaultHomeData.settings
+  const stats = (activeData.stats && activeData.stats.length > 0) ? activeData.stats : defaultHomeData.stats
+  const whyFeatures = (activeData.whyFeatures && activeData.whyFeatures.length > 0) ? activeData.whyFeatures : defaultHomeData.whyFeatures
+  const certifications = activeData.certifications || defaultHomeData.certifications
+  const services = (activeData.services && activeData.services.length > 0) ? activeData.services : defaultHomeData.services
+  const destinations = (activeData.destinations && activeData.destinations.length > 0) ? activeData.destinations : defaultHomeData.destinations
+  const gallery = activeData.gallery || defaultHomeData.gallery
+  const testimonials = (activeData.testimonials && activeData.testimonials.length > 0) ? activeData.testimonials : defaultHomeData.testimonials
+  const videos = (activeData.videos && activeData.videos.length > 0) ? activeData.videos : defaultHomeData.videos
+  const processSteps = (activeData.processSteps && activeData.processSteps.length > 0) ? activeData.processSteps : defaultHomeData.processSteps
+  const enquiryOptions = (activeData.enquiryOptions && activeData.enquiryOptions.length > 0) ? activeData.enquiryOptions : defaultHomeData.enquiryOptions
 
   // Metadata published in the admin SEO manager wins; the settings are the
   // fallback for an unregistered route or while the request is in flight.
@@ -52,8 +52,6 @@ export default function Home() {
     const target = document.getElementById(location.hash.slice(1))
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [location.hash, data])
-
-  if (!data) return null
 
   return (
     <>

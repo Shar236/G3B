@@ -1,7 +1,9 @@
 import axios from 'axios'
 import { notify } from './notifications.js'
-
-const baseURL = (import.meta.env?.VITE_API_URL || '').replace(/\/$/, '')
+const defaultApiUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+  ? 'https://g3b-production.up.railway.app'
+  : ''
+const baseURL = (import.meta.env?.VITE_API_URL || defaultApiUrl).replace(/\/$/, '')
 const authListeners = new Set()
 const refreshListeners = new Set()
 const errorListeners = new Set()

@@ -44,10 +44,23 @@ const env = {
   host: process.env.HOST || '0.0.0.0',
   port: toInt(process.env.PORT, 5000),
 
-  clientOrigins: (process.env.CLIENT_ORIGINS || 'http://localhost:5173')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
+  clientOrigins: (() => {
+    const defaultOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://elegant-harmony-production.up.railway.app',
+    ];
+    const configured = [
+      process.env.CLIENT_ORIGINS,
+      process.env.CLIENT_URL,
+      process.env.FRONTEND_URL,
+    ]
+      .filter(Boolean)
+      .join(',');
+
+    const list = (configured ? configured.split(',') : []).map((o) => o.trim()).concat(defaultOrigins);
+    return [...new Set(list.map((origin) => origin.replace(/\/+$/, '')).filter(Boolean))];
+  })(),
 
   db: {
     host: process.env.DB_HOST || process.env.MYSQLHOST || process.env.MYSQL_HOST || dbUrl?.host || (isProduction ? '' : 'localhost'),

@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { pool } from '../config/db.js';
 
 export async function syncExistingVideosToRegistry() {
@@ -29,12 +31,16 @@ export async function syncExistingVideosToRegistry() {
   return existing;
 }
 
-syncExistingVideosToRegistry()
-  .then(() => {
-    console.log('Successfully synced existing videos to registry.');
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error('Error syncing:', err);
-    process.exit(1);
-  });
+const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+
+if (isDirectRun) {
+  syncExistingVideosToRegistry()
+    .then(() => {
+      console.log('Successfully synced existing videos to registry.');
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Error syncing:', err);
+      process.exit(1);
+    });
+}

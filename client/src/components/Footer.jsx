@@ -1,12 +1,22 @@
 import { Link } from 'react-router-dom'
 import { resolveMediaUrl } from '../api/client.js'
+import defaultHomeData from '../data/defaultHomeContent.js'
 
 /** Site footer: brand summary, quick links, contact details and social profiles. */
 export default function Footer({ settings = {}, content = {}, socialLinks = [], services = [], destinations = [] }) {
-  const brand = settings.brand_name || 'G3B Education'
-  const logoUrl = settings.header_logo_url ? resolveMediaUrl(settings.header_logo_url) : '/logo.png'
-  const tagline = content.footer?.body || 'Career Guidance · Psychometric Assessment · Study Abroad'
+  const activeSettings = { ...defaultHomeData.settings, ...settings }
+  const brand = activeSettings.brand_name || 'G3B Education'
+  const logoUrl = activeSettings.header_logo_url ? resolveMediaUrl(activeSettings.header_logo_url) : '/logo.png'
+  const tagline = content.footer?.body || defaultHomeData.content?.footer?.body || 'Career Guidance · Psychometric Assessment · Study Abroad'
   const year = new Date().getFullYear()
+
+  const activeDestinations = (destinations && destinations.length > 0) ? destinations : defaultHomeData.destinations
+  const activeServices = (services && services.length > 0) ? services : defaultHomeData.services
+  const activeSocialLinks = (socialLinks && socialLinks.length > 0) ? socialLinks : (defaultHomeData.socialLinks && defaultHomeData.socialLinks.length > 0 ? defaultHomeData.socialLinks : [
+    { id: 'wa', platform: 'WhatsApp', url: 'https://wa.me/919820000000', icon: 'fab fa-whatsapp' },
+    { id: 'li', platform: 'LinkedIn', url: 'https://linkedin.com', icon: 'fab fa-linkedin-in' },
+    { id: 'ig', platform: 'Instagram', url: 'https://instagram.com', icon: 'fab fa-instagram' },
+  ])
 
   return (
     <footer className="g3b-site-footer">
@@ -28,14 +38,14 @@ export default function Footer({ settings = {}, content = {}, socialLinks = [], 
               {brand}
             </div>
             <p className="footer-about">
-              {settings.seo_description ||
+              {activeSettings.seo_description ||
                 'Career guidance, psychometric assessment, test preparation and end-to-end study abroad support from Nerul, Navi Mumbai.'}
             </p>
-            {socialLinks.length > 0 ? (
+            {activeSocialLinks.length > 0 ? (
               <div className="footer-social">
-                {socialLinks.map((link) => (
+                {activeSocialLinks.map((link) => (
                   <a
-                    key={link.id}
+                    key={link.id || link.platform}
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -55,8 +65,8 @@ export default function Footer({ settings = {}, content = {}, socialLinks = [], 
               <li><Link to="/#pathways">Grade 9+ & Career Pathways</Link></li>
               <li><Link to="/#knowledge-hub">Free Guide & Newsletter</Link></li>
               <li><Link to="/insights">Study Abroad Insights</Link></li>
-              {services.slice(0, 6).map((service) => (
-                <li key={service.id}>
+              {activeServices.slice(0, 6).map((service) => (
+                <li key={service.id || service.title}>
                   <Link to={`/services#${service.slug || service.id}`}>{service.title}</Link>
                 </li>
               ))}
@@ -71,8 +81,8 @@ export default function Footer({ settings = {}, content = {}, socialLinks = [], 
           <div className="footer-col">
             <h4>Study Destinations</h4>
             <ul>
-              {destinations.slice(0, 6).map((destination) => (
-                <li key={destination.id}>
+              {activeDestinations.slice(0, 6).map((destination) => (
+                <li key={destination.id || destination.country}>
                   <Link to="/#destinations">{destination.country}</Link>
                 </li>
               ))}
@@ -82,24 +92,24 @@ export default function Footer({ settings = {}, content = {}, socialLinks = [], 
           <div className="footer-col">
             <h4>Get in Touch</h4>
             <ul>
-              {settings.contact_address ? (
+              {activeSettings.contact_address ? (
                 <li>
-                  <p>{settings.contact_address}</p>
+                  <p>{activeSettings.contact_address}</p>
                 </li>
               ) : null}
-              {settings.contact_phone ? (
+              {activeSettings.contact_phone ? (
                 <li>
-                  <a href={`tel:${settings.contact_phone_link || settings.contact_phone}`}>{settings.contact_phone}</a>
+                  <a href={`tel:${activeSettings.contact_phone_link || activeSettings.contact_phone}`}>{activeSettings.contact_phone}</a>
                 </li>
               ) : null}
-              {settings.contact_email ? (
+              {activeSettings.contact_email ? (
                 <li>
-                  <a href={`mailto:${settings.contact_email}`}>{settings.contact_email}</a>
+                  <a href={`mailto:${activeSettings.contact_email}`}>{activeSettings.contact_email}</a>
                 </li>
               ) : null}
-              {settings.working_hours ? (
+              {activeSettings.working_hours ? (
                 <li>
-                  <p>{settings.working_hours}</p>
+                  <p>{activeSettings.working_hours}</p>
                 </li>
               ) : null}
             </ul>
@@ -108,7 +118,7 @@ export default function Footer({ settings = {}, content = {}, socialLinks = [], 
 
         <div className="footer-bottom">
           <p>
-            {settings.footer_copyright || `© ${year} ${brand}. All rights reserved.`}
+            {activeSettings.footer_copyright || `© ${year} ${brand}. All rights reserved.`}
           </p>
           <p>{tagline}</p>
         </div>

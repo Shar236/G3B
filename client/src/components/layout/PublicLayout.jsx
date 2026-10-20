@@ -3,11 +3,12 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Header from '../Header.jsx'
 import Footer from '../Footer.jsx'
 import useHomeContent from '../../hooks/useHomeContent.js'
-import { PageLoader, StateBlock } from '../ui/StateBlock.jsx'
+import { PageLoader } from '../ui/StateBlock.jsx'
 import { CounsellingProvider } from '../../context/CounsellingContext.jsx'
 import CounsellingModal from '../ui/CounsellingModal.jsx'
 import { resolveMediaUrl } from '../../api/client.js'
 import ErrorBoundary from '../ui/ErrorBoundary.jsx'
+import defaultHomeData from '../../data/defaultHomeContent.js'
 
 const SiteContentContext = createContext(null)
 
@@ -22,27 +23,28 @@ export function useSiteContent() {
 export default function PublicLayout() {
   const { data, loading, error, reload } = useHomeContent()
   const location = useLocation()
+  const siteData = data || defaultHomeData
 
   // Dynamic favicon and tracking script injection from Admin Settings
   useEffect(() => {
-    if (!data?.settings) return
+    if (!siteData?.settings) return
 
     // Dynamic favicon
-    if (data.settings.favicon_url) {
+    if (siteData.settings.favicon_url) {
       let link = document.querySelector("link[rel*='icon']")
       if (!link) {
         link = document.createElement('link')
         link.rel = 'shortcut icon'
         document.head.appendChild(link)
       }
-      link.href = resolveMediaUrl(data.settings.favicon_url)
+      link.href = resolveMediaUrl(siteData.settings.favicon_url)
     }
 
     // Dynamic head tracking code
-    if (data.settings.tracking_code_head && !document.getElementById('g3b-tracking-head')) {
+    if (siteData.settings.tracking_code_head && !document.getElementById('g3b-tracking-head')) {
       const container = document.createElement('div')
       container.id = 'g3b-tracking-head'
-      container.innerHTML = data.settings.tracking_code_head
+      container.innerHTML = siteData.settings.tracking_code_head
       Array.from(container.children).forEach((el) => {
         if (el.tagName === 'SCRIPT') {
           const s = document.createElement('script')
@@ -56,10 +58,10 @@ export default function PublicLayout() {
     }
 
     // Dynamic body tracking code
-    if (data.settings.tracking_code_body && !document.getElementById('g3b-tracking-body')) {
+    if (siteData.settings.tracking_code_body && !document.getElementById('g3b-tracking-body')) {
       const container = document.createElement('div')
       container.id = 'g3b-tracking-body'
-      container.innerHTML = data.settings.tracking_code_body
+      container.innerHTML = siteData.settings.tracking_code_body
       Array.from(container.children).forEach((el) => {
         if (el.tagName === 'SCRIPT') {
           const s = document.createElement('script')
@@ -71,32 +73,28 @@ export default function PublicLayout() {
         }
       })
     }
-  }, [data?.settings])
+  }, [siteData?.settings])
 
   return (
-    <SiteContentContext.Provider value={{ data, loading, error, reload }}>
+    <SiteContentContext.Provider value={{ data: siteData, rawData: data, loading, error, reload }}>
       <CounsellingProvider>
         <a className="sr-only" href="#primary">
           Skip to content
         </a>
-        <Header settings={data?.settings} navigation={data?.navigation} />
+        <Header settings={siteData?.settings} navigation={siteData?.navigation} />
         <main id="primary" className="site-main">
-          {loading ? (
+          {loading && !data ? (
             <PageLoader label="Loading G3B Education…" />
-          ) : error ? (
-            <div className="container" style={{ padding: '80px 24px' }}>
-              <StateBlock variant="error" title="We could not load the website content" message={error.message} onRetry={reload} />
-            </div>
           ) : (
             <ErrorBoundary resetKey={location.pathname}><Outlet /></ErrorBoundary>
           )}
         </main>
         <Footer
-          settings={data?.settings}
-          content={data?.content}
-          socialLinks={data?.socialLinks}
-          services={data?.services}
-          destinations={data?.destinations}
+          settings={siteData?.settings}
+          content={siteData?.content}
+          socialLinks={siteData?.socialLinks}
+          services={siteData?.services}
+          destinations={siteData?.destinations}
         />
         <CounsellingModal />
       </CounsellingProvider>
