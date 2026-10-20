@@ -20,9 +20,28 @@ const toInt = (value, fallback) => {
 const nodeEnv = process.env.NODE_ENV || 'development';
 const isProduction = nodeEnv === 'production';
 
+function parseDatabaseUrl(urlStr) {
+  if (!urlStr) return null;
+  try {
+    const parsed = new URL(urlStr);
+    return {
+      host: parsed.hostname,
+      port: parsed.port ? Number(parsed.port) : 3306,
+      user: decodeURIComponent(parsed.username || ''),
+      password: decodeURIComponent(parsed.password || ''),
+      name: parsed.pathname.replace(/^\//, ''),
+    };
+  } catch {
+    return null;
+  }
+}
+
+const dbUrl = parseDatabaseUrl(process.env.MYSQL_URL || process.env.DATABASE_URL);
+
 const env = {
   nodeEnv,
   isProduction,
+  host: process.env.HOST || '0.0.0.0',
   port: toInt(process.env.PORT, 5000),
 
   clientOrigins: (process.env.CLIENT_ORIGINS || 'http://localhost:5173')
@@ -31,11 +50,11 @@ const env = {
     .filter(Boolean),
 
   db: {
-    host: process.env.DB_HOST || 'localhost',
-    port: toInt(process.env.DB_PORT, 3306),
-    name: process.env.DB_NAME || 'g3b_education',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
+    host: process.env.DB_HOST || process.env.MYSQLHOST || process.env.MYSQL_HOST || dbUrl?.host || (isProduction ? '' : 'localhost'),
+    port: toInt(process.env.DB_PORT || process.env.MYSQLPORT || process.env.MYSQL_PORT || dbUrl?.port, 3306),
+    name: process.env.DB_NAME || process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE || dbUrl?.name || (isProduction ? '' : 'g3b_education'),
+    user: process.env.DB_USER || process.env.MYSQLUSER || process.env.MYSQL_USER || dbUrl?.user || (isProduction ? '' : 'root'),
+    password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || process.env.MYSQL_PASSWORD || dbUrl?.password || '',
     connectionLimit: toInt(process.env.DB_CONNECTION_LIMIT, 10),
     ssl: toBool(process.env.DB_SSL, false),
   },
@@ -116,8 +135,9 @@ export function validateEnv() {
     if (!process.env.JWT_SECRET || env.auth.secret.length < 32) {
       problems.push('JWT_SECRET must be set to a random string of at least 32 characters in production.');
     }
-    if (!process.env.DB_USER) problems.push('DB_USER is required in production.');
-    if (!process.env.DB_NAME) problems.push('DB_NAME is required in production.');
+    if (!env.db.host) problems.push('DB_HOST (or MYSQLHOST / DATABASE_URL) is required in production.');
+    if (!env.db.user) problems.push('DB_USER (or MYSQLUSER / DATABASE_URL) is required in production.');
+    if (!env.db.name) problems.push('DB_NAME (or MYSQLDATABASE / DATABASE_URL) is required in production.');
     if (env.cookie.sameSite === 'none' && !env.cookie.secure) {
       problems.push('COOKIE_SAMESITE=none requires COOKIE_SECURE=true in production.');
     }

@@ -451,6 +451,7 @@ export async function seedDatabase({ log = console.log } = {}) {
     password: env.db.password,
     database: env.db.name,
     multipleStatements: true,
+    ssl: env.db.ssl ? { rejectUnauthorized: false } : undefined,
   });
 
   try {

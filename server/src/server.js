@@ -17,8 +17,8 @@ async function start() {
   }
 
   const app = createApp();
-  const server = app.listen(env.port, () => {
-    logger.info(`G3B Education API listening on http://localhost:${env.port}`, {
+  const server = app.listen(env.port, env.host, () => {
+    logger.info(`G3B Education API listening on http://${env.host}:${env.port}`, {
       environment: env.nodeEnv,
       allowedOrigins: env.clientOrigins,
     });
