@@ -86,7 +86,7 @@ export default function Services({ content = {}, services = [] }) {
                 {service.features?.length > 0 ? (
                   <ul style={{ marginBottom: '16px', flex: 1 }}>
                     {service.features.map((feature, index) => (
-                      <li key={index}>{feature}</li>
+                      <li key={index}>{typeof feature === 'object' ? feature?.text : feature}</li>
                     ))}
                   </ul>
                 ) : null}

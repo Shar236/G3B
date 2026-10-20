@@ -26,7 +26,6 @@ import {
   Play,
   Eye,
   Edit2,
-  Trash2,
   Plus,
   RefreshCw,
   ExternalLink,
@@ -38,13 +37,6 @@ import './youtubeShorts.css'
 
 const CHANNEL_URL = 'https://www.youtube.com/@g3beducation_nerul/shorts'
 const CATEGORY_OPTIONS = ['What Parents Say', 'Student Review']
-const countLabels = {
-  candidates: 'Registered videos',
-  published: 'Published Shorts',
-  pending: 'Awaiting review',
-  excluded: 'Excluded',
-  unavailable: 'Unavailable',
-}
 const dateLabel = (value) =>
   value && !Number.isNaN(Date.parse(value)) ? new Date(value).toLocaleString() : 'Never'
 

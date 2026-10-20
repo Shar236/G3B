@@ -8,11 +8,27 @@ import { enrichData } from './db/enrichSeed.js';
 import { syncExistingVideosToRegistry } from './db/syncExistingVideos.js';
 import { startYouTubeSyncScheduler } from './services/youtubeSyncService.js';
 
+async function waitForDatabase(maxRetries = env.isProduction ? 5 : 1, delayMs = 2000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
+    try {
+      await pingDatabase();
+      return true;
+    } catch (err) {
+      if (attempt < maxRetries) {
+        logger.warn(`Database connection attempt ${attempt}/${maxRetries} failed, retrying in ${delayMs}ms...`, { error: err.message });
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
 async function start() {
   validateEnv();
 
   try {
-    await pingDatabase();
+    await waitForDatabase();
     logger.info('Database connection established', { database: env.db.name, host: env.db.host });
 
     // Ensure database tables exist and seed initial content if fresh/empty

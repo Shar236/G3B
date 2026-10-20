@@ -24,12 +24,14 @@ function parseDatabaseUrl(urlStr) {
   if (!urlStr) return null;
   try {
     const parsed = new URL(urlStr);
+    const sslParam = (parsed.searchParams.get('ssl') || parsed.searchParams.get('sslmode') || parsed.searchParams.get('ssl-mode') || '').toLowerCase();
     return {
       host: parsed.hostname,
       port: parsed.port ? Number(parsed.port) : 3306,
       user: decodeURIComponent(parsed.username || ''),
       password: decodeURIComponent(parsed.password || ''),
       name: parsed.pathname.replace(/^\//, ''),
+      ssl: ['true', '1', 'require', 'required'].includes(sslParam),
     };
   } catch {
     return null;
@@ -45,15 +47,21 @@ const env = {
   port: toInt(process.env.PORT, 5000),
 
   clientOrigins: (() => {
-    const defaultOrigins = [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'https://elegant-harmony-production.up.railway.app',
-    ];
+    const defaultOrigins = isProduction
+      ? []
+      : [
+          'http://localhost:5173',
+          'http://localhost:5174',
+          'http://localhost:3000',
+          'http://127.0.0.1:5173',
+          'http://127.0.0.1:5174',
+        ];
     const configured = [
       process.env.CLIENT_ORIGINS,
       process.env.CLIENT_URL,
       process.env.FRONTEND_URL,
+      process.env.PUBLIC_SITE_URL,
+      process.env.SITE_URL,
     ]
       .filter(Boolean)
       .join(',');
@@ -69,7 +77,12 @@ const env = {
     user: process.env.DB_USER || process.env.MYSQLUSER || process.env.MYSQL_USER || dbUrl?.user || (isProduction ? '' : 'root'),
     password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || process.env.MYSQL_PASSWORD || dbUrl?.password || '',
     connectionLimit: toInt(process.env.DB_CONNECTION_LIMIT, 10),
-    ssl: toBool(process.env.DB_SSL, false),
+    ssl: (() => {
+      if (process.env.DB_SSL !== undefined) return toBool(process.env.DB_SSL, false);
+      if (process.env.MYSQL_SSL !== undefined) return toBool(process.env.MYSQL_SSL, false);
+      if (dbUrl?.ssl) return true;
+      return false;
+    })(),
   },
 
   auth: {

@@ -130,7 +130,7 @@ export default function Destinations({ content = {}, destinations = [] }) {
                     {destination.points.map((point, index) => (
                       <li key={index} style={{ fontSize: '13px', color: '#334155', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                         <i className="fas fa-check" style={{ color: '#10b981', marginTop: '3px', fontSize: '12px' }} aria-hidden="true" />
-                        <span>{point}</span>
+                        <span>{typeof point === 'object' ? point?.text : point}</span>
                       </li>
                     ))}
                   </ul>

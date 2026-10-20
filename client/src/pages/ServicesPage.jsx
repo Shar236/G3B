@@ -5,6 +5,7 @@ import usePageSeo from '../hooks/usePageSeo.js'
 import { resolveMediaUrl } from '../api/client.js'
 import { useCounsellingModal } from '../context/CounsellingContext.jsx'
 import Pathways from '../components/Pathways.jsx'
+import defaultHomeData from '../data/defaultHomeContent.js'
 
 /** Interactive Accordion Component for Service FAQs with accessibility */
 function FaqAccordion({ items = [], serviceSlug = 'service' }) {
@@ -75,8 +76,8 @@ export default function ServicesPage() {
   const [activeServiceId, setActiveServiceId] = useState('')
   const observerRef = useRef(null)
 
-  const services = data?.services || []
-  const settings = data?.settings || {}
+  const services = (data?.services && data.services.length > 0) ? data.services : (defaultHomeData.services || [])
+  const settings = data?.settings || defaultHomeData.settings || {}
 
   // Metadata published in the admin SEO manager wins; these strings are the
   // fallback for an unregistered route or while the request is in flight.
@@ -334,7 +335,7 @@ export default function ServicesPage() {
                         {features.map((feature, fIdx) => (
                           <li key={fIdx}>
                             <i className="fas fa-circle-check" aria-hidden="true" />
-                            <span>{feature}</span>
+                            <span>{typeof feature === 'object' ? feature?.text : feature}</span>
                           </li>
                         ))}
                       </ul>
