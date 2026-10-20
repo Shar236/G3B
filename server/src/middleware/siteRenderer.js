@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pagesRepository } from '../repositories/pagesRepository.js';
 import { settingsRepository } from '../repositories/settingsRepository.js';
 import {
   buildRobotsTxt,
@@ -11,6 +10,7 @@ import {
 } from '../services/seoRenderer.js';
 import env from '../config/env.js';
 import logger from '../utils/logger.js';
+import { listPublicPagesWithDefaults, findPublicPageWithDefaults, injectBuiltInBody } from '../services/builtInPages.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -49,7 +49,7 @@ export function createSiteFiles() {
         return;
       }
 
-      const pages = await pagesRepository.list({ status: 'published' });
+      const pages = await listPublicPagesWithDefaults();
       res
         .type('application/xml')
         .set('Cache-Control', 'public, max-age=300')
@@ -123,12 +123,12 @@ export function createPageRenderer({ distDir = DEFAULT_CLIENT_DIST } = {}) {
 
       if (!req.accepts('html')) return next();
 
-      const page = await pagesRepository.findPublishedByRoute(pathname);
+      const page = await findPublicPageWithDefaults(pathname);
       const defaults = await loadDefaults();
 
       if (page) {
         const tags = renderMetaTags(page, defaults, origin);
-        res.status(200).type('html').send(injectHead(indexHtml, tags));
+        res.status(200).type('html').send(injectBuiltInBody(injectHead(indexHtml, tags), pathname));
         return;
       }
 

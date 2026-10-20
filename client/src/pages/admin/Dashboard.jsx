@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { fetchEnquiryStats } from '../../api/adminApi.js'
 import { parseApiError } from '../../api/client.js'
 import { adminPath } from '../../config/adminRoute.js'
 import { StateBlock } from '../../components/ui/StateBlock.jsx'
+import { useAuth } from '../../context/AuthContext.jsx'
+import { displayDate, TableSkeleton } from './AdminDataUI.jsx'
 
-const STATUS_ORDER = ['new', 'contacted', 'in_progress', 'qualified', 'converted', 'completed', 'closed']
+const STATUS_ORDER = ['new', 'contacted', 'in_progress', 'qualified', 'converted', 'completed', 'closed', 'archived']
 
-const formatDate = (value) => (value ? new Date(value).toLocaleString() : '—')
+const formatDate = displayDate
 
 /** Admin summary: enquiry counts, last 7 days and the most recent submissions. */
 export default function Dashboard() {
+  const { user } = useAuth()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -28,10 +31,12 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    load()
-  }, [load])
+    if (user?.role !== 'editor') load()
+  }, [load, user?.role])
 
-  if (loading) return <StateBlock variant="loading" title="Loading dashboard…" />
+  if (user?.role === 'editor') return <Navigate to={adminPath('services')} replace />
+
+  if (loading) return <><div className="stat-cards">{Array.from({ length: 10 }, (_, index) => <div className="stat-card" key={index}><TableSkeleton columns={1} rows={2} /></div>)}</div><div className="admin-card"><TableSkeleton columns={5} /></div></>
   if (error) return <StateBlock variant="error" title="Could not load the dashboard" message={error.message} onRetry={load} />
 
   const counts = stats?.counts || {}

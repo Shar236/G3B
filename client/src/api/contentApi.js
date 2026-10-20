@@ -2,8 +2,8 @@ import api from './client.js'
 
 /** Public, unauthenticated content endpoints. */
 
-export async function fetchHome() {
-  const { data } = await api.get('/api/home')
+export async function fetchHome(options = {}) {
+  const { data } = await api.get('/api/home', options)
   return data.data
 }
 

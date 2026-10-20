@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useId, useRef } from 'react'
 import api from '../../api/client.js'
 import { parseApiError } from '../../api/client.js'
 
@@ -32,6 +32,8 @@ export default function ConsultationForm({
   inModal = false,
   theme = inModal ? 'light' : 'dark',
 }) {
+  const id = useId()
+  const pendingRef = useRef(false)
   const [form, setForm] = useState({
     fullName: initialValues.fullName || '',
     email: initialValues.email || '',
@@ -40,6 +42,8 @@ export default function ConsultationForm({
     serviceInterest: initialValues.serviceInterest || '',
     preferredDestination: initialValues.preferredDestination || '',
     message: initialValues.message || '',
+    currentStatus: initialValues.currentStatus || '',
+    targetDegree: initialValues.targetDegree || '',
   })
 
   const [errors, setErrors] = useState({})
@@ -67,15 +71,15 @@ export default function ConsultationForm({
 
   const validate = () => {
     const errs = {}
-    if (!form.fullName || form.fullName.trim().length < 2) {
+    if (!form.fullName || form.fullName.trim().length < 2 || form.fullName.trim().length > 150) {
       errs.fullName = 'Please enter your full name (at least 2 characters).'
     }
-    if (!form.email || !EMAIL_REGEX.test(form.email.trim())) {
+    if (!form.email || !EMAIL_REGEX.test(form.email.trim()) || form.email.trim().length > 190) {
       errs.email = 'Please provide a valid email address.'
     }
 
     const cleanPhone = form.phone.replace(/[\s()-]/g, '')
-    if (!cleanPhone || cleanPhone.length < 7 || cleanPhone.length > 15 || !/^\d+$/.test(cleanPhone)) {
+    if (!cleanPhone || cleanPhone.length < 7 || `${form.dialCode.replace('+', '')}${cleanPhone}`.length > 15 || !/^\d+$/.test(cleanPhone)) {
       errs.phone = 'Please enter a valid phone number (7 to 15 digits).'
     }
 
@@ -92,41 +96,36 @@ export default function ConsultationForm({
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (pendingRef.current) return
     setNotice(null)
 
     const validationErrors = validate()
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
       setNotice({ type: 'error', message: 'Please correct the highlighted fields before submitting.' })
+      const formElement = event.currentTarget
+      requestAnimationFrame(() => formElement.querySelector('[aria-invalid="true"]')?.focus())
       return
     }
 
-    const fullPhoneNumber = `${form.dialCode} ${form.phone.trim()}`
+    const fullPhoneNumber = `${form.dialCode} ${form.phone.replace(/[\s()-]/g, '')}`
 
+    pendingRef.current = true
     setSubmitting(true)
     try {
-      // Post to /api/counselling with fallback to /api/enquiries
-      let res
-      try {
-        res = await api.post('/api/counselling', {
+      const res = await api.post('/api/enquiries', {
           fullName: form.fullName.trim(),
           email: form.email.trim(),
           phone: fullPhoneNumber,
           serviceInterest: form.serviceInterest,
           preferredDestination: form.preferredDestination || undefined,
           message: form.message.trim() || undefined,
-        })
-      } catch {
-        // Fallback to /api/enquiries if counselling alias is cached/unreachable
-        res = await api.post('/api/enquiries', {
-          fullName: form.fullName.trim(),
-          email: form.email.trim(),
-          phone: fullPhoneNumber,
-          serviceInterest: form.serviceInterest,
-          preferredDestination: form.preferredDestination || undefined,
-          message: form.message.trim() || undefined,
-        })
-      }
+          currentStatus: form.currentStatus || undefined,
+          targetDegree: form.targetDegree || undefined,
+          countryCode: form.dialCode,
+          leadSource: initialValues.leadSource || (inModal ? 'consultation' : 'contact'),
+          landingPage: `${window.location.pathname}${window.location.hash}`.slice(0, 500),
+        }, { notifyOnError: false })
 
       setSubmitted(true)
       if (onSuccess) onSuccess(res.data)
@@ -141,6 +140,7 @@ export default function ConsultationForm({
             : parsed.message || 'Unable to submit your request. Please try again.',
       })
     } finally {
+      pendingRef.current = false
       setSubmitting(false)
     }
   }
@@ -154,6 +154,8 @@ export default function ConsultationForm({
       serviceInterest: '',
       preferredDestination: '',
       message: '',
+      currentStatus: '',
+      targetDegree: '',
     })
     setErrors({})
     setNotice(null)
@@ -200,7 +202,7 @@ export default function ConsultationForm({
           }}
         >
           <i className="fas fa-envelope" style={{ color: isDark ? '#fbbf24' : '#0B2C5F', marginRight: '6px' }} />
-          A notification email has been dispatched to admissions.g3beducation@gmail.com
+          Our counsellors will review your request and contact you using the details provided.
         </div>
         <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
           <i className="fas fa-rotate-left" aria-hidden="true" /> Book Another Session
@@ -226,9 +228,12 @@ export default function ConsultationForm({
   if (form.serviceInterest && !serviceOptions.includes(form.serviceInterest)) {
     serviceOptions = [form.serviceInterest, ...serviceOptions]
   }
+  serviceOptions = [...new Set([...serviceOptions, 'Grade 9+ Counselling', 'Career Counselling Workshops', 'Mid-Career & Working Professionals', 'University & Study Abroad Counselling'])]
+  const destinationOptions = [...new Set([...destinations.map((d) => d.country), 'USA', 'UK', 'Canada', 'Australia', 'Germany', 'France', form.preferredDestination].filter(Boolean))]
 
   return (
     <div className={`consultation-form-wrapper consultation-form-${theme}`}>
+      {initialValues.leadSource === 'assessment' && <div className="assessment-summary"><strong>Your pathway finder answers are included.</strong><span>{{ high_school: 'High school / Grade 9–12', college: 'College / graduate', working: 'Working professional' }[form.currentStatus]}</span><span>{{ ug: 'Undergraduate', pg: 'Postgraduate', mba: 'MBA / executive study', undecided: 'Help me decide' }[form.targetDegree]}</span><span>{form.preferredDestination || 'Open to destinations'}</span></div>}
       {notice ? (
         <div
           className={`form-notice ${notice.type}`}
@@ -243,19 +248,20 @@ export default function ConsultationForm({
         </div>
       ) : null}
 
-      <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit} noValidate aria-busy={submitting}>
         {/* Full Name */}
         <div className={`form-group${errors.fullName ? ' has-error' : ''}`}>
-          <label htmlFor="lead-full-name">
+          <label htmlFor={`${id}-full-name`}>
             Full Name <span style={{ color: '#ef4444' }}>*</span>
           </label>
           <div style={{ position: 'relative' }}>
             <input
-              id="lead-full-name"
+              id={`${id}-full-name`}
               name="fullName"
               type="text"
               placeholder="e.g. Rahul Sharma"
               autoComplete="name"
+              maxLength={150}
               value={form.fullName}
               onChange={update('fullName')}
               aria-invalid={Boolean(errors.fullName)}
@@ -268,15 +274,16 @@ export default function ConsultationForm({
         {/* Email & Phone Row */}
         <div className="form-row">
           <div className={`form-group${errors.email ? ' has-error' : ''}`}>
-            <label htmlFor="lead-email">
+            <label htmlFor={`${id}-email`}>
               Email Address <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <input
-              id="lead-email"
+              id={`${id}-email`}
               name="email"
               type="email"
               placeholder="rahul@example.com"
               autoComplete="email"
+              maxLength={190}
               value={form.email}
               onChange={update('email')}
               aria-invalid={Boolean(errors.email)}
@@ -286,12 +293,12 @@ export default function ConsultationForm({
           </div>
 
           <div className={`form-group${errors.phone ? ' has-error' : ''}`}>
-            <label htmlFor="lead-phone">
+            <label htmlFor={`${id}-phone`}>
               Phone Number <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <div className="phone-input-wrap">
               <select
-                id="lead-dial-code"
+                id={`${id}-dial-code`}
                 aria-label="Country dial code"
                 value={form.dialCode}
                 onChange={update('dialCode')}
@@ -304,11 +311,12 @@ export default function ConsultationForm({
                 ))}
               </select>
               <input
-                id="lead-phone"
+                id={`${id}-phone`}
                 name="phone"
                 type="tel"
                 placeholder="98201 23456"
                 autoComplete="tel"
+                maxLength={24}
                 value={form.phone}
                 onChange={update('phone')}
                 aria-invalid={Boolean(errors.phone)}
@@ -323,11 +331,11 @@ export default function ConsultationForm({
         {/* Service & Destination Row */}
         <div className="form-row">
           <div className={`form-group${errors.serviceInterest ? ' has-error' : ''}`}>
-            <label htmlFor="lead-service">
+            <label htmlFor={`${id}-service`}>
               Interested Service <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <select
-              id="lead-service"
+              id={`${id}-service`}
               name="serviceInterest"
               value={form.serviceInterest}
               onChange={update('serviceInterest')}
@@ -345,33 +353,37 @@ export default function ConsultationForm({
           </div>
 
           <div className={`form-group${errors.preferredDestination ? ' has-error' : ''}`}>
-            <label htmlFor="lead-destination">Preferred Destination</label>
+            <label htmlFor={`${id}-destination`}>Preferred Destination</label>
             <select
-              id="lead-destination"
+              id={`${id}-destination`}
               name="preferredDestination"
               value={form.preferredDestination}
               onChange={update('preferredDestination')}
             >
               <option value="">Not decided yet</option>
-              {destinations.map((d) => (
-                <option key={d.id || d.country} value={d.country}>
-                  {d.flagIcon ? `${d.flagIcon} ` : ''}{d.country}
+              {destinationOptions.map((country) => (
+                <option key={country} value={country}>
+                  {country}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
+        <div className="form-row">
+          <div className="form-group"><label htmlFor={`${id}-status`}>Current class / status</label><select id={`${id}-status`} value={form.currentStatus} onChange={update('currentStatus')}><option value="">Choose your stage (optional)</option><option value="high_school">High school / Grade 9–12</option><option value="college">College / graduate</option><option value="working">Working professional</option></select></div>
+          <div className="form-group"><label htmlFor={`${id}-degree`}>Target degree</label><select id={`${id}-degree`} value={form.targetDegree} onChange={update('targetDegree')}><option value="">Choose your goal (optional)</option><option value="ug">Undergraduate</option><option value="pg">Postgraduate</option><option value="mba">MBA / executive study</option><option value="undecided">Help me decide</option></select></div>
+        </div>
         {/* Message / Query */}
         <div className={`form-group${errors.message ? ' has-error' : ''}`}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <label htmlFor="lead-message">Your Study Goals & Questions (Optional)</label>
+            <label htmlFor={`${id}-message`}>Your Study Goals & Questions (Optional)</label>
             <span className="char-counter">
               {form.message.length}/2000
             </span>
           </div>
           <textarea
-            id="lead-message"
+            id={`${id}-message`}
             name="message"
             rows={inModal ? 3 : 4}
             placeholder="Tell us about your target course, intake, preferred budget or exams taken..."

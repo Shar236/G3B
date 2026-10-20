@@ -7,9 +7,9 @@ const DEFAULT_NAV = [
   { label: 'Why G3B', url: '/#why' },
   { label: 'Our Services', url: '/services' },
   { label: 'Destinations', url: '/#destinations' },
-  { label: 'Gallery', url: '/#gallery' },
+  { label: 'Pathways', url: '/#pathways' },
   { label: 'Reviews', url: '/#reviews' },
-  { label: 'Videos', url: '/#video-testimonial' },
+  { label: 'Insights', url: '/insights' },
   { label: 'Contact', url: '/#contact' },
 ]
 
@@ -23,7 +23,7 @@ export default function Header({ settings = {}, navigation = [] }) {
   const brand = settings.brand_name || 'G3B Education'
   const subheading = settings.header_subheading || 'Career Guidance · Study Abroad'
   const ctaLabel = settings.header_cta_label || 'Free Counselling'
-  const logoUrl = settings.header_logo_url ? resolveMediaUrl(settings.header_logo_url) : null
+  const logoUrl = settings.header_logo_url ? resolveMediaUrl(settings.header_logo_url) : '/logo.png'
 
   const navItems = navigation && navigation.length > 0 ? navigation : DEFAULT_NAV
 
@@ -60,7 +60,6 @@ export default function Header({ settings = {}, navigation = [] }) {
               src={logoUrl}
               alt={brand}
               className="brand-logo-img"
-              style={{ maxHeight: '42px', width: 'auto', objectFit: 'contain' }}
             />
           ) : (
             <span className="brand-mark" aria-hidden="true">

@@ -1,0 +1,14 @@
+.g3b-notifications { position: fixed; z-index: 10000; right: 24px; bottom: 24px; display: grid; gap: 12px; width: min(420px, calc(100vw - 32px)); pointer-events: none; }
+.g3b-notification { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px; border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: var(--radius); background: var(--white); color: var(--text); box-shadow: var(--shadow-lg); pointer-events: auto; animation: g3b-notify-in .2s ease-out; }
+.g3b-notification > i { color: var(--primary); margin-top: 4px; }
+.g3b-notification p { flex: 1; font-size: .9rem; line-height: 1.5; overflow-wrap: anywhere; }
+.g3b-notification button { flex-shrink: 0; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 4px; }
+.g3b-notification button:hover { color: var(--primary); background: var(--bg-alt); }
+.g3b-notification button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.g3b-notification--error { border-left-color: var(--danger); }
+.g3b-notification--error > i { color: var(--danger); }
+.g3b-notification--success { border-left-color: var(--success); }
+.g3b-notification--success > i { color: var(--success); }
+@keyframes g3b-notify-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 600px) { .g3b-notifications { right: 16px; bottom: 16px; } }
+@media (prefers-reduced-motion: reduce) { .g3b-notification { animation: none; } }

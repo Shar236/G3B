@@ -11,6 +11,8 @@ const CSV_COLUMNS = [
   'countryCode',
   'serviceInterest',
   'preferredDestination',
+  'currentStatus',
+  'targetDegree',
   'message',
   'status',
   'leadSource',
@@ -26,21 +28,23 @@ export async function listEnquiries(req, res) {
   const page = Number.parseInt(req.query.page, 10) || 1;
   const perPage = Math.min(Number.parseInt(req.query.perPage, 10) || 20, 100);
 
-  const result = await enquiriesRepository.list({
-    page,
-    perPage,
-    status: req.query.status || undefined,
-    search: req.query.search || undefined,
-    assignedTo: req.query.assignedTo || undefined,
-    service: req.query.service || undefined,
-    destination: req.query.destination || undefined,
-    leadSource: req.query.leadSource || undefined,
-    dateFrom: req.query.dateFrom || undefined,
-    dateTo: req.query.dateTo || undefined,
-    includeAnonymized: req.query.includeAnonymized === 'true',
-  });
+  const result = await enquiriesRepository.list({ ...req.query, page, perPage, includeAnonymized: req.query.includeAnonymized === 'true' });
 
   res.json({ success: true, data: result.items, pagination: result.pagination });
+}
+
+/** Manual lead creation deliberately does not trigger public marketing mail. */
+export async function createAdminEnquiry(req, res) {
+  const enquiry = await enquiriesRepository.create({ ...req.body, source: 'admin', leadSource: req.body.leadSource || 'admin' });
+  await recordAudit(req, { action: 'enquiry.create', entityType: 'enquiry', entityId: enquiry.id, summary: `Created enquiry #${enquiry.id}` });
+  res.status(201).json({ success: true, data: enquiry });
+}
+
+export async function bulkEnquiries(req, res) {
+  if (req.body.action === 'delete' && req.user.role !== 'admin') throw ApiError.forbidden('Only administrators can delete enquiries.');
+  const affected = await enquiriesRepository.bulk(req.body);
+  await recordAudit(req, { action: `enquiry.bulk.${req.body.action}`, entityType: 'enquiry', summary: `${affected} enquiries affected`, changes: req.body });
+  res.json({ success: true, data: { affected } });
 }
 
 /** GET /api/admin/enquiries/stats */
@@ -180,10 +184,7 @@ export async function deleteEnquiryNote(req, res) {
 
 /** GET /api/admin/enquiries/export - CSV download of authorised data */
 export async function exportEnquiries(req, res) {
-  const rows = await enquiriesRepository.listForExport({
-    status: req.query.status || undefined,
-    search: req.query.search || undefined,
-  });
+  const rows = await enquiriesRepository.listForExport({ ...req.query, includeAnonymized: req.query.includeAnonymized === 'true' });
 
   const csv = toCsv(rows, CSV_COLUMNS);
   const filename = `g3b-enquiries-${new Date().toISOString().slice(0, 10)}.csv`;

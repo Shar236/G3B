@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   createResource,
   deleteResource,
@@ -10,6 +10,8 @@ import {
 import { parseApiError, resolveMediaUrl } from '../../api/client.js'
 import { Modal } from '../../components/ui/Modal.jsx'
 import { StateBlock } from '../../components/ui/StateBlock.jsx'
+import { AdminNotice, AdminPagination, ConfirmAction, TableSkeleton } from './AdminDataUI.jsx'
+import { downloadContentCsv, isSafeAssetUrl, parseVideoUrl, validateContentForm } from './contentTools.js'
 
 // Resources backed by the generic reorder endpoint (services/destinations use
 // dedicated repositories and order themselves by their own sort order field).
@@ -56,7 +58,7 @@ const emptyForm = (fields) =>
   Object.fromEntries(
     fields.map((field) => [
       field.name,
-      field.type === 'checkbox' ? true : field.type === 'list' || field.type === 'json' ? '' : field.type === 'number' ? 0 : '',
+      field.type === 'checkbox' ? true : field.type === 'number' ? field.min ?? 0 : field.type === 'select' ? field.options[0]?.value || '' : '',
     ]),
   )
 
@@ -108,7 +110,7 @@ function toPayload(fields, form) {
 }
 
 /** Generic list/create/edit/delete screen driven by a resource config. */
-export default function ContentResource({ resource, config }) {
+export default function ContentResource({ resource, config, allowCreate = true }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -117,45 +119,85 @@ export default function ContentResource({ resource, config }) {
   const [form, setForm] = useState(() => emptyForm(config.fields))
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(null)
+  const [search, setSearch] = useState('')
+  const [visibility, setVisibility] = useState('')
+  const [sortBy, setSortBy] = useState('')
+  const [page, setPage] = useState(1)
+  const [selected, setSelected] = useState([])
+  const [busy, setBusy] = useState(false)
+  const [confirmation, setConfirmation] = useState(null)
+  const [formError, setFormError] = useState(null)
+  const loadGeneration = useRef(0)
+  const pendingMutation = useRef(false)
 
   const rows = useMemo(() => buildRows(config.fields), [config.fields])
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    const result = items.filter((record) => (!term || Object.values(record).some((value) => String(value || '').toLowerCase().includes(term))) && (!visibility || Boolean(record.isActive) === (visibility === 'active')))
+    if (sortBy) result.sort((left, right) => String(left[sortBy] ?? '').localeCompare(String(right[sortBy] ?? ''), undefined, { numeric: true }))
+    return result
+  }, [items, search, visibility, sortBy])
+  const totalPages = Math.max(1, Math.ceil(filtered.length / 20))
+  const currentPage = Math.min(page, totalPages)
+  const visibleItems = filtered.slice((currentPage - 1) * 20, currentPage * 20)
+  const selectedItems = visibleItems.filter((item) => selected.includes(item.id))
+  const canReorder = REORDERABLE.has(resource) && !search && !visibility && !sortBy
+  const video = resource === 'videos' ? parseVideoUrl(form.youtubeUrl) : null
 
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current
     setLoading(true)
     setError(null)
     try {
-      setItems(await listResource(resource))
+      const records = await listResource(resource)
+      if (generation === loadGeneration.current) setItems(records)
     } catch (err) {
-      setError(parseApiError(err))
+      if (generation === loadGeneration.current) setError(parseApiError(err))
     } finally {
-      setLoading(false)
+      if (generation === loadGeneration.current) setLoading(false)
     }
   }, [resource])
 
   useEffect(() => {
+    setSelected([])
+    setEditing(null)
+    setSearch('')
+    setVisibility('')
+    setSortBy('')
+    setPage(1)
     load()
+    return () => { loadGeneration.current += 1 }
   }, [load])
 
   const openCreate = () => {
     setEditing({ id: null })
     setForm(emptyForm(config.fields))
     setNotice(null)
+    setFormError(null)
   }
 
   const openEdit = (record) => {
     setEditing(record)
     setForm(toForm(config.fields, record))
     setNotice(null)
+    setFormError(null)
   }
 
   const closeModal = () => setEditing(null)
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (pendingMutation.current) return
+    pendingMutation.current = true
     setSaving(true)
+    setFormError(null)
+    const previous = items
     try {
+      validateContentForm(config.fields, form, resource)
       const payload = toPayload(config.fields, form)
+      if (resource === 'videos') payload.youtubeId = parseVideoUrl(payload.youtubeUrl).id
       if (editing?.id) {
+        setItems((current) => current.map((item) => item.id === editing.id ? { ...item, ...payload } : item))
         await updateResource(resource, editing.id, payload)
         setNotice({ type: 'success', message: `${config.singular} updated.` })
       } else {
@@ -166,49 +208,67 @@ export default function ContentResource({ resource, config }) {
       load()
     } catch (err) {
       const parsed = parseApiError(err)
-      setNotice({ type: 'error', message: parsed.message })
+      setItems(previous)
+      setFormError(parsed.message)
     } finally {
+      pendingMutation.current = false
       setSaving(false)
     }
   }
 
-  const handleDelete = async (record) => {
-    const label = record.title || record.country || record.authorName || record.altText || record.label || record.platform || 'this item'
-    if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return
-    try {
-      await deleteResource(resource, record.id)
-      setNotice({ type: 'success', message: `${config.singular} deleted.` })
-      load()
-    } catch (err) {
-      setNotice({ type: 'error', message: parseApiError(err).message })
-    }
+  const handleBulk = async (records, action) => {
+    if (pendingMutation.current || busy || !records.length) return
+    pendingMutation.current = true
+    setBusy(true)
+    const previous = items
+    const ids = records.map((record) => record.id)
+    setItems((current) => action === 'delete' ? current.filter((item) => !ids.includes(item.id)) : current.map((item) => ids.includes(item.id) ? { ...item, isActive: action === 'show' } : item))
+    const results = await Promise.allSettled(records.map((record) => action === 'delete' ? deleteResource(resource, record.id) : updateResource(resource, record.id, { isActive: action === 'show' })))
+    const failed = results.filter((result) => result.status === 'rejected')
+    const completedIds = ids.filter((_, index) => results[index].status === 'fulfilled')
+    setItems(action === 'delete' ? previous.filter((item) => !completedIds.includes(item.id)) : previous.map((item) => completedIds.includes(item.id) ? { ...item, isActive: action === 'show' } : item))
+    setNotice(failed.length ? { type: 'error', message: `${records.length - failed.length} updated; ${failed.length} failed. ${parseApiError(failed[0].reason).message}` } : { type: 'success', message: `${records.length} ${records.length === 1 ? config.singular.toLowerCase() : 'items'} ${action === 'delete' ? 'deleted' : action === 'show' ? 'shown' : 'hidden'}.` })
+    setBusy(false)
+    pendingMutation.current = false
+    setConfirmation(null)
+    setSelected([])
+    load()
   }
 
   const move = async (index, direction) => {
+    if (pendingMutation.current || busy) return
     const target = index + direction
     if (target < 0 || target >= items.length) return
+    pendingMutation.current = true
     const next = [...items]
     const [moved] = next.splice(index, 1)
     next.splice(target, 0, moved)
     setItems(next)
+    setBusy(true)
     try {
       await reorderResource(resource, next.map((item) => item.id))
       setNotice({ type: 'success', message: 'Display order updated.' })
     } catch (err) {
       setNotice({ type: 'error', message: parseApiError(err).message })
-      load()
-    }
+      setItems(items)
+    } finally { pendingMutation.current = false; setBusy(false) }
   }
 
   const handleUpload = async (field, file) => {
-    if (!file) return
+    if (!file || pendingMutation.current) return
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/svg+xml'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setFormError('Choose a PNG, JPG, WEBP, AVIF or SVG image smaller than 5 MB.')
+      return
+    }
+    pendingMutation.current = true
     setUploading(field)
     try {
       const result = await uploadImage(file)
       setForm((current) => ({ ...current, [field]: result.relativeUrl || result.url }))
     } catch (err) {
-      setNotice({ type: 'error', message: parseApiError(err).message })
+      setFormError(parseApiError(err).message)
     } finally {
+      pendingMutation.current = false
       setUploading(null)
     }
   }
@@ -216,6 +276,7 @@ export default function ContentResource({ resource, config }) {
   const renderField = (field) => {
     const value = form[field.name]
     const id = `${resource}-${field.name}`
+    const inputProps = { required: Boolean(field.required), disabled: saving || Boolean(uploading), maxLength: field.maxLength || (field.type === 'textarea' ? 3000 : field.type === 'json' ? 20000 : field.type === 'list' ? 6000 : 500) }
 
     if (field.type === 'checkbox') {
       return (
@@ -223,6 +284,7 @@ export default function ContentResource({ resource, config }) {
           <input
             id={id}
             type="checkbox"
+            disabled={saving || Boolean(uploading)}
             checked={Boolean(value)}
             onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.checked }))}
           />
@@ -242,6 +304,7 @@ export default function ContentResource({ resource, config }) {
           <>
             <textarea
               id={id}
+              {...inputProps}
               className="admin-textarea"
               rows={6}
               value={value}
@@ -254,6 +317,7 @@ export default function ContentResource({ resource, config }) {
           <textarea
             id={id}
             className="admin-textarea"
+              {...inputProps}
             rows={field.type === 'list' ? 5 : 4}
             value={value}
             placeholder={field.placeholder}
@@ -262,6 +326,8 @@ export default function ContentResource({ resource, config }) {
         ) : field.type === 'select' ? (
           <select
             id={id}
+            required={Boolean(field.required)}
+            disabled={saving || Boolean(uploading)}
             className="admin-select"
             value={value}
             onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
@@ -278,6 +344,8 @@ export default function ContentResource({ resource, config }) {
             id={id}
             className="admin-input"
             type="number"
+            required={Boolean(field.required)}
+            disabled={saving || Boolean(uploading)}
             min={field.min}
             max={field.max}
             value={value}
@@ -288,6 +356,7 @@ export default function ContentResource({ resource, config }) {
             <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
               <input
                 id={id}
+                {...inputProps}
                 className="admin-input"
                 type="text"
                 value={value}
@@ -301,6 +370,8 @@ export default function ContentResource({ resource, config }) {
                   className="btn btn-ghost btn-sm"
                   onClick={() => setForm((current) => ({ ...current, [field.name]: '' }))}
                   title="Clear image"
+                  aria-label={`Clear ${field.label}`}
+                  disabled={saving || Boolean(uploading)}
                 >
                   <i className="fas fa-trash-can" aria-hidden="true" />
                 </button>
@@ -308,11 +379,15 @@ export default function ContentResource({ resource, config }) {
             </div>
             <div
               className="admin-dropzone"
+              role="button"
+              tabIndex={saving || uploading ? -1 : 0}
+              aria-label={`Upload ${field.label}`}
+              onKeyDown={(event) => { if (['Enter', ' '].includes(event.key) && !saving && !uploading) { event.preventDefault(); document.getElementById(`${id}-file-input`)?.click() } }}
               onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
               onDrop={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (e.dataTransfer.files?.[0]) handleUpload(field.name, e.dataTransfer.files[0]);
+                if (!saving && !uploading && e.dataTransfer.files?.[0]) handleUpload(field.name, e.dataTransfer.files[0]);
               }}
               style={{
                 border: '2px dashed #cbd5e1',
@@ -322,7 +397,7 @@ export default function ContentResource({ resource, config }) {
                 background: '#f8fafc',
                 cursor: 'pointer',
               }}
-              onClick={() => document.getElementById(`${id}-file-input`)?.click()}
+              onClick={() => { if (!saving && !uploading) document.getElementById(`${id}-file-input`)?.click() }}
             >
               <input
                 id={`${id}-file-input`}
@@ -338,7 +413,7 @@ export default function ContentResource({ resource, config }) {
               </p>
               <span className="hint" style={{ fontSize: '11px' }}>PNG, JPG, WEBP, AVIF or SVG (max 5MB)</span>
             </div>
-            {value ? (
+            {value && isSafeAssetUrl(value) ? (
               <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <img src={resolveMediaUrl(value)} alt="" className="thumb" style={{ width: 120, height: 75, objectFit: 'cover', borderRadius: '6px' }} />
                 <span className="hint" style={{ wordBreak: 'break-all' }}>{value}</span>
@@ -350,13 +425,16 @@ export default function ContentResource({ resource, config }) {
             id={id}
             className="admin-input"
             type="text"
+            {...inputProps}
             value={value}
             placeholder={field.placeholder}
-            onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+            readOnly={resource === 'videos' && field.name === 'youtubeId'}
+            onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value, ...(resource === 'videos' && field.name === 'youtubeUrl' ? { youtubeId: parseVideoUrl(event.target.value)?.id || '' } : {}) }))}
           />
         )}
 
         {field.hint ? <p className="hint">{field.hint}</p> : null}
+        {resource === 'videos' && field.name === 'youtubeUrl' && value ? video ? <iframe className="admin-video-preview" src={video.embedUrl} title={`Preview: ${form.title || 'video testimonial'}`} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" allow="fullscreen; picture-in-picture" allowFullScreen /> : <p className="hint" role="status">Enter a supported YouTube or Vimeo URL to see the preview.</p> : null}
       </div>
     )
   }
@@ -383,9 +461,9 @@ export default function ContentResource({ resource, config }) {
           </h2>
           <p className="row-sub">{config.description}</p>
         </div>
-        <button type="button" className="btn btn-primary btn-sm" onClick={openCreate}>
+        <div className="admin-action-group"><button type="button" className="btn btn-secondary btn-sm" disabled={loading || !filtered.length} onClick={() => downloadContentCsv(`g3b-${resource}.csv`, filtered, [{ name: 'id', label: 'ID' }, ...config.listColumns])}>Export filtered CSV</button>{allowCreate ? <button type="button" className="btn btn-primary btn-sm" onClick={openCreate}>
           <i className="fas fa-plus" aria-hidden="true" /> Add {config.singular.toLowerCase()}
-        </button>
+        </button> : null}</div>
       </div>
 
       {notice ? (
@@ -394,21 +472,30 @@ export default function ContentResource({ resource, config }) {
         </p>
       ) : null}
 
+      <div className="admin-toolbar">
+        <input type="search" aria-label={`Search ${config.label.toLowerCase()}`} placeholder="Search content" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); setSelected([]) }} />
+        <select aria-label="Filter content visibility" value={visibility} onChange={(event) => { setVisibility(event.target.value); setPage(1); setSelected([]) }}><option value="">All visibility</option><option value="active">Visible</option><option value="hidden">Hidden</option></select>
+        <select aria-label="Sort content" value={sortBy} onChange={(event) => { setSortBy(event.target.value); setPage(1); setSelected([]) }}><option value="">Display order</option>{config.listColumns.filter((column) => !column.image).map((column) => <option key={column.name} value={column.name}>{column.label} (ascending)</option>)}</select>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setVisibility(''); setSortBy(''); setPage(1); setSelected([]) }}>Reset filters</button>
+      </div>
+      {selectedItems.length ? <div className="admin-bulk-bar"><strong>{selectedItems.length} selected</strong><button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={() => handleBulk(selectedItems, 'show')}>Show selected</button><button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={() => handleBulk(selectedItems, 'hide')}>Hide selected</button><button type="button" className="btn btn-danger btn-sm" disabled={busy} onClick={() => setConfirmation({ records: selectedItems, message: `Delete ${selectedItems.length} selected content items?` })}>Delete selected</button></div> : null}
+
       {loading ? (
-        <StateBlock variant="loading" title={`Loading ${config.label.toLowerCase()}…`} />
+        <TableSkeleton columns={config.listColumns.length} />
       ) : error ? (
         <StateBlock variant="error" title={`Could not load ${config.label.toLowerCase()}`} message={error.message} onRetry={load} />
-      ) : items.length === 0 ? (
-        <StateBlock variant="empty" title={`No ${config.label.toLowerCase()} yet`} message={`Add your first ${config.singular.toLowerCase()} to get started.`}>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={openCreate}>
+      ) : filtered.length === 0 ? (
+        <StateBlock variant="empty" title={`No ${config.label.toLowerCase()} yet`} message={allowCreate ? `Add your first ${config.singular.toLowerCase()} to get started.` : 'Register and confirm a channel Short above to add it to the website.'}>
+          {allowCreate ? <button type="button" className="btn btn-secondary btn-sm" onClick={openCreate}>
             <i className="fas fa-plus" aria-hidden="true" /> Add {config.singular.toLowerCase()}
-          </button>
+          </button> : null}
         </StateBlock>
       ) : (
-        <div className="table-wrap">
+        <><div className="table-wrap admin-data-table" tabIndex={0} role="region" aria-label={`${config.label} table; scroll horizontally for all columns`}>
           <table className="admin-table">
             <thead>
               <tr>
+                <th className="admin-check-cell"><input type="checkbox" aria-label="Select all content on this page" checked={visibleItems.length > 0 && selectedItems.length === visibleItems.length} disabled={busy} onChange={(event) => setSelected(event.target.checked ? visibleItems.map((item) => item.id) : [])} /></th>
                 {config.listColumns.map((column) => (
                   <th key={column.name}>{column.label}</th>
                 ))}
@@ -416,38 +503,39 @@ export default function ContentResource({ resource, config }) {
               </tr>
             </thead>
             <tbody>
-              {items.map((record, index) => (
+              {visibleItems.map((record) => (
                 <tr key={record.id}>
+                  <td className="admin-check-cell"><input type="checkbox" checked={selected.includes(record.id)} disabled={busy} aria-label={`Select item ${record.id}`} onChange={() => setSelected((current) => current.includes(record.id) ? current.filter((id) => id !== record.id) : [...current, record.id])} /></td>
                   {config.listColumns.map((column) => (
                     <td key={column.name}>{renderCell(column, record)}</td>
                   ))}
                   <td className="actions">
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => openEdit(record)}>
+                    <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => openEdit(record)}>
                       Edit
                     </button>
-                    {REORDERABLE.has(resource) ? (
+                    {canReorder ? (
                       <>
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm"
-                          disabled={index === 0}
+                          disabled={busy || items.findIndex((item) => item.id === record.id) === 0}
                           aria-label="Move up"
-                          onClick={() => move(index, -1)}
+                          onClick={() => move(items.findIndex((item) => item.id === record.id), -1)}
                         >
                           <i className="fas fa-arrow-up" aria-hidden="true" />
                         </button>
                         <button
                           type="button"
                           className="btn btn-ghost btn-sm"
-                          disabled={index === items.length - 1}
+                          disabled={busy || items.findIndex((item) => item.id === record.id) === items.length - 1}
                           aria-label="Move down"
-                          onClick={() => move(index, 1)}
+                          onClick={() => move(items.findIndex((item) => item.id === record.id), 1)}
                         >
                           <i className="fas fa-arrow-down" aria-hidden="true" />
                         </button>
                       </>
                     ) : null}
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => handleDelete(record)}>
+                    <button type="button" className="btn btn-danger btn-sm" disabled={busy} onClick={() => setConfirmation({ records: [record], message: `Delete this ${config.singular.toLowerCase()}?` })}>
                       Delete
                     </button>
                   </td>
@@ -455,20 +543,20 @@ export default function ContentResource({ resource, config }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </div><AdminPagination pagination={{ page: currentPage, totalPages, total: filtered.length }} disabled={busy} onPage={(value) => { setPage(value); setSelected([]) }} /></>
       )}
 
       {editing ? (
         <Modal
           title={`${editing.id ? 'Edit' : 'Add'} ${config.singular.toLowerCase()}`}
-          onClose={closeModal}
+          onClose={saving || uploading ? undefined : closeModal}
           size="lg"
           footer={
             <>
-              <button type="button" className="btn btn-ghost" onClick={closeModal}>
+              <button type="button" className="btn btn-ghost" disabled={saving || Boolean(uploading)} onClick={closeModal}>
                 Cancel
               </button>
-              <button type="submit" form={`${resource}-form`} className="btn btn-primary" disabled={saving}>
+              <button type="submit" form={`${resource}-form`} className="btn btn-primary" disabled={saving || Boolean(uploading)}>
                 {saving ? (
                   <>
                     <i className="fas fa-spinner fa-spin" aria-hidden="true" /> Saving…
@@ -482,6 +570,7 @@ export default function ContentResource({ resource, config }) {
             </>
           }
         >
+          <AdminNotice notice={formError ? { type: 'error', message: formError } : null} />
           <form id={`${resource}-form`} onSubmit={handleSubmit}>
             {rows.map((row, index) =>
               row.length === 1 ? (
@@ -497,6 +586,7 @@ export default function ContentResource({ resource, config }) {
           </form>
         </Modal>
       ) : null}
+      <ConfirmAction action={confirmation} busy={busy} onClose={() => setConfirmation(null)} onConfirm={() => handleBulk(confirmation.records, 'delete')} />
     </div>
   )
 }

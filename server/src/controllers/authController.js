@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import { usersRepository } from '../repositories/userRepository.js';
-import { setAuthCookies, clearAuthCookies, CSRF_COOKIE } from '../middleware/auth.js';
+import { setAuthCookies, clearAuthCookies, CSRF_COOKIE, REFRESH_COOKIE } from '../middleware/auth.js';
+import { sessionsRepository } from '../repositories/sessionsRepository.js';
 import { requestPasswordReset, resetPassword } from '../services/passwordResetService.js';
 import { recordAudit } from '../services/auditLog.js';
 import ApiError from '../utils/ApiError.js';
@@ -8,6 +10,8 @@ import logger from '../utils/logger.js';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
+// A valid bcrypt hash keeps unknown-account checks on the same expensive path.
+const dummyPasswordHash = bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
 
 const publicUser = (user) => ({
   id: user.id,
@@ -30,7 +34,7 @@ export async function login(req, res) {
   }
 
   // Constant-ish time: always run a comparison to reduce user enumeration.
-  const hash = user?.password_hash || '$2a$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidin';
+  const hash = user?.password_hash || await dummyPasswordHash;
   const passwordMatches = await bcrypt.compare(password, hash);
 
   if (!user || !passwordMatches) {
@@ -43,16 +47,34 @@ export async function login(req, res) {
     throw ApiError.forbidden('This account has been disabled.');
   }
 
-  const { csrfToken } = setAuthCookies(res, user);
+  const session = await sessionsRepository.create(user.id);
+  const { csrfToken } = setAuthCookies(res, user, session);
   await usersRepository.clearLoginFailures(user.id);
 
   res.json({ success: true, data: { user: publicUser(user), csrfToken } });
 }
 
 /** POST /api/auth/logout */
-export async function logout(_req, res) {
+export async function logout(req, res) {
+  if (req.cookies?.[REFRESH_COOKIE]) await sessionsRepository.revoke(req.cookies[REFRESH_COOKIE]);
   clearAuthCookies(res);
   res.json({ success: true, data: { message: 'Signed out.' } });
+}
+
+/** Rotate a single-use, opaque refresh token; access JWTs never refresh themselves. */
+export async function refreshToken(req, res) {
+  const token = req.cookies?.[REFRESH_COOKIE];
+  if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) {
+    clearAuthCookies(res);
+    throw ApiError.unauthorized('Your session has expired. Please sign in again.');
+  }
+  const session = await sessionsRepository.rotate(token);
+  if (!session) {
+    clearAuthCookies(res);
+    throw ApiError.unauthorized('Your session has expired. Please sign in again.');
+  }
+  const { csrfToken } = setAuthCookies(res, session.user, session);
+  res.json({ success: true, data: { user: publicUser(session.user), csrfToken } });
 }
 
 /** GET /api/auth/me */

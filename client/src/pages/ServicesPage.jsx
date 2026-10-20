@@ -4,6 +4,7 @@ import { useSiteContent } from '../components/layout/PublicLayout.jsx'
 import usePageSeo from '../hooks/usePageSeo.js'
 import { resolveMediaUrl } from '../api/client.js'
 import { useCounsellingModal } from '../context/CounsellingContext.jsx'
+import Pathways from '../components/Pathways.jsx'
 
 /** Interactive Accordion Component for Service FAQs with accessibility */
 function FaqAccordion({ items = [], serviceSlug = 'service' }) {
@@ -219,6 +220,7 @@ export default function ServicesPage() {
       </section>
 
       {/* 2. Redesigned Service Navigation Strip */}
+      <Pathways />
       <div className="services-nav-bar" role="navigation" aria-label="Services Navigation Strip">
         <div className="services-nav-container" role="tablist">
           {services.map((s, idx) => {

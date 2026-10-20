@@ -5,6 +5,7 @@ import { passwordResetRepository } from '../repositories/passwordResetRepository
 import { sendMail } from './mailer.js';
 import env from '../config/env.js';
 import logger from '../utils/logger.js';
+import { withTransaction } from '../config/db.js';
 
 const TOKEN_TTL_MINUTES = 60;
 
@@ -73,14 +74,16 @@ export async function requestPasswordReset(email, { ipAddress = null } = {}) {
 export async function resetPassword(token, newPassword) {
   if (!token) return null;
 
-  const record = await passwordResetRepository.findActiveByHash(hashToken(token));
-  if (!record) return null;
-
   const passwordHash = await bcrypt.hash(newPassword, 12);
-  await usersRepository.update(record.user_id, { passwordHash });
-  await passwordResetRepository.markUsed(record.id);
-
-  return { userId: Number(record.user_id) };
+  return withTransaction(async (connection) => {
+    const [records] = await connection.execute('SELECT * FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() LIMIT 1 FOR UPDATE', [hashToken(token)]);
+    const record = records[0];
+    if (!record) return null;
+    await connection.execute('UPDATE users SET password_hash = ?, auth_version = auth_version + 1 WHERE id = ?', [passwordHash, record.user_id]);
+    await connection.execute('UPDATE password_resets SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL', [record.user_id]);
+    await connection.execute('UPDATE auth_sessions SET revoked_at = COALESCE(revoked_at,NOW()) WHERE user_id = ?', [record.user_id]);
+    return { userId: Number(record.user_id) };
+  });
 }
 
 export default { requestPasswordReset, resetPassword };

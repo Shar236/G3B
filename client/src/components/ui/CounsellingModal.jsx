@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useCounsellingModal } from '../../context/CounsellingContext.jsx'
 import { useSiteContent } from '../layout/PublicLayout.jsx'
 import ConsultationForm from './ConsultationForm.jsx'
@@ -8,13 +8,23 @@ export default function CounsellingModal() {
   const { data } = useSiteContent()
   const enquiryOptions = data?.enquiryOptions || []
   const destinations = data?.destinations || []
+  const dialogRef = useRef(null)
 
   // Close on Escape key press and prevent background page scrolling
   useEffect(() => {
     if (!isOpen) return
 
+    const previousFocus = document.activeElement
+    dialogRef.current?.querySelector('button, input, select, textarea')?.focus()
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') closeModal()
+      if (e.key === 'Tab') {
+        const controls = [...(dialogRef.current?.querySelectorAll('a[href],button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]') || [])]
+        const first = controls[0]
+        const last = controls[controls.length - 1]
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus() }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus() }
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
 
@@ -27,6 +37,7 @@ export default function CounsellingModal() {
       window.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = prevBodyOverflow
       document.documentElement.style.overflow = prevHtmlOverflow
+      previousFocus?.focus?.()
     }
   }, [isOpen, closeModal])
 
@@ -40,6 +51,7 @@ export default function CounsellingModal() {
     >
       <div
         className="counselling-modal-dialog"
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="counselling-modal-title"

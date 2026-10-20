@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import Header from '../Header.jsx'
 import Footer from '../Footer.jsx'
 import useHomeContent from '../../hooks/useHomeContent.js'
@@ -7,6 +7,7 @@ import { PageLoader, StateBlock } from '../ui/StateBlock.jsx'
 import { CounsellingProvider } from '../../context/CounsellingContext.jsx'
 import CounsellingModal from '../ui/CounsellingModal.jsx'
 import { resolveMediaUrl } from '../../api/client.js'
+import ErrorBoundary from '../ui/ErrorBoundary.jsx'
 
 const SiteContentContext = createContext(null)
 
@@ -20,6 +21,7 @@ export function useSiteContent() {
 /** Public site chrome: header, footer, dynamic tracking & favicon, and counselling modal. */
 export default function PublicLayout() {
   const { data, loading, error, reload } = useHomeContent()
+  const location = useLocation()
 
   // Dynamic favicon and tracking script injection from Admin Settings
   useEffect(() => {
@@ -86,7 +88,7 @@ export default function PublicLayout() {
               <StateBlock variant="error" title="We could not load the website content" message={error.message} onRetry={reload} />
             </div>
           ) : (
-            <Outlet />
+            <ErrorBoundary resetKey={location.pathname}><Outlet /></ErrorBoundary>
           )}
         </main>
         <Footer

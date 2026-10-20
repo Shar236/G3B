@@ -1,5 +1,7 @@
-import { query, queryOne } from '../config/db.js';
+import { query, queryOne, withTransaction } from '../config/db.js';
 import { mapRow } from './catalogRepository.js';
+import { enquiryFilters, sortClause } from '../utils/listFilters.js';
+import ApiError from '../utils/ApiError.js';
 
 const SORTABLE = {
   created_at: 'created_at',
@@ -47,15 +49,32 @@ export const usersRepository = {
         values.push(value);
       }
     }
+    const credentialsChanged = passwordHash !== undefined || role !== undefined || status !== undefined;
+    if (credentialsChanged) assignments.push('auth_version = auth_version + 1');
     if (assignments.length > 0) {
-      await query(`UPDATE users SET ${assignments.join(', ')} WHERE id = ?`, [...values, id]);
+      await withTransaction(async (connection) => {
+        // Serialise demotion/disable with removal so concurrent requests cannot
+        // both remove the final administrator.
+        if (role !== undefined || status !== undefined) {
+          const [admins] = await connection.execute("SELECT id FROM users WHERE role = 'admin' AND status = 'active' FOR UPDATE");
+          if (admins.some((user) => Number(user.id) === Number(id)) && admins.length <= 1 && ((role && role !== 'admin') || (status && status !== 'active'))) {
+            throw ApiError.badRequest('At least one active administrator must remain.');
+          }
+        }
+        await connection.execute(`UPDATE users SET ${assignments.join(', ')} WHERE id = ?`, [...values, id]);
+        if (credentialsChanged) await connection.execute('UPDATE auth_sessions SET revoked_at = COALESCE(revoked_at,NOW()) WHERE user_id = ?', [id]);
+      });
     }
     return this.findById(id);
   },
 
   async remove(id) {
-    const result = await query('DELETE FROM users WHERE id = ?', [id]);
-    return result.affectedRows > 0;
+    return withTransaction(async (connection) => {
+      const [admins] = await connection.execute("SELECT id FROM users WHERE role = 'admin' AND status = 'active' FOR UPDATE");
+      if (admins.length <= 1 && admins.some((user) => Number(user.id) === Number(id))) throw ApiError.badRequest('At least one active administrator must remain.');
+      const [result] = await connection.execute('DELETE FROM users WHERE id = ?', [id]);
+      return result.affectedRows > 0;
+    });
   },
 
   async touchLastLogin(id) {
@@ -86,8 +105,8 @@ export const enquiriesRepository = {
   async create(data) {
     const result = await query(
       `INSERT INTO enquiries
-         (full_name, email, phone, country_code, service_interest, preferred_destination, message, status, source, lead_source, landing_page, ip_address)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?)`,
+         (full_name, email, phone, country_code, service_interest, preferred_destination, message, status, source, lead_source, landing_page, ip_address, current_status, target_degree)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?)`,
       [
         data.fullName,
         data.email,
@@ -100,6 +119,8 @@ export const enquiriesRepository = {
         data.leadSource ?? null,
         data.landingPage ?? null,
         data.ipAddress ?? null,
+        data.currentStatus || null,
+        data.targetDegree || null,
       ],
     );
     return this.findById(result.insertId);
@@ -127,58 +148,11 @@ export const enquiriesRepository = {
     return row ? mapRow(row) : null;
   },
 
-  async list({
-    page = 1,
-    perPage = 20,
-    status,
-    search,
-    assignedTo,
-    service,
-    destination,
-    leadSource,
-    dateFrom,
-    dateTo,
-    includeAnonymized = false,
-  } = {}) {
-    const where = [];
-    const params = [];
-
-    if (!includeAnonymized) where.push('e.anonymized_at IS NULL');
-    if (status) {
-      where.push('e.status = ?');
-      params.push(status);
-    }
-    if (assignedTo) {
-      where.push('e.assigned_to = ?');
-      params.push(assignedTo);
-    }
-    if (service) {
-      where.push('e.service_interest = ?');
-      params.push(service);
-    }
-    if (destination) {
-      where.push('e.preferred_destination = ?');
-      params.push(destination);
-    }
-    if (leadSource) {
-      where.push('e.lead_source = ?');
-      params.push(leadSource);
-    }
-    if (dateFrom) {
-      where.push('e.created_at >= ?');
-      params.push(dateFrom);
-    }
-    if (dateTo) {
-      where.push('e.created_at <= ?');
-      params.push(dateTo);
-    }
-    if (search) {
-      where.push('(e.full_name LIKE ? OR e.email LIKE ? OR e.phone LIKE ? OR e.message LIKE ? OR e.id = ?)');
-      const term = `%${search}%`;
-      params.push(term, term, term, term, Number.parseInt(search, 10) || 0);
-    }
-
-    const clause = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+  async list({ page = 1, perPage = 20, ...filters } = {}) {
+    const { clause, params } = enquiryFilters(filters);
+    const order = sortClause(filters.sortBy, filters.sortDir, {
+      createdAt: 'e.created_at', updatedAt: 'e.updated_at', fullName: 'e.full_name', email: 'e.email', status: 'e.status',
+    });
     const offset = (page - 1) * perPage;
 
     const totalRow = await queryOne(`SELECT COUNT(*) AS total FROM enquiries e ${clause}`, params);
@@ -187,7 +161,7 @@ export const enquiriesRepository = {
        FROM enquiries e
        LEFT JOIN users u ON u.id = e.assigned_to
        ${clause}
-       ORDER BY e.created_at DESC
+       ORDER BY ${order.replace(', id DESC', ', e.id DESC')}
        LIMIT ? OFFSET ?`,
       [...params, perPage, offset],
     );
@@ -204,27 +178,19 @@ export const enquiriesRepository = {
     };
   },
 
-  async listForExport({ status, search } = {}) {
-    const where = ['e.anonymized_at IS NULL'];
-    const params = [];
-    if (status) {
-      where.push('e.status = ?');
-      params.push(status);
-    }
-    if (search) {
-      where.push('(e.full_name LIKE ? OR e.email LIKE ? OR e.phone LIKE ? OR e.message LIKE ?)');
-      const term = `%${search}%`;
-      params.push(term, term, term, term);
-    }
-    const clause = `WHERE ${where.join(' AND ')}`;
+  async listForExport(filters = {}) {
+    const { clause, params } = enquiryFilters(filters);
+    const order = sortClause(filters.sortBy, filters.sortDir, {
+      createdAt: 'e.created_at', updatedAt: 'e.updated_at', fullName: 'e.full_name', email: 'e.email', status: 'e.status',
+    });
     const rows = await query(
       `SELECT e.id, e.full_name, e.email, e.phone, e.country_code, e.service_interest,
               e.preferred_destination, e.message, e.status, e.lead_source, e.landing_page,
-              e.follow_up_at, u.name AS assigned_to_name, e.created_at, e.updated_at
+              e.follow_up_at, e.current_status, e.target_degree, u.name AS assigned_to_name, e.created_at, e.updated_at
        FROM enquiries e
        LEFT JOIN users u ON u.id = e.assigned_to
        ${clause}
-       ORDER BY e.created_at DESC`,
+       ORDER BY ${order.replace(', id DESC', ', e.id DESC')}`,
       params,
     );
     return rows.map(mapRow);
@@ -246,6 +212,8 @@ export const enquiriesRepository = {
       lead_source: payload.leadSource,
       landing_page: payload.landingPage,
       follow_up_at: payload.followUpAt,
+      current_status: payload.currentStatus,
+      target_degree: payload.targetDegree,
     };
     for (const [column, value] of Object.entries(map)) {
       if (value !== undefined) {
@@ -264,9 +232,18 @@ export const enquiriesRepository = {
     return result.affectedRows > 0;
   },
 
+  async bulk({ ids, action, status }) {
+    const uniqueIds = [...new Set(ids)];
+    const placeholders = uniqueIds.map(() => '?').join(',');
+    const result = action === 'delete'
+      ? await query(`DELETE FROM enquiries WHERE id IN (${placeholders})`, uniqueIds)
+      : await query(`UPDATE enquiries SET status = ? WHERE id IN (${placeholders})`, [status, ...uniqueIds]);
+    return Number(result.affectedRows);
+  },
+
   async statusCounts() {
     const rows = await query('SELECT status, COUNT(*) AS total FROM enquiries WHERE anonymized_at IS NULL GROUP BY status');
-    const counts = { new: 0, contacted: 0, in_progress: 0, qualified: 0, converted: 0, completed: 0, closed: 0 };
+    const counts = { new: 0, contacted: 0, in_progress: 0, qualified: 0, converted: 0, completed: 0, closed: 0, archived: 0 };
     for (const row of rows) {
       counts[row.status] = Number(row.total);
     }

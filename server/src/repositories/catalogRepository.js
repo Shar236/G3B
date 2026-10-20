@@ -1,4 +1,6 @@
 import { query, queryOne, withTransaction } from '../config/db.js';
+import { parseVideoUrl } from '../utils/contentUrls.js';
+import ApiError from '../utils/ApiError.js';
 
 const toCamel = (key) => key.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
 const toSnake = (key) => key.replace(/[A-Z]/g, (char) => `_${char.toLowerCase()}`);
@@ -372,7 +374,7 @@ export const testimonialsRepository = createSimpleResource('testimonials', [
   'is_active',
 ]);
 
-export const videosRepository = createSimpleResource('video_testimonials', [
+const videoCrud = createSimpleResource('video_testimonials', [
   'title',
   'category',
   'student_name',
@@ -383,6 +385,49 @@ export const videosRepository = createSimpleResource('video_testimonials', [
   'sort_order',
   'is_active',
 ]);
+
+export const videosRepository = {
+  ...videoCrud,
+  async list({ activeOnly = false } = {}) {
+    // Gate every legacy duplicate by provider/ID, including exclusion tombstones
+    // whose original linked row has been removed. Vimeo IDs remain independent.
+    const rows = await query(`SELECT v.*, r.thumbnail_url, r.availability FROM video_testimonials v LEFT JOIN youtube_short_registry r ON r.youtube_id = v.youtube_id AND v.youtube_url NOT REGEXP '^https?://(www[.]|player[.])?vimeo[.]com([/:])' ${activeOnly ? "WHERE v.is_active = 1 AND (r.id IS NULL OR (r.excluded = 0 AND (r.verification_source = 'admin' OR (r.channel_verified = 1 AND r.verified_short = 1 AND r.availability = 'available' AND r.last_checked_at > UTC_TIMESTAMP() - INTERVAL 30 DAY))))" : ''} ORDER BY v.sort_order ASC, v.id ASC`);
+
+    // Existing duplicate records remain editable; public carousels receive one ID.
+    const seen = new Set();
+    return rows.map(mapRow).filter((row) => {
+      if (!activeOnly) return true;
+      const provider = parseVideoUrl(row.youtubeUrl)?.provider || 'unknown';
+      const key = `${provider}:${row.youtubeId}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  },
+  async update(id, payload) {
+    const existing = await this.findById(id);
+    if (!existing) return null;
+    // Identity changes cannot bypass the channel-verifying Shorts registry.
+    const next = parseVideoUrl(payload.youtubeUrl ?? existing.youtubeUrl);
+    const previous = parseVideoUrl(existing.youtubeUrl);
+    if ((next?.provider === 'youtube' || previous?.provider === 'youtube') && (next?.id !== previous?.id || next?.provider !== previous?.provider || (payload.youtubeId !== undefined && payload.youtubeId !== existing.youtubeId))) throw ApiError.badRequest('Add new YouTube identities through the verified Shorts registry.');
+    const updated = await videoCrud.update.call(this, id, payload);
+    if (payload.title !== undefined) await query('UPDATE youtube_short_registry SET title = ?, title_overridden = 1 WHERE video_id = ?', [payload.title, id]);
+    return updated;
+  },
+  async remove(id) {
+    return withTransaction(async (connection) => {
+      const [rows] = await connection.execute('SELECT * FROM video_testimonials WHERE id = ? FOR UPDATE', [id]);
+      const row = rows[0];
+      if (!row) return false;
+      if (parseVideoUrl(row.youtube_url)?.provider === 'youtube') {
+        await connection.execute(`INSERT INTO youtube_short_registry (youtube_id, source_url, excluded) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE excluded = 1, video_id = NULL`, [row.youtube_id, row.youtube_url]);
+      }
+      await connection.execute('DELETE FROM video_testimonials WHERE id = ?', [id]);
+      return true;
+    });
+  },
+};
 
 export const processStepsRepository = createSimpleResource('process_steps', [
   'step_number',

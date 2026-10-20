@@ -1,4 +1,5 @@
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
@@ -54,7 +55,8 @@ export function createApp() {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Request-ID'],
+    exposedHeaders: ['X-Request-ID', 'Retry-After', 'Content-Disposition'],
     maxAge: 86400,
   };
 
@@ -64,6 +66,13 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(cookieParser());
+  app.use((req, res, next) => {
+    const supplied = req.get('x-request-id');
+    req.requestId = typeof supplied === 'string' && /^[a-zA-Z0-9_-]{8,100}$/.test(supplied) ? supplied : crypto.randomUUID();
+    res.setHeader('X-Request-ID', req.requestId);
+    if (req.path.startsWith('/api/admin') || req.path.startsWith('/api/auth')) res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
 
   if (!env.isProduction) {
     app.use(morgan('dev'));

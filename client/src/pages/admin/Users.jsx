@@ -4,6 +4,7 @@ import { parseApiError } from '../../api/client.js'
 import { Modal } from '../../components/ui/Modal.jsx'
 import { StateBlock } from '../../components/ui/StateBlock.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { AdminNotice, ConfirmAction, TableSkeleton } from './AdminDataUI.jsx'
 
 const EMPTY = { name: '', email: '', password: '', role: 'staff', status: 'active' }
 
@@ -19,6 +20,9 @@ export default function Users() {
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmation, setConfirmation] = useState(null)
+  const [formError, setFormError] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -40,17 +44,20 @@ export default function Users() {
     setEditing({ id: null })
     setForm(EMPTY)
     setNotice(null)
+    setFormError(null)
   }
 
   const openEdit = (user) => {
     setEditing(user)
     setForm({ name: user.name, email: user.email, password: '', role: user.role, status: user.status })
     setNotice(null)
+    setFormError(null)
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setSaving(true)
+    setFormError(null)
     setNotice(null)
     try {
       if (editing.id) {
@@ -65,21 +72,24 @@ export default function Users() {
       setEditing(null)
       load()
     } catch (err) {
-      setNotice({ type: 'error', message: parseApiError(err).message })
+      setFormError(parseApiError(err).message)
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async (user) => {
-    if (!window.confirm(`Delete ${user.name}? This cannot be undone.`)) return
+  const handleDelete = async () => {
+    const previous = users
+    setDeleting(true)
+    setUsers((current) => current.filter((user) => user.id !== confirmation.user.id))
     try {
-      await deleteUser(user.id)
+      await deleteUser(confirmation.user.id)
       setNotice({ type: 'success', message: 'User deleted.' })
       load()
     } catch (err) {
+      setUsers(previous)
       setNotice({ type: 'error', message: parseApiError(err).message })
-    }
+    } finally { setDeleting(false); setConfirmation(null) }
   }
 
   return (
@@ -89,7 +99,7 @@ export default function Users() {
           <h2>
             <i className="fas fa-users" aria-hidden="true" /> Users &amp; roles
           </h2>
-          <p className="row-sub">Administrators can manage everything; staff accounts can be assigned to enquiries.</p>
+          <p className="row-sub">Administrators manage the platform; counsellors manage leads; editors manage website content.</p>
         </div>
         <button type="button" className="btn btn-primary btn-sm" onClick={openCreate}>
           <i className="fas fa-user-plus" aria-hidden="true" /> Add user
@@ -103,7 +113,7 @@ export default function Users() {
       ) : null}
 
       {loading ? (
-        <StateBlock variant="loading" title="Loading users…" />
+        <TableSkeleton columns={6} />
       ) : error ? (
         <StateBlock variant="error" title="Could not load users" message={error.message} onRetry={load} />
       ) : (
@@ -138,9 +148,9 @@ export default function Users() {
                     <button
                       type="button"
                       className="btn btn-danger btn-sm"
-                      disabled={user.id === currentUser?.id}
+                      disabled={deleting || user.id === currentUser?.id}
                       title={user.id === currentUser?.id ? 'You cannot delete your own account' : 'Delete user'}
-                      onClick={() => handleDelete(user)}
+                      onClick={() => setConfirmation({ user, message: `Delete the account for ${user.name}?` })}
                     >
                       Delete
                     </button>
@@ -155,10 +165,10 @@ export default function Users() {
       {editing ? (
         <Modal
           title={editing.id ? 'Edit user' : 'Add user'}
-          onClose={() => setEditing(null)}
+          onClose={saving ? undefined : () => setEditing(null)}
           footer={
             <>
-              <button type="button" className="btn btn-ghost" onClick={() => setEditing(null)}>
+              <button type="button" className="btn btn-ghost" disabled={saving} onClick={() => setEditing(null)}>
                 Cancel
               </button>
               <button type="submit" form="user-form" className="btn btn-primary" disabled={saving}>
@@ -175,11 +185,15 @@ export default function Users() {
             </>
           }
         >
+          <AdminNotice notice={formError ? { type: 'error', message: formError } : null} />
           <form id="user-form" onSubmit={handleSubmit}>
             <div className="admin-field">
               <label htmlFor="user-name">Name *</label>
               <input
                 id="user-name"
+                minLength={2}
+                maxLength={150}
+                disabled={saving}
                 className="admin-input"
                 type="text"
                 value={form.name}
@@ -192,6 +206,8 @@ export default function Users() {
               <label htmlFor="user-email">Email *</label>
               <input
                 id="user-email"
+                maxLength={190}
+                disabled={saving}
                 className="admin-input"
                 type="email"
                 value={form.email}
@@ -206,6 +222,9 @@ export default function Users() {
               </label>
               <input
                 id="user-password"
+                minLength={8}
+                maxLength={128}
+                disabled={saving}
                 className="admin-input"
                 type="password"
                 autoComplete="new-password"
@@ -227,6 +246,8 @@ export default function Users() {
                 >
                   <option value="admin">Administrator</option>
                   <option value="staff">Staff</option>
+                  <option value="counsellor">Counsellor</option>
+                  <option value="editor">Editor</option>
                 </select>
               </div>
 
@@ -246,6 +267,7 @@ export default function Users() {
           </form>
         </Modal>
       ) : null}
+      <ConfirmAction action={confirmation} busy={deleting} onClose={() => setConfirmation(null)} onConfirm={handleDelete} />
     </div>
   )
 }

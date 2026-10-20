@@ -41,7 +41,7 @@ async function main() {
   const name = args.name || env.admin.name;
   const email = args.email || env.admin.email;
   let password = args.password || env.admin.password;
-  const role = args.role === 'staff' ? 'staff' : 'admin';
+  const role = ['admin', 'staff', 'counsellor', 'editor'].includes(args.role) ? args.role : 'admin';
 
   if (!process.stdin.isTTY && !args.password) {
     password = env.admin.password;
@@ -58,13 +58,14 @@ async function main() {
   const [rows] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
 
   if (rows.length > 0) {
-    await pool.execute('UPDATE users SET name = ?, password_hash = ?, role = ?, status = ? WHERE email = ?', [
+    await pool.execute('UPDATE users SET name = ?, password_hash = ?, role = ?, status = ?, auth_version = auth_version + 1 WHERE email = ?', [
       name,
       passwordHash,
       role,
       'active',
       email,
     ]);
+    await pool.execute('UPDATE auth_sessions SET revoked_at = COALESCE(revoked_at,NOW()) WHERE user_id = ?', [rows[0].id]);
     console.log(`[create-admin] updated existing user ${email} (role: ${role}).`);
   } else {
     await pool.execute('INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?)', [

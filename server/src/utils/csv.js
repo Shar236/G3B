@@ -2,7 +2,9 @@
 export function toCsv(rows, columns) {
   const escape = (value) => {
     if (value === null || value === undefined) return '';
-    const text = String(value);
+    const raw = value instanceof Date ? value.toISOString() : String(value);
+    // Prevent Excel/Sheets from interpreting attacker-controlled cells as formulas.
+    const text = /^[\s]*[=+@-]/.test(raw) ? `'${raw}` : raw;
     if (/[",\n\r]/.test(text)) {
       return `"${text.replace(/"/g, '""')}"`;
     }

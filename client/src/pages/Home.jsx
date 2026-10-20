@@ -13,6 +13,10 @@ import VideoTestimonials from '../components/VideoTestimonials.jsx'
 import Process from '../components/Process.jsx'
 import CareerCta from '../components/CareerCta.jsx'
 import ContactForm from '../components/ContactForm.jsx'
+import Pathways from '../components/Pathways.jsx'
+import PathwayFinder from '../components/PathwayFinder.jsx'
+import KnowledgeHub from '../components/KnowledgeHub.jsx'
+import Insights from '../components/Insights.jsx'
 
 /** The public G3B Education homepage, rebuilt from the supplied content. */
 export default function Home() {
@@ -54,6 +58,8 @@ export default function Home() {
   return (
     <>
       <Hero content={content} settings={settings} stats={stats} />
+      <Pathways />
+      <PathwayFinder />
       <About content={content} settings={settings} features={whyFeatures} certifications={certifications} />
       <Gallery content={content} images={gallery} />
       <Services content={content} services={services} />
@@ -68,6 +74,8 @@ export default function Home() {
         options={enquiryOptions}
         destinations={destinations}
       />
+      <KnowledgeHub />
+      <Insights />
     </>
   )
 }

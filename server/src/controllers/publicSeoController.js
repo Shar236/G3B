@@ -1,8 +1,8 @@
-import { pagesRepository } from '../repositories/pagesRepository.js';
 import { settingsRepository } from '../repositories/settingsRepository.js';
 import { absoluteUrl } from '../services/seoRenderer.js';
 import ApiError from '../utils/ApiError.js';
 import env from '../config/env.js';
+import { listPublicPagesWithDefaults, findPublicPageWithDefaults } from '../services/builtInPages.js';
 
 /** The canonical site origin used for absolute URLs (canonical, OG, sitemap). */
 export function siteOrigin(req) {
@@ -57,7 +57,7 @@ function publicPage(page, req) {
 
 /** GET /api/seo/pages - every published page with its live SEO metadata. */
 export async function listPublicPages(req, res) {
-  const pages = await pagesRepository.list({ status: 'published' });
+  const pages = await listPublicPagesWithDefaults();
   res.json({ success: true, data: pages.map((page) => publicPage(page, req)) });
 }
 
@@ -66,7 +66,7 @@ export async function getPublicPageSeo(req, res) {
   const route = typeof req.query.route === 'string' ? req.query.route : null;
   if (!route) throw ApiError.badRequest('A `route` query parameter is required.');
 
-  const page = await pagesRepository.findPublishedByRoute(route);
+  const page = await findPublicPageWithDefaults(route);
   if (!page) throw ApiError.notFound('No published page is registered for that route.');
   res.json({ success: true, data: publicPage(page, req) });
 }
@@ -79,7 +79,7 @@ export async function getPublicPageSeo(req, res) {
 export async function getSeoContext(req, res) {
   const [settings, pages] = await Promise.all([
     settingsRepository.all(),
-    pagesRepository.list({ status: 'published' }),
+    listPublicPagesWithDefaults(),
   ]);
 
   res.json({

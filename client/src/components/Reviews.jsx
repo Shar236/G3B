@@ -2,6 +2,7 @@ const stars = (rating = 5) => '★★★★★'.slice(0, Math.max(0, Math.min(5,
 
 /** Google Business Profile score card plus the individual reviews. */
 export default function Reviews({ content = {}, settings = {}, testimonials = [] }) {
+  if (['false', '0', false, 0].includes(settings.show_google_reviews)) return null
   if (testimonials.length === 0) return null
 
   const reviewUrl = settings.google_review_url || content.reviews?.ctaUrl || '#'

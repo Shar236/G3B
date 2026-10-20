@@ -318,4 +318,71 @@ the six study destinations with their five points each, the six Google reviews w
 the 5.0 / 38-review score card, the two video testimonials, the five process steps,
 the career-mentor call to action, the office contact details, and the external
 career-mentor, Google Business Profile and YouTube URLs — all unmodified.
-# G3B
+## 13. Discovery pathways and lead operations
+
+The homepage and services page include Grade 9–12, university applicant,
+school workshop and working professional pathways. The three-question finder
+prefills the existing consultation modal; submissions persist the career stage,
+target degree, destination, source and landing page with the enquiry.
+
+The knowledge hub saves explicitly consented newsletter and guide subscriptions.
+The free two-page guide is served from
+`client/public/resources/g3b-global-education-guide.pdf`. A successful guide
+subscription reveals the download link. Newsletter unsubscribe links open
+`/unsubscribe`; SMTP must be configured to deliver welcome emails. Subscriptions
+and enquiries still save when SMTP is disabled.
+
+Three full articles live at `/insights` and `/insights/:slug`. Edit their source
+in `client/src/data/insights.js`; the production server uses the same content for
+article rendering, metadata and sitemap entries. Immigration articles link to
+official sources and include the date reviewed.
+Deploy the full repository with `client/dist` for Express prerendering; the server
+shares the article source from `client/src/data/insights.js`. Static-only hosting
+renders the React pages but does not provide the Express crawler HTML.
+
+Run `npm run migrate --prefix server` when upgrading another environment.
+Migration 004 adds the subscriber, assessment and rotating-session schema without
+reseeding existing data. The administration base remains configurable through
+`VITE_ADMIN_ROUTE` (default `/manage-portal`). The new inboxes are
+`/enquiries/school` and `/subscribers` under that base.
+
+Roles retain the existing `admin` and `staff` values and add `counsellor` and
+`editor`: administrators manage the full platform, staff/counsellors manage leads
+and subscribers, and editors manage content/SEO/media. Deleting personal records
+and managing system settings or credentials require the administrator role.
+Both API authorization and client route/navigation guards enforce these scopes.
+
+The Axios client uses HttpOnly session cookies, CSRF tokens, 15-second timeouts,
+request IDs, single-flight refresh and at most two retries for eligible GET
+requests. Writes do not retry automatically. Inbox updates provide optimistic
+feedback with rollback; CSV exports use the active filters and neutralize formula
+cells.
+
+Additional verification:
+
+```bash
+npm test --prefix client        # transport/cache, content and UI interactions
+npm test --prefix server        # API, auth, CRM and SEO regression tests
+npm run build                  # production client build
+```
+
+Database integration tests create unique test records and remove them afterward.
+The responsive additions are in `client/src/styles/discovery.css` and use the
+existing G3B design tokens, Poppins/Inter typography and Lucide React icons.
+
+## 14. YouTube Shorts synchronization
+
+Video Testimonials now includes a paginated channel discovery registry, an
+authorized synchronization action, scheduled API refresh and explicit Shorts
+review. The public carousel retains category filters, arrows and pagination,
+loads one active player, and handles YouTube playback failures with retry and
+watch links. Existing testimonials are retained.
+
+Configure the backend-only `YOUTUBE_API_KEY` to retrieve channel metadata. The
+public API does not expose Shorts membership: use administrator confirmation,
+or supply `YOUTUBE_SHORTS_PLAYLIST_ID` for a maintained playlist of confirmed
+channel Shorts to publish future additions automatically. With no key, new URLs
+can be registered pending verification but cannot be published.
+
+See [YouTube Shorts setup and verification](docs/youtube-shorts.md) for migration
+005, environment variables, quota, cache behavior and the admin workflow.

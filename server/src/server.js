@@ -2,6 +2,7 @@ import env, { validateEnv } from './config/env.js';
 import { createApp } from './app.js';
 import { pingDatabase, closePool } from './config/db.js';
 import logger from './utils/logger.js';
+import { startYouTubeSyncScheduler } from './services/youtubeSyncService.js';
 
 async function start() {
   validateEnv();
@@ -22,8 +23,10 @@ async function start() {
       allowedOrigins: env.clientOrigins,
     });
   });
+  const stopYouTubeSync = startYouTubeSyncScheduler();
 
   const shutdown = async (signal) => {
+    stopYouTubeSync();
     logger.info(`Received ${signal}, shutting down gracefully.`);
     server.close(async () => {
       await closePool().catch(() => {});

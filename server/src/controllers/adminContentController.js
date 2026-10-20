@@ -17,6 +17,7 @@ import { contentBlocksRepository, settingsRepository } from '../repositories/set
 import ApiError from '../utils/ApiError.js';
 import env from '../config/env.js';
 import { retryPendingNotifications } from '../services/notificationService.js';
+import { parseVideoUrl } from '../utils/contentUrls.js';
 
 /**
  * Resource registry powering the admin CRUD endpoints. Each entry maps a URL
@@ -54,6 +55,7 @@ export async function listResource(req, res) {
 /** POST /api/admin/<resource> */
 export async function createResource(req, res) {
   const { repo } = getResource(req.params.resource);
+  if (req.params.resource === 'videos' && parseVideoUrl(req.body.youtubeUrl)?.provider === 'youtube') throw ApiError.badRequest('Add YouTube videos through the Shorts registry so channel membership can be verified.');
   const created = await repo.create(req.body);
   res.status(201).json({ success: true, data: created });
 }
@@ -63,6 +65,10 @@ export async function updateResource(req, res) {
   const { repo } = getResource(req.params.resource);
   const existing = await repo.findById(req.params.id);
   if (!existing) throw ApiError.notFound('Resource not found.');
+  if (req.params.resource === 'videos') {
+    const video = parseVideoUrl(req.body.youtubeUrl ?? existing.youtubeUrl);
+    if (!video || video.id !== (req.body.youtubeId ?? existing.youtubeId)) throw ApiError.badRequest('The video URL and video ID must match a supported YouTube or Vimeo video.');
+  }
   const updated = await repo.update(req.params.id, req.body);
   res.json({ success: true, data: updated });
 }
@@ -101,6 +107,10 @@ export async function updateContentBlock(req, res) {
 }
 
 /** PATCH /api/admin/site-settings */
+export async function getSiteSettings(_req, res) {
+  res.json({ success: true, data: await settingsRepository.all() });
+}
+
 export async function updateSiteSettings(req, res) {
   const updated = await settingsRepository.upsertMany(req.body);
   res.json({ success: true, data: updated });

@@ -1,4 +1,4 @@
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 
 const PHONE_REGEX = /^[+]?[\d][\d\s()-]{6,19}$/;
 
@@ -47,9 +47,35 @@ export const createEnquiryRules = [
   body('countryCode').optional({ values: 'falsy' }).trim().isLength({ max: 10 }).withMessage('Invalid country code.'),
   body('leadSource').optional({ values: 'falsy' }).trim().isLength({ max: 80 }).withMessage('Invalid lead source.'),
   body('landingPage').optional({ values: 'falsy' }).trim().isLength({ max: 500 }).withMessage('Invalid landing page.'),
+  body('currentStatus').optional({ values: 'falsy' }).isIn(['high_school', 'college', 'working']).withMessage('Invalid current education or career status.'),
+  body('targetDegree').optional({ values: 'falsy' }).isIn(['ug', 'pg', 'mba', 'undecided']).withMessage('Invalid target degree.'),
 ];
 
-const ENQUIRY_STATUSES = ['new', 'contacted', 'in_progress', 'qualified', 'converted', 'completed', 'closed'];
+export const ENQUIRY_STATUSES = ['new', 'contacted', 'in_progress', 'qualified', 'converted', 'completed', 'closed', 'archived'];
+
+export const enquiryListRules = [
+  query('page').optional().isInt({ min: 1 }).toInt(),
+  query('perPage').optional().isInt({ min: 1, max: 100 }).toInt(),
+  query('search').optional().isString().trim().isLength({ max: 200 }),
+  query('status').optional().isIn(ENQUIRY_STATUSES),
+  query('assignedTo').optional().isInt({ min: 1 }),
+  ...['service', 'destination', 'leadSource'].map((key) => query(key).optional().isString().trim().isLength({ max: 150 })),
+  query('currentStatus').optional().isIn(['high_school', 'college', 'working']),
+  query('targetDegree').optional().isIn(['ug', 'pg', 'mba', 'undecided']),
+  query('segment').optional().isIn(['school', 'workshop', 'professional']),
+  query('sortBy').optional().isIn(['createdAt', 'updatedAt', 'fullName', 'email', 'status']),
+  query('sortDir').optional().isIn(['asc', 'desc']),
+  query('dateFrom').optional().isISO8601(),
+  query('dateTo').optional().isISO8601().custom((value, { req }) => !req.query.dateFrom || new Date(value) >= new Date(req.query.dateFrom)).withMessage('End date must be on or after the start date.'),
+  query('includeAnonymized').optional().isIn(['true', 'false']),
+];
+
+export const enquiryBulkRules = [
+  body('ids').isArray({ min: 1, max: 100 }).withMessage('Select between 1 and 100 enquiries.'),
+  body('ids.*').isInt({ min: 1 }).toInt(),
+  body('action').isIn(['status', 'delete']),
+  body('status').if(body('action').equals('status')).isIn(ENQUIRY_STATUSES).withMessage('Select a valid status.'),
+];
 
 export const updateEnquiryRules = [
   param('id').isInt({ min: 1 }).withMessage('Invalid enquiry id.'),
@@ -64,6 +90,8 @@ export const updateEnquiryRules = [
   body('assignedTo').optional({ values: 'null' }).isInt({ min: 1 }).withMessage('Invalid assignee.'),
   body('leadSource').optional({ values: 'null' }).trim().isLength({ max: 80 }),
   body('landingPage').optional({ values: 'null' }).trim().isLength({ max: 500 }),
+  body('currentStatus').optional({ values: 'null' }).isIn(['high_school', 'college', 'working']),
+  body('targetDegree').optional({ values: 'null' }).isIn(['ug', 'pg', 'mba', 'undecided']),
   body('followUpAt')
     .optional({ values: 'null' })
     .isISO8601()

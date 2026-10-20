@@ -3,13 +3,17 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
+import ErrorBoundary from './components/ui/ErrorBoundary.jsx'
+import NotificationCenter from './components/ui/NotificationCenter.jsx'
 import './styles/theme.css'
+import './styles/discovery.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <ErrorBoundary><App /></ErrorBoundary>
+        <NotificationCenter />
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

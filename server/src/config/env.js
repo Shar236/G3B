@@ -42,7 +42,7 @@ const env = {
   auth: {
     // The fallback secret is only tolerated in development.
     secret: process.env.JWT_SECRET || 'g3b-development-secret-change-me',
-    expiresIn: process.env.JWT_EXPIRES_IN || '12h',
+    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
   },
 
   cookie: {
@@ -77,6 +77,18 @@ const env = {
     provider: process.env.UPLOAD_STORAGE_PROVIDER || 'local',
     dir: process.env.UPLOAD_DIR || 'uploads',
     maxBytes: toInt(process.env.MAX_UPLOAD_MB, 5) * 1024 * 1024,
+  },
+
+  // Backend-only. Never use VITE_ prefixes for YouTube credentials.
+  youtube: {
+    apiKey: process.env.YOUTUBE_API_KEY || '',
+    // Optional owner-maintained playlist containing confirmed Shorts only.
+    shortsPlaylistId: process.env.YOUTUBE_SHORTS_PLAYLIST_ID || '',
+    syncIntervalMinutes: Math.max(15, Math.min(41760, toInt(process.env.YOUTUBE_SYNC_INTERVAL_MINUTES, 360))),
+    maxPages: Math.max(1, Math.min(2000, toInt(process.env.YOUTUBE_SYNC_MAX_PAGES, 500))),
+    timeoutMs: Math.max(1000, Math.min(30000, toInt(process.env.YOUTUBE_REQUEST_TIMEOUT_MS, 12000))),
+    maxSyncMs: Math.max(15000, Math.min(600000, toInt(process.env.YOUTUBE_SYNC_MAX_MS, 120000))),
+    autoSync: toBool(process.env.YOUTUBE_AUTO_SYNC, true),
   },
 
   // Serve the built SPA (and the prerendered SEO tags) from Express.

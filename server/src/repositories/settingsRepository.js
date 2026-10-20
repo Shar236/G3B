@@ -1,5 +1,23 @@
 import { query, queryOne, withTransaction } from '../config/db.js';
 
+// Public settings are allowlisted so a newly introduced integration credential
+// cannot accidentally become part of the anonymous homepage response.
+export const PUBLIC_SETTING_KEYS = new Set([
+  'brand_name', 'header_logo_url', 'header_subheading', 'header_cta_label', 'header_cta_url',
+  'footer_copyright', 'footer_tagline', 'footer_about', 'hero_badge', 'hero_bg_image_url',
+  'hero_cta_career_label', 'hero_cta_career_url', 'hero_cta_services_label', 'hero_cta_services_url',
+  'founder_name', 'founder_role', 'founder_image_url', 'founder_image_alt', 'founder_credentials_text',
+  'certifications_heading', 'contact_office_heading', 'contact_address', 'contact_phone', 'contact_phone_link',
+  'contact_email', 'working_hours', 'google_review_url', 'google_rating', 'google_review_count', 'show_google_reviews',
+  'career_mentor_url', 'seo_title', 'seo_description', 'seo_keywords', 'favicon_url',
+  'og_image_url', 'og_title', 'og_description', 'tracking_code_head', 'tracking_code_body',
+  'services_hero_heading', 'services_hero_subheading',
+]);
+
+export function publicSettings(settings) {
+  return Object.fromEntries(Object.entries(settings).filter(([key]) => PUBLIC_SETTING_KEYS.has(key)));
+}
+
 /** Content blocks (editable headings, descriptions and CTA labels). */
 export const contentBlocksRepository = {
   async all() {
@@ -45,6 +63,7 @@ export const contentBlocksRepository = {
 
 /** Key/value site settings grouped by area (contact, reviews, seo, homepage...). */
 export const settingsRepository = {
+  async public() { return publicSettings(await this.all()); },
   async all() {
     const rows = await query('SELECT * FROM site_settings ORDER BY setting_group ASC, setting_key ASC');
     const map = {};

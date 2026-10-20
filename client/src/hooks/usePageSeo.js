@@ -26,24 +26,25 @@ export function usePageSeo(route, fallback = {}) {
 
   useEffect(() => {
     if (!route) return undefined
-    let cancelled = false
+    const controller = new AbortController()
 
     api
-      .get('/seo/page', { params: { route } })
+      .get('/api/seo/page', { params: { route }, signal: controller.signal, notifyOnError: false })
       .then((response) => {
-        if (!cancelled) setRemote(response.data?.data || null)
+        if (!controller.signal.aborted) setRemote({ route, data: response.data?.data || null })
       })
       .catch(() => {
         // No published metadata for this route: keep the defaults.
-        if (!cancelled) setRemote(null)
+        if (!controller.signal.aborted) setRemote({ route, data: null })
       })
 
     return () => {
-      cancelled = true
+      controller.abort()
     }
   }, [route])
 
-  const seo = remote?.seo || null
+  const published = remote?.route === route ? remote.data : null
+  const seo = published?.seo || null
   // An explicit canonical is an override (e.g. a duplicate page pointing at the
   // original); otherwise the canonical is simply this page's own URL.
   const canonical = seo?.canonicalUrl || browserUrl(route) || fallback.canonical
@@ -59,7 +60,7 @@ export function usePageSeo(route, fallback = {}) {
   })
 
   // Expose the published content so pages can render editable headings/copy.
-  return remote
+  return published
 }
 
 export default usePageSeo

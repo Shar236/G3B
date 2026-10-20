@@ -70,7 +70,7 @@ export async function listFaqs(_req, res) {
 }
 
 export async function getSiteSettings(_req, res) {
-  res.json({ success: true, data: await settingsRepository.all() });
+  res.json({ success: true, data: await settingsRepository.public() });
 }
 
 export async function getContentBlocks(_req, res) {
@@ -100,7 +100,7 @@ export async function getHome(_req, res) {
     navigation,
   ] = await Promise.all([
     contentBlocksRepository.all(),
-    settingsRepository.all(),
+    settingsRepository.public(),
     statsRepository.list({ activeOnly: true }),
     whyFeaturesRepository.list({ activeOnly: true }),
     certificationsRepository.list({ activeOnly: true }),

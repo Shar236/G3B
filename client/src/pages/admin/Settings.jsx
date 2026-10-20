@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchSiteSettings } from '../../api/contentApi.js'
 import { updateSiteSettings, uploadImage } from '../../api/adminApi.js'
-import { parseApiError, resolveMediaUrl } from '../../api/client.js'
+import api, { parseApiError, resolveMediaUrl } from '../../api/client.js'
 import { StateBlock } from '../../components/ui/StateBlock.jsx'
 
 const SETTINGS_SECTIONS = [
@@ -66,6 +65,7 @@ const SETTINGS_SECTIONS = [
     icon: 'fab fa-google',
     description: 'Google Business Profile rating metrics and direct Maps review links.',
     fields: [
+      { key: 'show_google_reviews', label: 'Google Reviews showcase', type: 'select', defaultValue: '1', options: [{ value: '1', label: 'Show reviews on the website' }, { value: '0', label: 'Hide reviews on the website' }] },
       { key: 'google_review_url', label: 'Google Review Destination Link', type: 'text', placeholder: 'https://maps.google.com/...' },
       { key: 'google_rating', label: 'Google Business Rating', type: 'text', placeholder: '5.0' },
       { key: 'google_review_count', label: 'Total Google Reviews Count', type: 'text', placeholder: '38' },
@@ -124,7 +124,8 @@ export default function Settings() {
     setLoading(true)
     setError(null)
     try {
-      setSettings(await fetchSiteSettings())
+      const response = await api.get('/api/admin/site-settings')
+      setSettings(response.data.data)
     } catch (err) {
       setError(parseApiError(err))
     } finally {
@@ -216,14 +217,18 @@ export default function Settings() {
 
         <div className="settings-fields-grid" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           {currentSection.fields.map((f) => {
-            const val = settings[f.key] ?? ''
+            const val = settings[f.key] ?? f.defaultValue ?? ''
             const inputId = `setting-${f.key}`
 
             return (
               <div className="admin-field" key={f.key}>
                 <label htmlFor={inputId} style={{ fontWeight: 600 }}>{f.label}</label>
 
-                {f.type === 'textarea' ? (
+                {f.type === 'select' ? (
+                  <select id={inputId} className="admin-select" value={String(val)} onChange={(e) => setSettings((cur) => ({ ...cur, [f.key]: e.target.value }))}>
+                    {f.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                ) : f.type === 'textarea' ? (
                   <textarea
                     id={inputId}
                     className="admin-textarea"

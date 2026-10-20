@@ -1,0 +1,729 @@
+/* ==========================================================================
+   YouTube Shorts Manager & Video Testimonials Admin Styles
+   ========================================================================== */
+
+.admin-youtube-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.admin-youtube-manager .admin-card {
+  margin: 0;
+  background: #ffffff;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(11, 44, 95, 0.05);
+  overflow: hidden;
+}
+
+/* Card Headers */
+.admin-card-head-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  background: linear-gradient(180deg, #fbfcfd 0%, #f6f8fb 100%);
+}
+
+.admin-card-head-compact h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0b2c5f;
+  margin: 0 0 4px;
+}
+
+.admin-card-head-compact h2 .fa-youtube,
+.admin-card-head-compact h2 svg {
+  color: #ff0000;
+}
+
+.admin-card-head-compact .row-sub {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+/* --- Section 1: YouTube Shorts Manager Form Layout --- */
+.youtube-shorts-creator-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr);
+  gap: 28px;
+  padding: 24px;
+  align-items: start;
+}
+
+.youtube-shorts-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.youtube-shorts-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.youtube-shorts-form label {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.youtube-shorts-form .required-mark {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+.youtube-shorts-form .admin-input,
+.youtube-shorts-form .admin-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.youtube-shorts-form .admin-input:focus,
+.youtube-shorts-form .admin-select:focus {
+  border-color: #0b2c5f;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(11, 44, 95, 0.12);
+}
+
+.youtube-shorts-form .admin-input.is-invalid {
+  border-color: #ef4444;
+  background: #fff8f8;
+}
+
+.youtube-shorts-form .admin-input.is-valid {
+  border-color: #10b981;
+}
+
+.input-hint-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-top: 3px;
+}
+
+.input-hint-row .hint-text {
+  color: #64748b;
+}
+
+.input-hint-row .validation-error {
+  color: #dc2626;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.input-hint-row .validation-success {
+  color: #059669;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-row-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Custom Toggle Switch */
+.toggle-switch-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.2s;
+}
+
+.toggle-switch-wrapper:hover {
+  border-color: #cbd5e1;
+}
+
+.toggle-switch-label {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggle-switch-label strong {
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.toggle-switch-label span {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.toggle-switch-input {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  appearance: none;
+  background: #cbd5e1;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.toggle-switch-input:checked {
+  background: #10b981;
+}
+
+.toggle-switch-input::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch-input:checked::after {
+  transform: translateX(20px);
+}
+
+/* Form Action Buttons */
+.form-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn-save-video {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #0b2c5f 0%, #1e4287 100%);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 11px 22px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 12px rgba(11, 44, 95, 0.2);
+  transition: all 0.2s ease;
+}
+
+.btn-save-video:hover:not(:disabled) {
+  background: linear-gradient(135deg, #071c3d 0%, #0b2c5f 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(11, 44, 95, 0.25);
+}
+
+.btn-save-video:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Live Preview Box */
+.shorts-live-preview-card {
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 18px;
+  align-items: center;
+  text-align: center;
+  min-height: 420px;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.shorts-live-preview-card.has-preview {
+  border-style: solid;
+  border-color: #0b2c5f;
+  background: #0f172a;
+  padding: 16px;
+  justify-content: flex-start;
+}
+
+.shorts-preview-mockup {
+  width: 100%;
+  max-width: 250px;
+  aspect-ratio: 9 / 16;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  background: #000000;
+  position: relative;
+  border: 3px solid #334155;
+}
+
+.shorts-preview-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+.preview-meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.preview-placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #64748b;
+  max-width: 280px;
+}
+
+.preview-placeholder-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 1.6rem;
+}
+
+.preview-placeholder-content h4 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.preview-placeholder-content p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.btn-sample-url {
+  background: none;
+  border: 1px dashed #94a3b8;
+  border-radius: 6px;
+  color: #0b2c5f;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-sample-url:hover {
+  background: #f1f5f9;
+  border-color: #0b2c5f;
+}
+
+/* --- Section 2: Videos List & Table --- */
+.youtube-shorts-table-card {
+  padding: 0;
+}
+
+.shorts-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.shorts-search-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.shorts-search-input {
+  flex: 1;
+  max-width: 380px;
+  padding: 8px 12px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+.shorts-filter-select {
+  padding: 8px 12px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: #ffffff;
+}
+
+/* Table styling */
+.shorts-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.shorts-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.shorts-admin-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.shorts-admin-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.shorts-admin-table tr:hover {
+  background: #fbfcfd;
+}
+
+/* Thumbnail cell */
+.shorts-cell-video {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 260px;
+}
+
+.shorts-thumb-box {
+  width: 64px;
+  height: 84px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0f172a;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.shorts-thumb-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shorts-thumb-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.shorts-thumb-box:hover .shorts-thumb-overlay {
+  opacity: 1;
+}
+
+.shorts-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shorts-info-col strong {
+  color: #0f172a;
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+
+.shorts-id-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.shorts-id-badge a {
+  color: #0b2c5f;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Category Badges */
+.badge-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.badge-category-parents {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-category-student {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-category-default {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* Order badge */
+.order-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+/* Active Status Toggle in Table */
+.status-cell-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.status-badge.is-active {
+  color: #059669;
+}
+
+.status-badge.is-inactive {
+  color: #94a3b8;
+}
+
+/* Actions cell */
+.shorts-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-action:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.btn-icon-action.btn-action-preview:hover {
+  color: #0b2c5f;
+  border-color: #0b2c5f;
+}
+
+.btn-icon-action.btn-action-delete:hover {
+  color: #dc2626;
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+/* --- Section 3: Collapsible Advanced Sync --- */
+.youtube-advanced-sync-card {
+  border: 1px dashed #cbd5e1 !important;
+  background: #fbfcfd !important;
+}
+
+.youtube-sync-details summary {
+  padding: 16px 20px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  font-size: 0.92rem;
+}
+
+.youtube-sync-details summary:hover {
+  color: #0b2c5f;
+}
+
+.youtube-sync-inner {
+  padding: 0 20px 20px;
+}
+
+.admin-youtube-status {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.admin-youtube-status div {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-youtube-status dt {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.admin-youtube-status dd {
+  margin: 4px 0 0;
+  color: #0b2c5f;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.admin-youtube-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 12px 0;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+/* Modal video embed container */
+.modal-video-preview-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.modal-video-frame {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 9 / 16;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  background: #000000;
+}
+
+.modal-video-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.modal-video-meta {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.85rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .youtube-shorts-creator-grid {
+    grid-template-columns: 1fr;
+  }
+  .shorts-live-preview-card {
+    min-height: 340px;
+  }
+}
+
+@media (max-width: 640px) {
+  .form-row-duo {
+    grid-template-columns: 1fr;
+  }
+  .shorts-table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .shorts-search-group {
+    min-width: 100%;
+  }
+  .admin-youtube-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

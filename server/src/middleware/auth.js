@@ -6,6 +6,7 @@ import ApiError from '../utils/ApiError.js';
 
 export const AUTH_COOKIE = 'g3b_token';
 export const CSRF_COOKIE = 'g3b_csrf';
+export const REFRESH_COOKIE = 'g3b_refresh';
 
 const cookieBase = {
   httpOnly: true,
@@ -14,19 +15,22 @@ const cookieBase = {
   path: '/',
 };
 
-export function signToken(user) {
-  return jwt.sign({ sub: user.id, role: user.role, email: user.email }, env.auth.secret, {
+export function signToken(user, session) {
+  return jwt.sign({ sub: user.id, role: user.role, email: user.email, type: 'access', ver: user.auth_version ?? user.authVersion ?? 0, ...(session?.familyId ? { sid: session.familyId } : {}) }, env.auth.secret, {
     expiresIn: env.auth.expiresIn,
   });
 }
 
-export function setAuthCookies(res, user) {
-  const token = signToken(user);
+export function setAuthCookies(res, user, session) {
+  const token = signToken(user, session);
   const csrfToken = crypto.randomBytes(24).toString('hex');
 
-  res.cookie(AUTH_COOKIE, token, { ...cookieBase, maxAge: 12 * 60 * 60 * 1000 });
+  const expires = jwt.decode(token).exp * 1000;
+  res.cookie(AUTH_COOKIE, token, { ...cookieBase, maxAge: Math.max(0, expires - Date.now()) });
   // The CSRF cookie must be readable by the browser so the SPA can echo it back.
-  res.cookie(CSRF_COOKIE, csrfToken, { ...cookieBase, httpOnly: false, maxAge: 12 * 60 * 60 * 1000 });
+  const sessionMaxAge = session ? Math.max(0, new Date(session.expiresAt).getTime() - Date.now()) : Math.max(0, expires - Date.now());
+  res.cookie(CSRF_COOKIE, csrfToken, { ...cookieBase, httpOnly: false, maxAge: sessionMaxAge });
+  if (session) res.cookie(REFRESH_COOKIE, session.token, { ...cookieBase, path: '/api/auth', maxAge: sessionMaxAge });
 
   return { token, csrfToken };
 }
@@ -34,6 +38,7 @@ export function setAuthCookies(res, user) {
 export function clearAuthCookies(res) {
   res.clearCookie(AUTH_COOKIE, cookieBase);
   res.clearCookie(CSRF_COOKIE, { ...cookieBase, httpOnly: false });
+  res.clearCookie(REFRESH_COOKIE, { ...cookieBase, path: '/api/auth' });
 }
 
 function extractToken(req) {
@@ -56,13 +61,19 @@ export async function resolveUser(req, _res, next) {
     const { token, method } = extractToken(req);
     if (!token) return next();
 
-    const payload = jwt.verify(token, env.auth.secret);
+    const payload = jwt.verify(token, env.auth.secret, { algorithms: ['HS256'] });
+    if (payload.type !== 'access') return next();
     const user = await queryOne(
-      'SELECT id, name, email, role, status FROM users WHERE id = ? LIMIT 1',
+      'SELECT id, name, email, role, status, auth_version FROM users WHERE id = ? LIMIT 1',
       [payload.sub],
     );
 
-    if (user && user.status === 'active') {
+    if (payload.sid) {
+      const activeSession = await queryOne('SELECT id FROM auth_sessions WHERE user_id = ? AND family_id = ? AND revoked_at IS NULL AND expires_at > NOW() LIMIT 1', [payload.sub, payload.sid]);
+      if (!activeSession) return next();
+    }
+
+    if (user && user.status === 'active' && (payload.ver ?? 0) === user.auth_version) {
       req.user = user;
       req.authMethod = method;
     }
@@ -90,6 +101,16 @@ export function requireRole(...roles) {
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+export function requireCookieCsrf(req, _res, next) {
+  const cookieToken = req.cookies?.[CSRF_COOKIE];
+  const headerToken = req.headers['x-csrf-token'];
+  const validTokens = typeof cookieToken === 'string' && typeof headerToken === 'string' && /^[a-f0-9]{48}$/.test(cookieToken) && /^[a-f0-9]{48}$/.test(headerToken);
+  if (!validTokens || !crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(headerToken))) {
+    return next(ApiError.forbidden('Invalid or missing CSRF token.'));
+  }
+  return next();
+}
+
 /**
  * Double-submit CSRF protection. Only enforced for cookie based auth, so
  * token/Bearer clients (and automated tests) are unaffected.
@@ -98,11 +119,5 @@ export function csrfProtection(req, _res, next) {
   if (!MUTATING_METHODS.has(req.method)) return next();
   if (req.authMethod !== 'cookie') return next();
 
-  const cookieToken = req.cookies?.[CSRF_COOKIE];
-  const headerToken = req.headers['x-csrf-token'];
-
-  if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-    return next(ApiError.forbidden('Invalid or missing CSRF token.'));
-  }
-  return next();
+  return requireCookieCsrf(req, _res, next);
 }

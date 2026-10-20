@@ -1,5 +1,6 @@
 import { body } from 'express-validator';
 import { idParamRule } from './enquiryValidators.js';
+import { isSafeAssetUrl, parseVideoUrl } from '../utils/contentUrls.js';
 
 /** Apply `.optional()` to a rule chain when building "update" validators. */
 const maybe = (chain, partial) => (partial ? chain.optional({ values: 'null' }) : chain);
@@ -15,7 +16,7 @@ const boolField = (name, { partial = false } = {}) =>
   maybe(body(name).isBoolean().withMessage(`${name} must be a boolean.`).toBoolean(), partial);
 
 const urlField = (name, { partial = false, max = 500 } = {}) =>
-  maybe(body(name).trim().isLength({ min: 1, max }).withMessage(`${name} is invalid.`), partial);
+  maybe(body(name).trim().isLength({ min: 1, max }).withMessage(`${name} is invalid.`).custom(isSafeAssetUrl).withMessage(`${name} must be an HTTP(S) URL or a local path.`), partial);
 
 const optionalText = (name, max = 2000) =>
   body(name).optional({ values: 'null' }).trim().isLength({ max }).withMessage(`${name} is too long.`);
@@ -93,7 +94,10 @@ const spec = {
     optionalText('studentName', 150),
     optionalText('destinationCountry', 100),
     str('youtubeId', { max: 40, partial, message: 'YouTube video id is required.' }),
-    urlField('youtubeUrl', { partial }),
+    urlField('youtubeUrl', { partial }).custom((value, { req }) => {
+      const video = parseVideoUrl(value);
+      return video && (!req.body.youtubeId || video.id === req.body.youtubeId);
+    }).withMessage('Enter a valid YouTube or Vimeo URL with its matching video ID.'),
     maybe(body('orientation').isIn(['landscape', 'portrait']).withMessage('Invalid orientation.'), partial),
     intField('sortOrder', { partial }),
     boolField('isActive', { partial }),

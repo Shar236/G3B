@@ -53,6 +53,8 @@ export async function createEnquiry(req, res) {
     leadSource: resolveLeadSource(req),
     landingPage: resolveLandingPage(req),
     ipAddress: (req.ip || '').slice(0, 45),
+    currentStatus: req.body.currentStatus,
+    targetDegree: req.body.targetDegree,
   });
 
   let notifications = { admin: { sent: false }, visitor: { sent: false } };

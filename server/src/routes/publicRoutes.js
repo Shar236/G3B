@@ -6,6 +6,8 @@ import { createEnquiryRules } from '../validators/enquiryValidators.js';
 import validate from '../middleware/validate.js';
 import { enquiryRateLimiter } from '../middleware/rateLimit.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import { subscribe, unsubscribe } from '../controllers/subscriberController.js';
+import { subscribeRules, unsubscribeRules } from '../validators/subscriberValidators.js';
 
 const router = Router();
 
@@ -37,5 +39,7 @@ router.get('/content-blocks', asyncHandler(content.getContentBlocks));
 // Public enquiry / free counselling submission ---------------------------------
 router.post('/enquiries', enquiryRateLimiter, createEnquiryRules, validate, asyncHandler(createEnquiry));
 router.post('/counselling', enquiryRateLimiter, createEnquiryRules, validate, asyncHandler(createEnquiry));
+router.post('/subscribers', enquiryRateLimiter, subscribeRules, validate, asyncHandler(subscribe));
+router.post('/subscribers/unsubscribe', enquiryRateLimiter, unsubscribeRules, validate, asyncHandler(unsubscribe));
 
 export default router;

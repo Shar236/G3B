@@ -10,7 +10,7 @@ export const createUserRules = [
   body('name').trim().notEmpty().withMessage('Name is required.').isLength({ max: 150 }),
   body('email').trim().isEmail().withMessage('Enter a valid email.').normalizeEmail(),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters.'),
-  body('role').optional().isIn(['admin', 'staff']).withMessage('Invalid role.'),
+  body('role').optional().isIn(['admin', 'staff', 'counsellor', 'editor']).withMessage('Invalid role.'),
   body('status').optional().isIn(['active', 'disabled']).withMessage('Invalid status.'),
 ];
 
@@ -19,7 +19,7 @@ export const updateUserRules = [
   body('name').optional().trim().isLength({ min: 2, max: 150 }),
   body('email').optional().trim().isEmail().withMessage('Enter a valid email.').normalizeEmail(),
   body('password').optional().isLength({ min: 8 }).withMessage('Password must be at least 8 characters.'),
-  body('role').optional().isIn(['admin', 'staff']).withMessage('Invalid role.'),
+  body('role').optional().isIn(['admin', 'staff', 'counsellor', 'editor']).withMessage('Invalid role.'),
   body('status').optional().isIn(['active', 'disabled']).withMessage('Invalid status.'),
 ];
 

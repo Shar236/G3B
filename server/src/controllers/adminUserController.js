@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { usersRepository } from '../repositories/userRepository.js';
 import ApiError from '../utils/ApiError.js';
+import { recordAudit } from '../services/auditLog.js';
 
 /** GET /api/admin/users */
 export async function listUsers(_req, res) {
@@ -16,6 +17,7 @@ export async function createUser(req, res) {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await usersRepository.create({ name, email, passwordHash, role, status });
+  await recordAudit(req, { action: 'user.create', entityType: 'user', entityId: user.id, summary: 'Created an administrator account', changes: { role, status } });
   res.status(201).json({ success: true, data: user });
 }
 
@@ -42,6 +44,7 @@ export async function updateUser(req, res) {
 
   const passwordHash = password ? await bcrypt.hash(password, 12) : undefined;
   const user = await usersRepository.update(req.params.id, { name, email, role, status, passwordHash });
+  await recordAudit(req, { action: 'user.update', entityType: 'user', entityId: user.id, summary: 'Updated an administrator account', changes: { role, status, passwordChanged: Boolean(password) } });
   res.json({ success: true, data: user });
 }
 
@@ -59,6 +62,7 @@ export async function deleteUser(req, res) {
   }
 
   await usersRepository.remove(req.params.id);
+  await recordAudit(req, { action: 'user.delete', entityType: 'user', entityId: req.params.id, summary: 'Deleted an administrator account' });
   res.json({ success: true, data: { message: 'User deleted.' } });
 }
 

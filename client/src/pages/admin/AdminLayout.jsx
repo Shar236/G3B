@@ -1,13 +1,18 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { adminPath } from '../../config/adminRoute.js'
 import useDocumentMeta from '../../hooks/useDocumentMeta.js'
 import { resourceConfigs } from './resourceConfigs.js'
+import ErrorBoundary from '../../components/ui/ErrorBoundary.jsx'
+import { notify } from '../../api/notifications.js'
+import { parseApiError } from '../../api/client.js'
 
 const primaryNav = [
   { to: adminPath(), label: 'Dashboard', icon: 'fas fa-gauge-high', end: true },
   { to: adminPath('enquiries'), label: 'Enquiries (CRM)', icon: 'fas fa-inbox' },
+  { to: adminPath('enquiries/school'), label: 'Grade 9+ & Workshops', icon: 'fas fa-school' },
+  { to: adminPath('subscribers'), label: 'Newsletter subscribers', icon: 'fas fa-envelope-open-text' },
 ]
 
 const seoNav = [
@@ -29,13 +34,21 @@ const systemNav = [
 export default function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
+  const canManageLeads = ['admin', 'staff', 'counsellor'].includes(user?.role)
+  const canManageContent = ['admin', 'editor'].includes(user?.role)
+  const visibleSystemNav = systemNav.filter((item) => user?.role === 'admin' || (canManageContent && item.to === adminPath('homepage-content')))
 
   // The entire dashboard is private: never let it into a search index.
   useDocumentMeta({ robots: 'noindex,nofollow,noarchive' })
 
   const handleLogout = async () => {
-    await logout()
+    setSigningOut(true)
+    try { await logout() }
+    catch (cause) { notify({ type: 'error', message: parseApiError(cause).message }) }
+    finally { setSigningOut(false) }
     navigate(adminPath('login'), { replace: true })
   }
 
@@ -54,25 +67,24 @@ export default function AdminLayout() {
 
   return (
     <div className="admin-shell">
-      <aside className={`admin-sidebar${menuOpen ? ' open' : ''}`}>
+      <aside id="admin-sidebar" className={`admin-sidebar${menuOpen ? ' open' : ''}`}>
         <div className="admin-brand">
-          <span className="brand-mark" aria-hidden="true">
-            <i className="fas fa-graduation-cap" />
-          </span>
-          G3B Admin
+          <img
+            src="/logo.png"
+            alt="G3B Admin"
+            className="admin-brand-logo"
+          />
+          <span>G3B Admin</span>
         </div>
 
         <nav aria-label="Admin navigation">
-          {primaryNav.map(link)}
+          {canManageLeads ? primaryNav.map(link) : null}
 
-          <p className="admin-nav-heading">SEO &amp; Media</p>
-          {seoNav.map(link)}
+          {canManageContent ? <><p className="admin-nav-heading">SEO &amp; Media</p>{seoNav.map(link)}</> : null}
 
-          <p className="admin-nav-heading">Website content</p>
-          {Object.values(resourceConfigs).map((config) => link({ to: adminPath(config.route), label: config.label, icon: config.icon }))}
+          {canManageContent ? <><p className="admin-nav-heading">Website content</p>{Object.values(resourceConfigs).map((config) => link({ to: adminPath(config.route), label: config.label, icon: config.icon }))}</> : null}
 
-          <p className="admin-nav-heading">System</p>
-          {systemNav.map(link)}
+          {visibleSystemNav.length ? <><p className="admin-nav-heading">System</p>{visibleSystemNav.map(link)}</> : null}
         </nav>
 
         <div className="admin-sidebar-footer">
@@ -81,7 +93,7 @@ export default function AdminLayout() {
             <br />
             {user?.email}
           </p>
-          <button type="button" className="btn btn-ghost btn-sm btn-block" onClick={handleLogout}>
+          <button type="button" className="btn btn-ghost btn-sm btn-block" disabled={signingOut} onClick={handleLogout}>
             <i className="fas fa-right-from-bracket" aria-hidden="true" /> Sign out
           </button>
           <p style={{ marginTop: 10 }}>
@@ -100,6 +112,8 @@ export default function AdminLayout() {
             type="button"
             className="admin-sidebar-toggle"
             aria-label="Toggle navigation"
+            aria-expanded={menuOpen}
+            aria-controls="admin-sidebar"
             onClick={() => setMenuOpen((value) => !value)}
           >
             <i className="fas fa-bars" aria-hidden="true" />
@@ -108,7 +122,7 @@ export default function AdminLayout() {
         </div>
 
         <div className="admin-content">
-          <Outlet />
+          <ErrorBoundary resetKey={location.pathname}><Outlet /></ErrorBoundary>
         </div>
       </div>
     </div>

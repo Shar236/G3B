@@ -8,11 +8,15 @@ import * as redirects from '../controllers/adminRedirectController.js';
 import * as seoAudit from '../controllers/adminSeoAuditController.js';
 import * as audit from '../controllers/adminAuditController.js';
 import * as integrations from '../controllers/adminIntegrationController.js';
+import * as subscribers from '../controllers/subscriberController.js';
+import * as youtube from '../controllers/adminYouTubeController.js';
+import { registerYouTubeRules, updateYouTubeRules } from '../validators/youtubeValidators.js';
 import { requireAuth, requireRole, csrfProtection } from '../middleware/auth.js';
 import validate from '../middleware/validate.js';
 import { contentRules, contentBlockRules, reorderRules, settingsRules } from '../validators/contentValidators.js';
 import { createUserRules, updateUserRules, userParamRule } from '../validators/authValidators.js';
-import { updateEnquiryRules, noteRules, noteParamRules, idParamRule } from '../validators/enquiryValidators.js';
+import { createEnquiryRules, updateEnquiryRules, enquiryListRules, enquiryBulkRules, noteRules, noteParamRules, idParamRule } from '../validators/enquiryValidators.js';
+import { createSubscriberRules, updateSubscriberRules, subscriberListRules, subscriberBulkRules } from '../validators/subscriberValidators.js';
 import {
   pageRules,
   seoRules,
@@ -30,21 +34,48 @@ const router = Router();
 
 // Every admin route requires an authenticated administrator and a valid CSRF
 // token for state-changing requests.
-router.use(requireAuth, requireRole('admin'), csrfProtection);
+router.use(requireAuth, csrfProtection);
+
+const leadRole = requireRole('admin', 'staff', 'counsellor');
+const adminRole = requireRole('admin');
+router.use('/enquiries', leadRole);
+router.use('/subscribers', leadRole);
 
 // --- Enquiries --------------------------------------------------------------
-router.get('/enquiries', asyncHandler(enquiries.listEnquiries));
+router.get('/enquiries', enquiryListRules, validate, asyncHandler(enquiries.listEnquiries));
+router.post('/enquiries', createEnquiryRules, validate, asyncHandler(enquiries.createAdminEnquiry));
+router.post('/enquiries/bulk', enquiryBulkRules, validate, asyncHandler(enquiries.bulkEnquiries));
 router.get('/enquiries/stats', asyncHandler(enquiries.enquiryStats));
-router.get(['/enquiries/export', '/enquiries/export.csv'], asyncHandler(enquiries.exportEnquiries));
+router.get(['/enquiries/export', '/enquiries/export.csv'], enquiryListRules, validate, asyncHandler(enquiries.exportEnquiries));
 router.get('/enquiries/:id', idParamRule, validate, asyncHandler(enquiries.getEnquiry));
 router.patch('/enquiries/:id', updateEnquiryRules, validate, asyncHandler(enquiries.updateEnquiry));
-router.delete('/enquiries/:id', idParamRule, validate, asyncHandler(enquiries.deleteEnquiry));
-router.post('/enquiries/:id/anonymize', idParamRule, validate, asyncHandler(enquiries.anonymizeEnquiry));
+router.delete('/enquiries/:id', adminRole, idParamRule, validate, asyncHandler(enquiries.deleteEnquiry));
+router.post('/enquiries/:id/anonymize', adminRole, idParamRule, validate, asyncHandler(enquiries.anonymizeEnquiry));
 
 // Internal notes are admin-only; no public endpoint ever returns them.
 router.get('/enquiries/:id/notes', idParamRule, validate, asyncHandler(enquiries.listEnquiryNotes));
-router.post('/enquiries/:id/notes', noteRules, validate, asyncHandler(enquiries.addEnquiryNote));
-router.delete('/enquiries/:id/notes/:noteId', noteParamRules, validate, asyncHandler(enquiries.deleteEnquiryNote));
+router.post('/enquiries/:id/notes', idParamRule, noteRules, validate, asyncHandler(enquiries.addEnquiryNote));
+router.delete('/enquiries/:id/notes/:noteId', adminRole, noteParamRules, validate, asyncHandler(enquiries.deleteEnquiryNote));
+
+router.get('/subscribers', subscriberListRules, validate, asyncHandler(subscribers.listSubscribers));
+router.get(['/subscribers/export', '/subscribers/export.csv'], subscriberListRules, validate, asyncHandler(subscribers.exportSubscribers));
+router.post('/subscribers', createSubscriberRules, validate, asyncHandler(subscribers.createSubscriber));
+router.post('/subscribers/bulk', subscriberBulkRules, validate, asyncHandler(subscribers.bulkSubscribers));
+router.patch('/subscribers/:id', updateSubscriberRules, validate, asyncHandler(subscribers.updateSubscriber));
+router.delete('/subscribers/:id', adminRole, idParamRule, validate, asyncHandler(subscribers.deleteSubscriber));
+
+// All remaining resources are content or sensitive system administration.
+router.use(requireRole('admin', 'editor'));
+for (const path of ['/users', '/site-settings', '/notifications', '/integrations', '/audit-logs']) router.use(path, adminRole);
+
+// Official YouTube metadata cache and reviewed Shorts registry.
+router.get('/youtube-shorts/status', asyncHandler(youtube.status));
+router.post('/youtube-shorts/sync', asyncHandler(youtube.sync));
+router.get('/youtube-shorts', asyncHandler(youtube.list));
+router.post('/youtube-shorts', registerYouTubeRules, validate, asyncHandler(youtube.register));
+router.post('/youtube-shorts/manual', registerYouTubeRules, validate, asyncHandler(youtube.saveManual));
+router.patch('/youtube-shorts/:id', updateYouTubeRules, validate, asyncHandler(youtube.update));
+router.delete('/youtube-shorts/:id', idParamRule, validate, asyncHandler(youtube.remove));
 
 // --- Users ------------------------------------------------------------------
 router.get('/users', asyncHandler(users.listUsers));
@@ -53,6 +84,7 @@ router.patch('/users/:id', updateUserRules, validate, asyncHandler(users.updateU
 router.delete('/users/:id', userParamRule, validate, asyncHandler(users.deleteUser));
 
 // --- Site settings & content blocks ----------------------------------------
+router.get('/site-settings', asyncHandler(admin.getSiteSettings));
 router.patch('/site-settings', settingsRules, validate, asyncHandler(admin.updateSiteSettings));
 router.delete('/site-settings/:key', asyncHandler(admin.deleteSiteSetting));
 router.patch('/content-blocks/:key', contentBlockRules, validate, asyncHandler(admin.updateContentBlock));

@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom'
+import { resolveMediaUrl } from '../api/client.js'
 
 /** Site footer: brand summary, quick links, contact details and social profiles. */
 export default function Footer({ settings = {}, content = {}, socialLinks = [], services = [], destinations = [] }) {
   const brand = settings.brand_name || 'G3B Education'
+  const logoUrl = settings.header_logo_url ? resolveMediaUrl(settings.header_logo_url) : '/logo.png'
   const tagline = content.footer?.body || 'Career Guidance · Psychometric Assessment · Study Abroad'
   const year = new Date().getFullYear()
 
@@ -12,9 +14,17 @@ export default function Footer({ settings = {}, content = {}, socialLinks = [], 
         <div className="footer-grid">
           <div className="footer-col">
             <div className="footer-brand">
-              <span className="brand-mark" aria-hidden="true">
-                <i className="fas fa-graduation-cap" />
-              </span>
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={brand}
+                  className="footer-logo-img"
+                />
+              ) : (
+                <span className="brand-mark" aria-hidden="true">
+                  <i className="fas fa-graduation-cap" />
+                </span>
+              )}
               {brand}
             </div>
             <p className="footer-about">
@@ -42,6 +52,9 @@ export default function Footer({ settings = {}, content = {}, socialLinks = [], 
           <div className="footer-col">
             <h4>Our Services</h4>
             <ul>
+              <li><Link to="/#pathways">Grade 9+ & Career Pathways</Link></li>
+              <li><Link to="/#knowledge-hub">Free Guide & Newsletter</Link></li>
+              <li><Link to="/insights">Study Abroad Insights</Link></li>
               {services.slice(0, 6).map((service) => (
                 <li key={service.id}>
                   <Link to={`/services#${service.slug || service.id}`}>{service.title}</Link>

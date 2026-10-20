@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { parseApiError } from '../../api/client.js'
-import { adminPath } from '../../config/adminRoute.js'
+import { ADMIN_BASE, adminPath } from '../../config/adminRoute.js'
 import useDocumentMeta from '../../hooks/useDocumentMeta.js'
 
 /** Administrator sign-in screen — premium split-panel design. */
@@ -14,21 +14,33 @@ export default function AdminLogin() {
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [showPass, setShowPass] = useState(false)
+  const returnPath = typeof location.state?.from === 'string' && (location.state.from === ADMIN_BASE || location.state.from.startsWith(`${ADMIN_BASE}/`)) ? location.state.from : adminPath()
 
   // Private screen: keep it out of every search index.
   useDocumentMeta({ title: 'Admin sign in | G3B Education', robots: 'noindex,nofollow,noarchive' })
 
   if (!loading && user) {
-    return <Navigate to={location.state?.from || adminPath()} replace />
+    return <Navigate to={returnPath} replace />
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (submitting || loading) return
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || form.email.trim().length > 190) {
+      setError('Enter a valid email address.')
+      document.getElementById('admin-email')?.focus()
+      return
+    }
+    if (!form.password || form.password.length > 128) {
+      setError('Enter your password (up to 128 characters).')
+      document.getElementById('admin-password')?.focus()
+      return
+    }
     setSubmitting(true)
     setError(null)
     try {
-      await login(form)
-      navigate(location.state?.from || adminPath(), { replace: true })
+      await login({ email: form.email.trim(), password: form.password })
+      navigate(returnPath, { replace: true })
     } catch (err) {
       setError(parseApiError(err).message)
     } finally {
@@ -47,8 +59,8 @@ export default function AdminLogin() {
 
         <div className="al-brand-inner">
           {/* Logo mark */}
-          <div className="al-logo-mark">
-            <span>G3B</span>
+          <div className="al-logo-mark" style={{ background: '#ffffff', padding: '6px' }}>
+            <img src="/logo.png" alt="G3B Education" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
 
           <h2 className="al-brand-headline">
@@ -91,7 +103,9 @@ export default function AdminLogin() {
 
           {/* Mobile logo (hidden on desktop) */}
           <div className="al-mobile-logo">
-            <div className="al-logo-mark al-logo-mark--sm"><span>G3B</span></div>
+            <div className="al-logo-mark al-logo-mark--sm" style={{ background: '#ffffff', padding: '4px' }}>
+              <img src="/logo.png" alt="G3B Education" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
           </div>
 
           <div className="al-form-header">
@@ -100,13 +114,13 @@ export default function AdminLogin() {
           </div>
 
           {error && (
-            <div className="al-error-banner" role="alert">
+            <div id="admin-login-error" className="al-error-banner" role="alert">
               <i className="fas fa-circle-exclamation" aria-hidden="true" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} noValidate className="al-form">
+          <form onSubmit={handleSubmit} className="al-form" aria-busy={submitting || loading}>
             {/* Email */}
             <div className="al-field">
               <label htmlFor="admin-email">Email address</label>
@@ -115,6 +129,9 @@ export default function AdminLogin() {
                 <input
                   id="admin-email"
                   type="email"
+                  maxLength={190}
+                  disabled={submitting || loading}
+                  aria-describedby={error ? 'admin-login-error' : undefined}
                   autoComplete="username"
                   placeholder="you@g3beducation.com"
                   value={form.email}
@@ -137,6 +154,9 @@ export default function AdminLogin() {
                 <input
                   id="admin-password"
                   type={showPass ? 'text' : 'password'}
+                  maxLength={128}
+                  disabled={submitting || loading}
+                  aria-describedby={error ? 'admin-login-error' : undefined}
                   autoComplete="current-password"
                   placeholder="••••••••••"
                   value={form.password}
@@ -148,6 +168,8 @@ export default function AdminLogin() {
                   className="al-toggle-pass"
                   onClick={() => setShowPass((v) => !v)}
                   aria-label={showPass ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPass}
+                  aria-controls="admin-password"
                 >
                   <i className={`fas ${showPass ? 'fa-eye-slash' : 'fa-eye'}`} aria-hidden="true" />
                 </button>
@@ -158,7 +180,7 @@ export default function AdminLogin() {
             <button
               type="submit"
               className="al-submit-btn"
-              disabled={submitting}
+              disabled={submitting || loading}
             >
               {submitting ? (
                 <>

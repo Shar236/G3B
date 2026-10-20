@@ -55,7 +55,7 @@ export function renderMetaTags(page, defaults = {}, origin = '') {
     meta.primaryKeyword ? `<meta name="keywords" content="${escapeHtml(meta.primaryKeyword)}" />` : null,
     `<meta name="robots" content="${escapeHtml(meta.robots)}" />`,
     `<link rel="canonical" href="${escapeHtml(meta.canonical)}" />`,
-    `<meta property="og:type" content="website" />`,
+    `<meta property="og:type" content="${page?.pageType === 'article' ? 'article' : 'website'}" />`,
     meta.ogTitle ? `<meta property="og:title" content="${escapeHtml(meta.ogTitle)}" />` : null,
     meta.ogDescription
       ? `<meta property="og:description" content="${escapeHtml(meta.ogDescription)}" />`
