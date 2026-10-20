@@ -4,6 +4,9 @@ import api from './client.js'
 
 export async function fetchHome(options = {}) {
   const { data } = await api.get('/api/home', options)
+  if (!data || typeof data !== 'object' || !data.data) {
+    throw new Error('API returned an invalid response. Ensure VITE_API_URL points to your backend.')
+  }
   return data.data
 }
 
