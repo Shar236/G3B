@@ -1,0 +1,421 @@
+import { useState, useEffect } from 'react'
+import api from '../../api/client.js'
+import { parseApiError } from '../../api/client.js'
+
+export const COUNTRY_DIAL_CODES = [
+  { code: '+91', country: 'India', flag: '🇮🇳' },
+  { code: '+1', country: 'USA / Canada', flag: '🇺🇸' },
+  { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
+  { code: '+61', country: 'Australia', flag: '🇦🇺' },
+  { code: '+49', country: 'Germany', flag: '🇩🇪' },
+  { code: '+33', country: 'France', flag: '🇫🇷' },
+  { code: '+971', country: 'UAE', flag: '🇦🇪' },
+  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
+  { code: '+64', country: 'New Zealand', flag: '🇳🇿' },
+  { code: '+353', country: 'Ireland', flag: '🇮🇪' },
+  { code: '+977', country: 'Nepal', flag: '🇳🇵' },
+  { code: '+880', country: 'Bangladesh', flag: '🇧🇩' },
+  { code: '+94', country: 'Sri Lanka', flag: '🇱🇰' },
+  { code: '+966', country: 'Saudi Arabia', flag: '🇸🇦' },
+  { code: '+974', country: 'Qatar', flag: '🇶🇦' },
+  { code: '+968', country: 'Oman', flag: '🇴🇲' },
+  { code: '+965', country: 'Kuwait', flag: '🇰🇼' },
+]
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export default function ConsultationForm({
+  initialValues = {},
+  options = [],
+  destinations = [],
+  onSuccess,
+  inModal = false,
+  theme = inModal ? 'light' : 'dark',
+}) {
+  const [form, setForm] = useState({
+    fullName: initialValues.fullName || '',
+    email: initialValues.email || '',
+    dialCode: initialValues.dialCode || '+91',
+    phone: initialValues.phone || '',
+    serviceInterest: initialValues.serviceInterest || '',
+    preferredDestination: initialValues.preferredDestination || '',
+    message: initialValues.message || '',
+  })
+
+  const [errors, setErrors] = useState({})
+  const [notice, setNotice] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  // Update pre-selected values if initialValues changes
+  useEffect(() => {
+    if (initialValues?.serviceInterest) {
+      setForm((prev) => ({ ...prev, serviceInterest: initialValues.serviceInterest }))
+    }
+    if (initialValues?.preferredDestination) {
+      setForm((prev) => ({ ...prev, preferredDestination: initialValues.preferredDestination }))
+    }
+  }, [initialValues?.serviceInterest, initialValues?.preferredDestination])
+
+  const update = (field) => (event) => {
+    const value = event.target.value
+    setForm((current) => ({ ...current, [field]: value }))
+    if (errors[field]) {
+      setErrors((current) => ({ ...current, [field]: undefined }))
+    }
+  }
+
+  const validate = () => {
+    const errs = {}
+    if (!form.fullName || form.fullName.trim().length < 2) {
+      errs.fullName = 'Please enter your full name (at least 2 characters).'
+    }
+    if (!form.email || !EMAIL_REGEX.test(form.email.trim())) {
+      errs.email = 'Please provide a valid email address.'
+    }
+
+    const cleanPhone = form.phone.replace(/[\s()-]/g, '')
+    if (!cleanPhone || cleanPhone.length < 7 || cleanPhone.length > 15 || !/^\d+$/.test(cleanPhone)) {
+      errs.phone = 'Please enter a valid phone number (7 to 15 digits).'
+    }
+
+    if (!form.serviceInterest) {
+      errs.serviceInterest = 'Please choose a service you are interested in.'
+    }
+
+    if (form.message && form.message.length > 2000) {
+      errs.message = 'Message must be 2000 characters or fewer.'
+    }
+
+    return errs
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setNotice(null)
+
+    const validationErrors = validate()
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      setNotice({ type: 'error', message: 'Please correct the highlighted fields before submitting.' })
+      return
+    }
+
+    const fullPhoneNumber = `${form.dialCode} ${form.phone.trim()}`
+
+    setSubmitting(true)
+    try {
+      // Post to /api/counselling with fallback to /api/enquiries
+      let res
+      try {
+        res = await api.post('/api/counselling', {
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: fullPhoneNumber,
+          serviceInterest: form.serviceInterest,
+          preferredDestination: form.preferredDestination || undefined,
+          message: form.message.trim() || undefined,
+        })
+      } catch {
+        // Fallback to /api/enquiries if counselling alias is cached/unreachable
+        res = await api.post('/api/enquiries', {
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          phone: fullPhoneNumber,
+          serviceInterest: form.serviceInterest,
+          preferredDestination: form.preferredDestination || undefined,
+          message: form.message.trim() || undefined,
+        })
+      }
+
+      setSubmitted(true)
+      if (onSuccess) onSuccess(res.data)
+    } catch (error) {
+      const parsed = parseApiError(error)
+      if (parsed.details) setErrors(parsed.details)
+      setNotice({
+        type: 'error',
+        message:
+          parsed.status === 409
+            ? 'We already received this request a moment ago. A counsellor will reach out shortly!'
+            : parsed.message || 'Unable to submit your request. Please try again.',
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const resetForm = () => {
+    setForm({
+      fullName: '',
+      email: '',
+      dialCode: '+91',
+      phone: '',
+      serviceInterest: '',
+      preferredDestination: '',
+      message: '',
+    })
+    setErrors({})
+    setNotice(null)
+    setSubmitted(false)
+  }
+
+  if (submitted) {
+    const isDark = theme === 'dark'
+    return (
+      <div className={`counselling-success-view consultation-form-${theme}`} style={{ textAlign: 'center', padding: inModal ? '24px 16px' : '36px 20px' }}>
+        <div
+          style={{
+            width: '64px',
+            height: '64px',
+            margin: '0 auto 16px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #10b981, #059669)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontSize: '28px',
+            boxShadow: '0 8px 24px rgba(16, 185, 129, 0.35)',
+          }}
+        >
+          <i className="fas fa-check" aria-hidden="true" />
+        </div>
+        <h3 style={{ fontSize: '22px', fontWeight: 800, color: isDark ? '#ffffff' : '#0B2C5F', margin: '0 0 8px 0' }}>
+          Consultation Request Confirmed!
+        </h3>
+        <p style={{ color: isDark ? 'rgba(255, 255, 255, 0.9)' : '#475569', fontSize: '15px', maxWidth: '440px', margin: '0 auto 16px', lineHeight: 1.6 }}>
+          Thank you, <strong>{form.fullName}</strong>. Your enquiry for <strong>{form.serviceInterest}</strong> has been received by our senior counsellors.
+        </p>
+        <div
+          style={{
+            background: isDark ? 'rgba(255, 255, 255, 0.1)' : '#f8fafc',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #e2e8f0',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            maxWidth: '440px',
+            margin: '0 auto 20px',
+            fontSize: '13px',
+            color: isDark ? '#e2e8f0' : '#64748b',
+          }}
+        >
+          <i className="fas fa-envelope" style={{ color: isDark ? '#fbbf24' : '#0B2C5F', marginRight: '6px' }} />
+          A notification email has been dispatched to admissions.g3beducation@gmail.com
+        </div>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
+          <i className="fas fa-rotate-left" aria-hidden="true" /> Book Another Session
+        </button>
+      </div>
+    )
+  }
+
+  // Combine options from enquiry options or services catalog
+  let serviceOptions = options.length > 0
+    ? options.map((opt) => opt.label)
+    : [
+        'Test Preparation & Language Support',
+        'Career Guidance & Psychometric Assessment',
+        'Assistance in University Selection',
+        'Application & Visa Documentation',
+        'Scholarship & Financial Assistance',
+        'Accommodation & Travel Arrangements',
+        'IELTS / TOEFL / PTE Coaching',
+        'Other Inquiry',
+      ]
+
+  if (form.serviceInterest && !serviceOptions.includes(form.serviceInterest)) {
+    serviceOptions = [form.serviceInterest, ...serviceOptions]
+  }
+
+  return (
+    <div className={`consultation-form-wrapper consultation-form-${theme}`}>
+      {notice ? (
+        <div
+          className={`form-notice ${notice.type}`}
+          role={notice.type === 'error' ? 'alert' : 'status'}
+          style={{ marginBottom: '16px' }}
+        >
+          <i
+            className={notice.type === 'success' ? 'fas fa-circle-check' : 'fas fa-circle-exclamation'}
+            aria-hidden="true"
+          />
+          <span>{notice.message}</span>
+        </div>
+      ) : null}
+
+      <form onSubmit={handleSubmit} noValidate>
+        {/* Full Name */}
+        <div className={`form-group${errors.fullName ? ' has-error' : ''}`}>
+          <label htmlFor="lead-full-name">
+            Full Name <span style={{ color: '#ef4444' }}>*</span>
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              id="lead-full-name"
+              name="fullName"
+              type="text"
+              placeholder="e.g. Rahul Sharma"
+              autoComplete="name"
+              value={form.fullName}
+              onChange={update('fullName')}
+              aria-invalid={Boolean(errors.fullName)}
+              required
+            />
+          </div>
+          {errors.fullName ? <span className="field-error">{errors.fullName}</span> : null}
+        </div>
+
+        {/* Email & Phone Row */}
+        <div className="form-row">
+          <div className={`form-group${errors.email ? ' has-error' : ''}`}>
+            <label htmlFor="lead-email">
+              Email Address <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <input
+              id="lead-email"
+              name="email"
+              type="email"
+              placeholder="rahul@example.com"
+              autoComplete="email"
+              value={form.email}
+              onChange={update('email')}
+              aria-invalid={Boolean(errors.email)}
+              required
+            />
+            {errors.email ? <span className="field-error">{errors.email}</span> : null}
+          </div>
+
+          <div className={`form-group${errors.phone ? ' has-error' : ''}`}>
+            <label htmlFor="lead-phone">
+              Phone Number <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <div className="phone-input-wrap">
+              <select
+                id="lead-dial-code"
+                aria-label="Country dial code"
+                value={form.dialCode}
+                onChange={update('dialCode')}
+                className="dial-code-select"
+              >
+                {COUNTRY_DIAL_CODES.map((c) => (
+                  <option key={c.code + c.country} value={c.code}>
+                    {c.flag} {c.code}
+                  </option>
+                ))}
+              </select>
+              <input
+                id="lead-phone"
+                name="phone"
+                type="tel"
+                placeholder="98201 23456"
+                autoComplete="tel"
+                value={form.phone}
+                onChange={update('phone')}
+                aria-invalid={Boolean(errors.phone)}
+                required
+                className="phone-number-input"
+              />
+            </div>
+            {errors.phone ? <span className="field-error">{errors.phone}</span> : null}
+          </div>
+        </div>
+
+        {/* Service & Destination Row */}
+        <div className="form-row">
+          <div className={`form-group${errors.serviceInterest ? ' has-error' : ''}`}>
+            <label htmlFor="lead-service">
+              Interested Service <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <select
+              id="lead-service"
+              name="serviceInterest"
+              value={form.serviceInterest}
+              onChange={update('serviceInterest')}
+              aria-invalid={Boolean(errors.serviceInterest)}
+              required
+            >
+              <option value="">Select a service…</option>
+              {serviceOptions.map((opt, i) => (
+                <option key={i} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+            {errors.serviceInterest ? <span className="field-error">{errors.serviceInterest}</span> : null}
+          </div>
+
+          <div className={`form-group${errors.preferredDestination ? ' has-error' : ''}`}>
+            <label htmlFor="lead-destination">Preferred Destination</label>
+            <select
+              id="lead-destination"
+              name="preferredDestination"
+              value={form.preferredDestination}
+              onChange={update('preferredDestination')}
+            >
+              <option value="">Not decided yet</option>
+              {destinations.map((d) => (
+                <option key={d.id || d.country} value={d.country}>
+                  {d.flagIcon ? `${d.flagIcon} ` : ''}{d.country}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Message / Query */}
+        <div className={`form-group${errors.message ? ' has-error' : ''}`}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <label htmlFor="lead-message">Your Study Goals & Questions (Optional)</label>
+            <span className="char-counter">
+              {form.message.length}/2000
+            </span>
+          </div>
+          <textarea
+            id="lead-message"
+            name="message"
+            rows={inModal ? 3 : 4}
+            placeholder="Tell us about your target course, intake, preferred budget or exams taken..."
+            value={form.message}
+            onChange={update('message')}
+            maxLength={2000}
+          />
+          {errors.message ? <span className="field-error">{errors.message}</span> : null}
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          className="btn btn-primary btn-block"
+          disabled={submitting}
+          style={{
+            padding: '14px 20px',
+            fontSize: '16px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: '0 4px 14px rgba(11, 44, 95, 0.25)',
+          }}
+        >
+          {submitting ? (
+            <>
+              <i className="fas fa-spinner fa-spin" aria-hidden="true" />
+              <span>Confirming Booking…</span>
+            </>
+          ) : (
+            <>
+              <i className="fas fa-calendar-check" aria-hidden="true" />
+              <span>Book Free Counselling Session</span>
+            </>
+          )}
+        </button>
+
+        <p className="form-privacy-note" style={{ textAlign: 'center', marginTop: '12px', marginBottom: 0 }}>
+          <i className="fas fa-shield-halved" style={{ marginRight: '4px', color: '#10b981' }} />
+          100% Free · No Obligation · Confidential Mentoring
+        </p>
+      </form>
+    </div>
+  )
+}

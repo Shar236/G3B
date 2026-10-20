@@ -1,0 +1,9 @@
+# Development fallback. In production the API server generates this file from
+# the live page registry and the configured private admin path, so entries stay
+# in sync with the CMS. Do not treat robots.txt as a security control.
+User-agent: *
+Allow: /
+Disallow: /manage-portal
+Disallow: /manage-portal/
+
+Sitemap: https://g3beducation.com/sitemap.xml
