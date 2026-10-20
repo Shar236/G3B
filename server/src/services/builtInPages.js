@@ -1,4 +1,4 @@
-import { insights } from '../../../client/src/data/insights.js';
+import { insights } from '../data/insights.js';
 import { pagesRepository } from '../repositories/pagesRepository.js';
 
 // Use the public article source directly so crawler content and the React page
