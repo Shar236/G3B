@@ -14,6 +14,7 @@ export const pool = mysql.createPool({
   charset: 'utf8mb4_unicode_ci',
   dateStrings: false,
   namedPlaceholders: false,
+  ssl: env.db.ssl ? { rejectUnauthorized: false } : undefined,
 });
 
 /**

@@ -37,6 +37,7 @@ const env = {
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     connectionLimit: toInt(process.env.DB_CONNECTION_LIMIT, 10),
+    ssl: toBool(process.env.DB_SSL, false),
   },
 
   auth: {
