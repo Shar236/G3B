@@ -12,6 +12,8 @@
     "vercel-build": "npm install --prefix client && npm run build --prefix client",
     "preview": "npm run preview --prefix client",
     "start": "npm start --prefix server",
+    "start:web": "npm start --prefix client",
+    "start:api": "npm start --prefix server",
     "migrate": "npm run migrate --prefix server",
     "seed": "npm run seed --prefix server",
     "db:setup": "npm run db:setup --prefix server",

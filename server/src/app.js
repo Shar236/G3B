@@ -45,24 +45,32 @@ export function createApp() {
     }),
   );
 
-  const corsOptions = {
-    origin(origin, callback) {
-      // Allow same-origin/tooling requests without an Origin header.
-      if (!origin) return callback(null, true);
-      const cleanOrigin = origin.replace(/\/+$/, '');
-      if (env.clientOrigins.includes(cleanOrigin) || env.clientOrigins.includes(origin)) return callback(null, true);
-      logger.warn('Blocked CORS origin', { origin, cleanOrigin, allowed: env.clientOrigins });
-      return callback(new Error(`Origin ${origin} is not allowed by CORS.`));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Request-ID'],
-    exposedHeaders: ['X-Request-ID', 'Retry-After', 'Content-Disposition'],
-    maxAge: 86400,
-  };
+  const corsMiddleware = cors((req, callback) => {
+    const origin = req.header('Origin');
+    if (!origin) return callback(null, { origin: true });
 
-  app.use(cors(corsOptions));
-  app.options('*', cors(corsOptions));
+    const cleanOrigin = origin.replace(/\/+$/, '');
+    const host = req.get('host');
+    const isSameHost = Boolean(host && (cleanOrigin === `https://${host}` || cleanOrigin === `http://${host}`));
+    const isAllowed = isSameHost || env.clientOrigins.includes(cleanOrigin) || env.clientOrigins.includes(origin);
+
+    if (isAllowed) {
+      return callback(null, {
+        origin: true,
+        credentials: true,
+        methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Request-ID'],
+        exposedHeaders: ['X-Request-ID', 'Retry-After', 'Content-Disposition'],
+        maxAge: 86400,
+      });
+    }
+
+    logger.warn('Blocked CORS origin', { origin, cleanOrigin, allowed: env.clientOrigins });
+    return callback(null, { origin: false });
+  });
+
+  app.use(corsMiddleware);
+  app.options('*', corsMiddleware);
 
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
