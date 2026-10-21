@@ -10,6 +10,8 @@ import * as audit from '../controllers/adminAuditController.js';
 import * as integrations from '../controllers/adminIntegrationController.js';
 import * as subscribers from '../controllers/subscriberController.js';
 import * as youtube from '../controllers/adminYouTubeController.js';
+import * as partner from '../controllers/partnerController.js';
+import { partnerListRules, updatePartnerEnquiryRules } from '../validators/partnerValidators.js';
 import { registerYouTubeRules, updateYouTubeRules } from '../validators/youtubeValidators.js';
 import { requireAuth, requireRole, csrfProtection } from '../middleware/auth.js';
 import validate from '../middleware/validate.js';
@@ -40,6 +42,7 @@ const leadRole = requireRole('admin', 'staff', 'counsellor');
 const adminRole = requireRole('admin');
 router.use('/enquiries', leadRole);
 router.use('/subscribers', leadRole);
+router.use('/partner-enquiries', leadRole);
 
 // --- Enquiries --------------------------------------------------------------
 router.get('/enquiries', enquiryListRules, validate, asyncHandler(enquiries.listEnquiries));
@@ -56,6 +59,14 @@ router.post('/enquiries/:id/anonymize', adminRole, idParamRule, validate, asyncH
 router.get('/enquiries/:id/notes', idParamRule, validate, asyncHandler(enquiries.listEnquiryNotes));
 router.post('/enquiries/:id/notes', idParamRule, noteRules, validate, asyncHandler(enquiries.addEnquiryNote));
 router.delete('/enquiries/:id/notes/:noteId', adminRole, noteParamRules, validate, asyncHandler(enquiries.deleteEnquiryNote));
+
+// --- Partner Enquiries ------------------------------------------------------
+router.get('/partner-enquiries', partnerListRules, validate, asyncHandler(partner.listPartnerEnquiries));
+router.get('/partner-enquiries/stats', asyncHandler(partner.partnerStats));
+router.get(['/partner-enquiries/export', '/partner-enquiries/export.csv'], partnerListRules, validate, asyncHandler(partner.exportPartnerEnquiries));
+router.get('/partner-enquiries/:id', idParamRule, validate, asyncHandler(partner.getPartnerEnquiry));
+router.patch('/partner-enquiries/:id', updatePartnerEnquiryRules, validate, asyncHandler(partner.updatePartnerEnquiry));
+router.delete('/partner-enquiries/:id', adminRole, idParamRule, validate, asyncHandler(partner.deletePartnerEnquiry));
 
 router.get('/subscribers', subscriberListRules, validate, asyncHandler(subscribers.listSubscribers));
 router.get(['/subscribers/export', '/subscribers/export.csv'], subscriberListRules, validate, asyncHandler(subscribers.exportSubscribers));

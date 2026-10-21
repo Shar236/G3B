@@ -10,7 +10,7 @@ export async function enrichData() {
       subtitle: 'Crack IELTS, TOEFL, PTE & GRE with TESOL Certified Master Trainers',
       badge: 'TESOL Certified Faculty',
       icon: 'fas fa-language',
-      description: 'Comprehensive, structured coaching for IELTS, TOEFL, PTE, GRE, and Spoken English. We provide personalized diagnostic tests, 70+ module-wise mock tests, live interactive feedback, and score-guarantee strategies tailored to your target universities.',
+      description: 'Comprehensive, structured coaching for IELTS, TOEFL, PTE, GRE, and Spoken English. We provide personalized diagnostic tests, 70+ module-wise mock tests, live interactive feedback, and proven score-maximization strategies tailored to your target universities.',
       packages: [
         {
           name: 'IELTS / PTE Masterclass',
@@ -50,12 +50,12 @@ export async function enrichData() {
       ],
       pricing: [
         { tier: 'Crash Course (4 Wks)', highlight: false, description: 'Rapid score booster with 4 mock tests and intensive sectional reviews' },
-        { tier: 'Comprehensive (8 Wks)', highlight: true, description: 'Complete end-to-end coaching with unlimited speaking sessions and guaranteed mock scoring' },
+        { tier: 'Comprehensive (8 Wks)', highlight: true, description: 'Complete end-to-end coaching with unlimited speaking sessions and rigorous simulated mock scoring' },
         { tier: '1-on-1 Private Mentoring', highlight: false, description: 'Dedicated personal tutor tailored exclusively to your weak sections and pace' }
       ],
       trainers: [
         { name: 'Minal Kulkarni', title: 'Lead Test Prep Consultant & Founder', credentials: 'TESOL Certified, 15+ Yrs Experience' },
-        { name: 'Senior Language Specialist', title: 'IELTS / PTE Master Evaluator', credentials: 'British Council & IDP Accredited Trainer' }
+        { name: 'Senior Language Specialist', title: 'IELTS / PTE Master Evaluator', credentials: 'British Council & IDP Certified Faculty' }
       ],
       faqs: [
         { q: 'How many mock tests are included in the IELTS/PTE course?', a: 'You receive 8 full-length simulated mock tests and more than 70 module-wise mock drills with comprehensive band score breakdowns and diagnostic reviews.' },
@@ -110,8 +110,8 @@ export async function enrichData() {
     {
       title: 'Assistance in University Selection',
       slug: 'university-selection',
-      subtitle: 'Data-Driven University Shortlisting Across 500+ Top Global Institutions',
-      badge: '500+ Partner Institutions',
+      subtitle: 'Data-Driven University Shortlisting Across Top Global Institutions',
+      badge: 'Strategic Shortlisting',
       icon: 'fas fa-university',
       description: 'Navigate tens of thousands of programs across the USA, UK, Canada, Australia, Germany, France, and Ireland. We create a balanced, strategic shortlist divided into Ambitious, Target, and Safe institutions matching your academic profile and budget.',
       packages: [
@@ -124,7 +124,7 @@ export async function enrichData() {
             'In-depth tuition fee, living cost & ROI financial analysis',
             'Location suitability, post-study work rights & local industry clusters',
             'Scholarship eligibility audit for institutional grants',
-            'Direct access to official university admissions representatives'
+            'Guidance on university entrance criteria & application requirements'
           ]
         }
       ],
@@ -132,7 +132,7 @@ export async function enrichData() {
         { tier: 'Admissions Package', highlight: true, description: 'Complete shortlisting of 6–10 institutions with complete application management' }
       ],
       trainers: [
-        { name: 'Senior Admissions Directorate', title: 'Global University Partnerships', credentials: 'Ex-Admissions Officers & Global Advisors' }
+        { name: 'Admissions Advisory Desk', title: 'Global Admissions Mentors', credentials: 'Experienced Global Education Advisors' }
       ],
       faqs: [
         { q: 'How many universities do you shortlist for me?', a: 'We typically shortlist 8 to 12 targeted institutions categorized into Dream, Target, and Safe, ensuring maximum chances of acceptance with optimal scholarship options.' },

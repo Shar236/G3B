@@ -32,6 +32,25 @@ export async function downloadEnquiriesCsv(params = {}) {
   window.URL.revokeObjectURL(url)
 }
 
+// --- Partner Enquiries ------------------------------------------------------
+export const listPartnerEnquiries = (params) => api.get('/api/admin/partner-enquiries', { params }).then((r) => r.data)
+export const getPartnerEnquiry = (id) => api.get(`/api/admin/partner-enquiries/${id}`).then((r) => r.data.data)
+export const updatePartnerEnquiry = (id, payload) => api.patch(`/api/admin/partner-enquiries/${id}`, payload).then((r) => r.data.data)
+export const deletePartnerEnquiry = (id) => api.delete(`/api/admin/partner-enquiries/${id}`).then((r) => r.data.data)
+
+/** Download the partner enquiry CSV through axios so auth cookies/CSRF apply. */
+export async function downloadPartnerEnquiriesCsv(params = {}) {
+  const response = await api.get('/api/admin/partner-enquiries/export', { params, responseType: 'blob' })
+  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `g3b-partner-enquiries-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}
+
 // --- Generic content resources ---------------------------------------------
 export const listResource = (resource) => api.get(`/api/admin/${resource}`).then((r) => r.data.data)
 export const createResource = (resource, payload) =>

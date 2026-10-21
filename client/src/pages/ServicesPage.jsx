@@ -184,7 +184,7 @@ export default function ServicesPage() {
           {/* Concise Description */}
           <p className="services-hero-desc">
             {settings.services_hero_subheading ||
-              'Discover our integrated 6-pillar framework pairing scientific psychometric mapping and certified IELTS/PTE coaching with 500+ global university partnerships, 98% visa success, and stress-free overseas relocation.'}
+              'Discover our integrated 6-pillar framework pairing scientific psychometric mapping and certified IELTS/PTE coaching with strategic university shortlisting, 98% visa success, and stress-free overseas relocation.'}
           </p>
 
           {/* 4 Verified Statistics Cards */}
@@ -198,8 +198,8 @@ export default function ServicesPage() {
               <span className="services-stat-label">Visa Success Rate</span>
             </div>
             <div className="services-stat-card">
-              <span className="services-stat-value">500+</span>
-              <span className="services-stat-label">Global Partner Universities</span>
+              <span className="services-stat-value">15+</span>
+              <span className="services-stat-label">Years Mentoring Experience</span>
             </div>
             <div className="services-stat-card">
               <span className="services-stat-value">TESOL</span>

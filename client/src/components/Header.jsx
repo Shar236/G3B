@@ -1,49 +1,213 @@
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { resolveMediaUrl } from '../api/client.js'
 import { useCounsellingModal } from '../context/CounsellingContext.jsx'
 
-const DEFAULT_NAV = [
-  { label: 'Why G3B', url: '/#why' },
-  { label: 'Our Services', url: '/services' },
-  { label: 'Destinations', url: '/#destinations' },
-  { label: 'Pathways', url: '/#pathways' },
-  { label: 'Reviews', url: '/#reviews' },
-  { label: 'Insights', url: '/insights' },
-  { label: 'Contact', url: '/#contact' },
+/**
+ * KNG-inspired Information Architecture for G3B Education.
+ * Preserves G3B's brand identity, typography, navy/white color scheme & orange accents.
+ */
+export const NAVIGATION_TREE = [
+  {
+    label: 'Home',
+    url: '/',
+  },
+  {
+    label: 'About G3B',
+    url: '/#why',
+    children: [
+      {
+        label: 'Why Choose G3B',
+        url: '/#why',
+        icon: 'fas fa-shield-halved',
+        description: 'Our philosophy, credentials & student-first approach',
+      },
+      {
+        label: 'Our Team',
+        url: '/#team',
+        icon: 'fas fa-user-tie',
+        description: 'Certified career mentors & TESOL master trainers',
+      },
+      {
+        label: 'Our Approach',
+        url: '/#approach',
+        icon: 'fas fa-route',
+        description: 'Discover, Plan, and Progress 3-stage framework',
+      },
+      {
+        label: 'Student Success Stories',
+        url: '/#reviews',
+        icon: 'fas fa-star',
+        description: 'Verified Google reviews & student video journeys',
+      },
+    ],
+  },
+  {
+    label: 'Our Services',
+    url: '/services',
+    children: [
+      {
+        label: 'Career Counselling',
+        url: '/services#career-guidance',
+        icon: 'fas fa-user-graduate',
+        description: 'Informed stream & course selection for high school & grads',
+      },
+      {
+        label: 'Psychometric Assessment',
+        url: '/services#career-guidance',
+        icon: 'fas fa-brain',
+        description: 'Scientific aptitude, personality & interest mapping',
+      },
+      {
+        label: 'Profile Building',
+        url: '/services#test-preparation',
+        icon: 'fas fa-id-card',
+        description: 'Extracurricular profiling, summer roadmap & skills',
+      },
+      {
+        label: 'Study Abroad',
+        url: '/services#university-selection',
+        icon: 'fas fa-globe-americas',
+        description: 'Strategic admissions & dream university shortlisting',
+      },
+      {
+        label: 'Admissions Guidance',
+        url: '/services#visa-documentation',
+        icon: 'fas fa-file-signature',
+        description: 'Statement of Purpose (SOP) & application filings',
+      },
+      {
+        label: 'Scholarship Guidance',
+        url: '/services#scholarships-financial-aid',
+        icon: 'fas fa-hand-holding-dollar',
+        description: 'Merit scholarship matching & education loan support',
+      },
+      {
+        label: 'Visa Guidance',
+        url: '/services#visa-documentation',
+        icon: 'fas fa-passport',
+        description: 'Embassy file verification & realistic mock interviews',
+      },
+      {
+        label: 'Pre-departure Support',
+        url: '/services#pre-departure-travel',
+        icon: 'fas fa-plane-departure',
+        description: 'Accommodation, flights, forex & relocation briefings',
+      },
+      {
+        label: 'View All Services',
+        url: '/services',
+        icon: 'fas fa-arrow-right',
+        description: 'Explore full coaching packages, pricing & FAQs',
+        isHighlight: true,
+      },
+    ],
+  },
+  {
+    label: 'Destinations',
+    url: '/#destinations',
+  },
+  {
+    label: 'Student Resources',
+    url: '/insights',
+    children: [
+      {
+        label: 'Blogs & Articles',
+        url: '/insights',
+        icon: 'fas fa-newspaper',
+        description: 'Expert guides on study visas, post-study work & exams',
+      },
+      {
+        label: 'Career Guidance Resources',
+        url: '/insights/psychometric-assessment-and-career-clarity',
+        icon: 'fas fa-book-open',
+        description: 'In-depth clarity guides for ambitious students & parents',
+      },
+      {
+        label: 'Frequently Asked Questions',
+        url: '/#faqs',
+        icon: 'fas fa-circle-question',
+        description: 'Quick answers about test prep, admissions & fees',
+      },
+    ],
+  },
+  {
+    label: 'Partner With Us',
+    url: '/partner-with-us',
+  },
+  {
+    label: 'Contact',
+    url: '/#contact',
+  },
 ]
 
-/** Sticky site header: dynamic brand, dynamic navigation and accessible modal booking CTA. */
-export default function Header({ settings = {}, navigation = [] }) {
-  const [open, setOpen] = useState(false)
+export default function Header({ settings = {} }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [activeDropdown, setActiveDropdown] = useState(null)
   const location = useLocation()
-  const onHome = location.pathname === '/'
+  const navigate = useNavigate()
+  const navRef = useRef(null)
   const { openModal } = useCounsellingModal()
 
   const brand = settings.brand_name || 'G3B Education'
   const subheading = settings.header_subheading || 'Career Guidance · Study Abroad'
   const ctaLabel = settings.header_cta_label || 'Free Counselling'
   const logoUrl = settings.header_logo_url ? resolveMediaUrl(settings.header_logo_url) : '/logo.png'
+  const onHome = location.pathname === '/'
 
-  const navItems = navigation && navigation.length > 0 ? navigation : DEFAULT_NAV
+  // Close menus on location change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+    setActiveDropdown(null)
+  }, [location.pathname])
 
-  const handleNavClick = (item, e) => {
-    setOpen(false)
-    if (item.url === '#contact' || item.url === '/#contact') {
+  // Close dropdown on click outside or Escape key
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (navRef.current && !navRef.current.contains(event.target)) {
+        setActiveDropdown(null)
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setActiveDropdown(null)
+        setMobileMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
+
+  const handleLinkClick = (url, e) => {
+    setMobileMenuOpen(false)
+    setActiveDropdown(null)
+
+    if (url.startsWith('/#') || url.startsWith('#')) {
+      const hash = url.includes('#') ? url.slice(url.indexOf('#')) : ''
+      const targetId = hash.replace('#', '')
+
       if (onHome) {
-        const contactSection = document.getElementById('contact')
-        if (contactSection) {
-          e.preventDefault()
-          contactSection.scrollIntoView({ behavior: 'smooth' })
+        e.preventDefault()
+        const el = document.getElementById(targetId)
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          window.history.pushState(null, '', `/#${targetId}`)
         }
+      } else {
+        // Navigating from another page to home anchor
+        navigate(`/${hash}`)
       }
     }
   }
 
   const handleCtaClick = (e) => {
     e.preventDefault()
-    setOpen(false)
-    // If the setting is a specific external URL, navigate there; otherwise open the modal dialog
+    setMobileMenuOpen(false)
+    setActiveDropdown(null)
     if (settings.header_cta_url && settings.header_cta_url.startsWith('http')) {
       window.open(settings.header_cta_url, '_blank', 'noopener,noreferrer')
     } else {
@@ -51,16 +215,25 @@ export default function Header({ settings = {}, navigation = [] }) {
     }
   }
 
+  const isItemActive = (item) => {
+    if (item.url === '/' && location.pathname === '/' && !location.hash) return true
+    if (item.url === '/services' && location.pathname === '/services') return true
+    if (item.url === '/insights' && location.pathname.startsWith('/insights')) return true
+    if (item.url === '/partner-with-us' && location.pathname === '/partner-with-us') return true
+    if (item.url.includes('#') && location.hash === item.url.slice(item.url.indexOf('#'))) return true
+    if (item.children) {
+      return item.children.some((child) => isItemActive(child))
+    }
+    return false
+  }
+
   return (
-    <header className="g3b-site-header">
+    <header className="g3b-site-header" ref={navRef}>
       <div className="container g3b-header-inner">
+        {/* Brand Logo and Name */}
         <Link className="g3b-brand" to="/" aria-label={`${brand} home`}>
           {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={brand}
-              className="brand-logo-img"
-            />
+            <img src={logoUrl} alt={brand} className="brand-logo-img" />
           ) : (
             <span className="brand-mark" aria-hidden="true">
               <i className="fas fa-graduation-cap" />
@@ -72,58 +245,156 @@ export default function Header({ settings = {}, navigation = [] }) {
           </span>
         </Link>
 
-        <nav className={`g3b-navigation${open ? ' open' : ''}`} aria-label="Primary navigation">
-          <div className="g3b-menu">
-            {navItems.map((item, idx) => {
-              const isExternal = item.url.startsWith('http')
-              const isInternalRoute = item.url.startsWith('/') && !item.url.startsWith('/#')
+        {/* Desktop & Tablet Navigation */}
+        <nav
+          className={`g3b-navigation${mobileMenuOpen ? ' open' : ''}`}
+          aria-label="Primary site navigation"
+          id="main-navigation"
+        >
+          <ul className="g3b-menu" role="menubar">
+            {NAVIGATION_TREE.map((item, idx) => {
+              const hasChildren = Boolean(item.children && item.children.length > 0)
+              const isOpen = activeDropdown === idx
+              const active = isItemActive(item)
 
-              if (isExternal) {
+              if (!hasChildren) {
+                const isInternal = item.url.startsWith('/') && !item.url.startsWith('/#')
                 return (
-                  <a
-                    key={item.id || idx}
-                    href={item.url}
-                    target={item.openNewTab ? '_blank' : '_self'}
-                    rel={item.openNewTab ? 'noopener noreferrer' : undefined}
-                    className={item.isButton ? 'nav-cta-btn' : ''}
-                    onClick={() => setOpen(false)}
-                  >
-                    {item.label}
-                  </a>
+                  <li key={idx} role="none" className="nav-item">
+                    {isInternal ? (
+                      <Link
+                        to={item.url}
+                        role="menuitem"
+                        className={`nav-link${active ? ' active' : ''}`}
+                        onClick={(e) => handleLinkClick(item.url, e)}
+                      >
+                        {item.label}
+                      </Link>
+                    ) : (
+                      <a
+                        href={item.url}
+                        role="menuitem"
+                        className={`nav-link${active ? ' active' : ''}`}
+                        onClick={(e) => handleLinkClick(item.url, e)}
+                      >
+                        {item.label}
+                      </a>
+                    )}
+                  </li>
                 )
               }
 
-              if (isInternalRoute) {
-                return (
-                  <Link
-                    key={item.id || idx}
-                    to={item.url}
-                    className={item.isButton ? 'nav-cta-btn' : ''}
-                    onClick={() => setOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                )
-              }
-
-              // Anchor links such as /#why or #why
-              const hashOnly = item.url.includes('#') ? item.url.slice(item.url.indexOf('#')) : item.url
-              const targetUrl = onHome ? hashOnly : `/${hashOnly}`
-
+              // Dropdown parent item
+              const isMega = item.children.length > 4
               return (
-                <a
-                  key={item.id || idx}
-                  href={targetUrl}
-                  className={item.isButton ? 'nav-cta-btn' : ''}
-                  onClick={(e) => handleNavClick(item, e)}
+                <li
+                  key={idx}
+                  role="none"
+                  className={`nav-item has-dropdown${isOpen ? ' dropdown-open' : ''}`}
+                  onMouseEnter={() => setActiveDropdown(idx)}
+                  onMouseLeave={() => setActiveDropdown(null)}
                 >
-                  {item.label}
-                </a>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className={`nav-link dropdown-toggle${active ? ' active' : ''}`}
+                    aria-haspopup="true"
+                    aria-expanded={isOpen}
+                    onClick={() => setActiveDropdown(isOpen ? null : idx)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setActiveDropdown(isOpen ? null : idx)
+                      }
+                    }}
+                  >
+                    <span>{item.label}</span>
+                    <i
+                      className="fas fa-chevron-down dropdown-arrow"
+                      style={{
+                        fontSize: '11px',
+                        marginLeft: '5px',
+                        transition: 'transform 0.2s ease',
+                        transform: isOpen ? 'rotate(180deg)' : 'none',
+                      }}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {/* Dropdown Menu Container */}
+                  <div
+                    className={`dropdown-menu ${isMega ? 'mega-menu' : 'standard-dropdown'}`}
+                    role="menu"
+                    aria-label={item.label}
+                    style={{
+                      display: isOpen ? 'block' : 'none',
+                    }}
+                  >
+                    <div className={isMega ? 'mega-menu-grid' : 'dropdown-list'}>
+                      {item.children.map((child, cIdx) => {
+                        const childActive = isItemActive(child)
+                        const isChildInternal = child.url.startsWith('/') && !child.url.startsWith('/#')
+
+                        const content = (
+                          <div className={`dropdown-item-content${child.isHighlight ? ' highlight' : ''}`}>
+                            {child.icon ? (
+                              <div className="dropdown-item-icon">
+                                <i className={child.icon} aria-hidden="true" />
+                              </div>
+                            ) : null}
+                            <div className="dropdown-item-text">
+                              <span className="dropdown-item-title">{child.label}</span>
+                              {child.description ? (
+                                <span className="dropdown-item-desc">{child.description}</span>
+                              ) : null}
+                            </div>
+                          </div>
+                        )
+
+                        return (
+                          <div key={cIdx} role="none" className="dropdown-item-wrapper">
+                            {isChildInternal ? (
+                              <Link
+                                to={child.url}
+                                role="menuitem"
+                                className={`dropdown-link${childActive ? ' active' : ''}`}
+                                onClick={(e) => handleLinkClick(child.url, e)}
+                              >
+                                {content}
+                              </Link>
+                            ) : (
+                              <a
+                                href={child.url}
+                                role="menuitem"
+                                className={`dropdown-link${childActive ? ' active' : ''}`}
+                                onClick={(e) => handleLinkClick(child.url, e)}
+                              >
+                                {content}
+                              </a>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </li>
               )
             })}
+          </ul>
+
+          {/* Mobile Menu In-Drawer CTA */}
+          <div className="mobile-drawer-cta">
+            <button
+              type="button"
+              className="btn btn-primary btn-block"
+              onClick={handleCtaClick}
+            >
+              <i className="fas fa-paper-plane" aria-hidden="true" /> {ctaLabel}
+            </button>
           </div>
         </nav>
 
+        {/* Header Actions: Primary Free Counselling CTA & Mobile Hamburger */}
         <div className="header-actions">
           <button
             type="button"
@@ -131,16 +402,19 @@ export default function Header({ settings = {}, navigation = [] }) {
             onClick={handleCtaClick}
             aria-label="Book Free Counselling Session"
           >
-            <i className="fas fa-paper-plane" aria-hidden="true" /> {ctaLabel}
+            <i className="fas fa-paper-plane" aria-hidden="true" />
+            <span>{ctaLabel}</span>
           </button>
+
           <button
             type="button"
             className="nav-toggle"
-            aria-expanded={open}
-            aria-label={open ? 'Close menu' : 'Open menu'}
-            onClick={() => setOpen((value) => !value)}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="main-navigation"
+            aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            onClick={() => setMobileMenuOpen((v) => !v)}
           >
-            <i className={open ? 'fas fa-xmark' : 'fas fa-bars'} aria-hidden="true" />
+            <i className={mobileMenuOpen ? 'fas fa-xmark' : 'fas fa-bars'} aria-hidden="true" />
           </button>
         </div>
       </div>

@@ -16,6 +16,24 @@ function page(route, name, description, pageType, extra = {}) {
 
 export const builtInPages = [
   page('/insights', 'Study Abroad Insights', insightDescription, 'blog'),
+  page(
+    '/partner-with-us',
+    'Partner With G3B Education',
+    'Join G3B Education in helping students make informed decisions about their academic and international education journeys. Connect with us to explore meaningful collaboration opportunities.',
+    'custom',
+    {
+      structuredData: {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'Partner With G3B Education',
+        description: 'Join G3B Education in helping students make informed decisions about their academic and international education journeys. Connect with us to explore meaningful collaboration opportunities.',
+        publisher: {
+          '@type': 'EducationalOrganization',
+          name: 'G3B Education',
+        },
+      },
+    },
+  ),
   ...insights.map((article) => page(`/insights/${article.slug}`, article.title, article.excerpt, 'article', {
     structuredData: {
       '@context': 'https://schema.org', '@type': 'Article', headline: article.title,

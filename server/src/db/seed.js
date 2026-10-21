@@ -103,7 +103,7 @@ const CONTENT_BLOCKS = [
 
 const STATS = [
   { value: '15,000+', label: 'Students Counselled' },
-  { value: '500+', label: 'Partner Universities' },
+  { value: '15+', label: 'Years Experience' },
   { value: '10+', label: 'Countries' },
   { value: '98%', label: 'Visa Success Rate' },
 ];
@@ -111,27 +111,11 @@ const STATS = [
 const WHY_FEATURES = [
   { icon: 'fas fa-brain', text: 'Psychometric assessment & career guidance' },
   { icon: 'fas fa-user-tie', text: 'Expert advisors with personalized guidance' },
-  { icon: 'fas fa-globe', text: 'Global network of top-tier universities' },
+  { icon: 'fas fa-compass', text: 'Objective university shortlisting & profile alignment' },
   { icon: 'fas fa-passport', text: 'End-to-end support from application to visa' },
 ];
 
-const CERTIFICATIONS = [
-  {
-    alt_text: 'Minal Kulkarni Certification 1',
-    image_url: 'https://images.pexels.com/photos/39296651/pexels-photo-39296651.png?auto=compress&cs=tinysrgb&w=400',
-    full_url: 'https://images.pexels.com/photos/39296651/pexels-photo-39296651.png',
-  },
-  {
-    alt_text: 'Minal Kulkarni Certification 2',
-    image_url: 'https://images.pexels.com/photos/39296579/pexels-photo-39296579.png?auto=compress&cs=tinysrgb&w=400',
-    full_url: 'https://images.pexels.com/photos/39296579/pexels-photo-39296579.png',
-  },
-  {
-    alt_text: 'Minal Kulkarni Certification 3',
-    image_url: 'https://images.pexels.com/photos/39296552/pexels-photo-39296552.jpeg?auto=compress&cs=tinysrgb&w=400',
-    full_url: 'https://images.pexels.com/photos/39296552/pexels-photo-39296552.jpeg',
-  },
-];
+const CERTIFICATIONS = [];
 
 const SERVICES = [
   {
@@ -150,7 +134,7 @@ const SERVICES = [
     title: 'Assistance in University Selection',
     description: 'Help selecting the right university and course based on interests, qualifications & goals.',
     image_url: 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=600&q=80',
-    features: ['500+ Partner Universities', 'Course Matching', 'Budget Planning'],
+    features: ['Strategic University Shortlisting', 'Course Matching', 'Budget Planning'],
   },
   {
     title: 'Application & Visa Documentation',
@@ -329,7 +313,7 @@ const PROCESS_STEPS = [
     step_number: 3,
     title: 'University Shortlisting',
     description: 'Expert selection based on your profile, interests, qualifications & career goals',
-    badge: '500+ Universities',
+    badge: 'Expert Shortlisting',
     icon: 'fas fa-university',
   },
   {

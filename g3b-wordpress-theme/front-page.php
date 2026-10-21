@@ -28,8 +28,8 @@ get_header();
           <span class="stat-label">Students Counselled</span>
         </div>
         <div class="stat-item">
-          <span class="stat-number">500+</span>
-          <span class="stat-label">Partner Universities</span>
+          <span class="stat-number">15+</span>
+          <span class="stat-label">Years Mentoring</span>
         </div>
         <div class="stat-item">
           <span class="stat-number">10+</span>
@@ -194,7 +194,7 @@ get_header();
             <h3>Assistance in University Selection</h3>
             <p>Help selecting the right university and course based on interests, qualifications & goals.</p>
             <ul>
-              <li>500+ Partner Universities</li>
+              <li>Objective University Shortlisting</li>
               <li>Course Matching</li>
               <li>Budget Planning</li>
             </ul>

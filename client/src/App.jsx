@@ -26,9 +26,11 @@ import { resourceConfigs } from './pages/admin/resourceConfigs.js'
 
 import ServicesPage from './pages/ServicesPage.jsx'
 import InsightPage from './pages/InsightPage.jsx'
+import PartnerPage from './pages/PartnerPage.jsx'
 import Unsubscribe from './pages/Unsubscribe.jsx'
 import Subscribers from './pages/admin/Subscribers.jsx'
 import Videos from './pages/admin/Videos.jsx'
+import PartnerEnquiries from './pages/admin/PartnerEnquiries.jsx'
 
 /** Gate the admin area behind an authenticated administrator session. */
 function ProtectedRoute({ children }) {
@@ -65,6 +67,7 @@ export default function App() {
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/insights" element={<InsightPage />} />
         <Route path="/insights/:slug" element={<InsightPage />} />
+        <Route path="/partner-with-us" element={<PartnerPage />} />
         <Route path="/unsubscribe" element={<Unsubscribe />} />
         <Route path="*" element={<NotFound />} />
       </Route>
@@ -83,6 +86,7 @@ export default function App() {
           <Route path="enquiries" element={<Enquiries />} />
           <Route path="enquiries/school" element={<Enquiries segment="school" />} />
           <Route path="enquiries/:id" element={<EnquiryDetail />} />
+          <Route path="partner-enquiries" element={<PartnerEnquiries />} />
           <Route path="subscribers" element={<Subscribers />} />
         </Route>
         <Route element={<RoleGate roles={['admin', 'editor']} />}>

@@ -63,7 +63,7 @@ export const defaultHomeData = {
   ],
   whyFeatures: [
     { id: 1, icon: 'fas fa-check-circle', text: 'Certified career counsellors & psychometric practitioners' },
-    { id: 2, icon: 'fas fa-graduation-cap', text: 'Direct tie-ups with 300+ accredited global universities' },
+    { id: 2, icon: 'fas fa-compass', text: 'Objective university shortlisting & profile alignment' },
     { id: 3, icon: 'fas fa-passport', text: 'End-to-end visa assistance & mock visa interviews' },
     { id: 4, icon: 'fas fa-hand-holding-usd', text: 'Transparent guidance with zero hidden commercial biases' },
   ],

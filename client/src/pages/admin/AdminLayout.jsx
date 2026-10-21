@@ -11,6 +11,7 @@ import { parseApiError } from '../../api/client.js'
 const primaryNav = [
   { to: adminPath(), label: 'Dashboard', icon: 'fas fa-gauge-high', end: true },
   { to: adminPath('enquiries'), label: 'Enquiries (CRM)', icon: 'fas fa-inbox' },
+  { to: adminPath('partner-enquiries'), label: 'Partner Enquiries', icon: 'fas fa-handshake' },
   { to: adminPath('enquiries/school'), label: 'Grade 9+ & Workshops', icon: 'fas fa-school' },
   { to: adminPath('subscribers'), label: 'Newsletter subscribers', icon: 'fas fa-envelope-open-text' },
 ]

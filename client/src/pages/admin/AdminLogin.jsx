@@ -84,8 +84,8 @@ export default function AdminLogin() {
             </div>
             <div className="al-stat-divider" />
             <div className="al-stat">
-              <strong>500+</strong>
-              <span>Universities</span>
+              <strong>10+</strong>
+              <span>Destinations</span>
             </div>
           </div>
         </div>

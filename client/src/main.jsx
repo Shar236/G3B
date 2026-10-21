@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ui/ErrorBoundary.jsx'
 import NotificationCenter from './components/ui/NotificationCenter.jsx'
 import './styles/theme.css'
 import './styles/discovery.css'
+import './styles/navigation.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

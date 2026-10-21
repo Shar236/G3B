@@ -9,6 +9,9 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { subscribe, unsubscribe } from '../controllers/subscriberController.js';
 import { subscribeRules, unsubscribeRules } from '../validators/subscriberValidators.js';
 
+import { createPartnerEnquiry } from '../controllers/partnerController.js';
+import { createPartnerEnquiryRules } from '../validators/partnerValidators.js';
+
 const router = Router();
 
 // Aggregated homepage payload -------------------------------------------------
@@ -39,6 +42,7 @@ router.get('/content-blocks', asyncHandler(content.getContentBlocks));
 // Public enquiry / free counselling submission ---------------------------------
 router.post('/enquiries', enquiryRateLimiter, createEnquiryRules, validate, asyncHandler(createEnquiry));
 router.post('/counselling', enquiryRateLimiter, createEnquiryRules, validate, asyncHandler(createEnquiry));
+router.post('/partner-enquiries', enquiryRateLimiter, createPartnerEnquiryRules, validate, asyncHandler(createPartnerEnquiry));
 router.post('/subscribers', enquiryRateLimiter, subscribeRules, validate, asyncHandler(subscribe));
 router.post('/subscribers/unsubscribe', enquiryRateLimiter, unsubscribeRules, validate, asyncHandler(unsubscribe));
 
