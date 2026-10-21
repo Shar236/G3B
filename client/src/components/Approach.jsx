@@ -2,8 +2,8 @@ import { useCounsellingModal } from '../context/CounsellingContext.jsx'
 
 /**
  * Section C: Our Approach
- * A three-stage framework (Discover, Plan, Progress) inspired by KNG Lifegyaan,
- * tailored authentically to G3B Education's verified services.
+ * A three-stage framework (Discover, Plan, Progress) with concise, keyword-focused
+ * deliverables and crisp summaries.
  */
 export default function Approach() {
   const { openModal } = useCounsellingModal()
@@ -12,51 +12,51 @@ export default function Approach() {
     {
       number: '01',
       title: 'Discover',
-      tagline: 'Understand Self, Aptitude & Aspirations',
+      tagline: 'Aptitude & Career Profiling',
       icon: 'fas fa-compass',
       color: '#0B2C5F',
       accent: '#2563eb',
       description:
-        'Every successful educational path starts with clarity. Through scientific psychometric mapping and personalized 1-on-1 discovery sessions, we identify your genuine strengths, cognitive inclinations, and long-term ambitions.',
+        'Identify genuine strengths, career inclinations, and academic potential through scientific evaluation.',
       highlights: [
-        'Scientific psychometric aptitude & personality assessment',
-        'Academic profile & extracurricular audit',
-        'In-depth student & parent debriefing consultation',
-        'Early stream & subject selection for Grades 9–12',
+        'Psychometric Assessment',
+        'Strengths & Aptitude Mapping',
+        'Grade 9–12 Stream Selection',
+        '1-on-1 Profile Evaluation',
       ],
       badge: 'Step 1: Self-Awareness',
     },
     {
       number: '02',
       title: 'Plan',
-      tagline: 'Strategic Course, Country & Budget Mapping',
+      tagline: 'Course, Country & Budget',
       icon: 'fas fa-map-location-dot',
       color: '#0f172a',
       accent: '#e64e15',
       description:
-        'With your strengths defined, we map global options without bias. We evaluate course curriculums, living costs, post-study work rights, and realistic admission benchmarks to craft your custom roadmap.',
+        'Targeted shortlisting of global universities, test timelines, and scholarship budgets.',
       highlights: [
-        'Balanced university shortlisting (Dream, Target & Safe)',
-        'Tuition budget, return on investment & living expense planning',
-        'Standardized test roadmap (IELTS / TOEFL / PTE / GRE)',
-        'Institutional grant & merit scholarship advisory',
+        'University Shortlisting (Dream / Target / Safe)',
+        'Tuition & Living Expense Planning',
+        'IELTS / TOEFL / GRE Test Plan',
+        'Scholarships & Financial Aid',
       ],
       badge: 'Step 2: Strategic Roadmap',
     },
     {
       number: '03',
       title: 'Progress',
-      tagline: 'Application Mastery, Visa Filing & Pre-Departure',
+      tagline: 'Applications & Visa Success',
       icon: 'fas fa-paper-plane',
       color: '#0B2C5F',
       accent: '#059669',
       description:
-        'Execution matters. We mentor every draft of your Statement of Purpose (SOP), coordinate official submissions, conduct realistic embassy mock interviews, and organize comprehensive pre-departure briefings.',
+        'Flawless execution from SOP and document audits to mock visa interviews and pre-departure.',
       highlights: [
-        'High-impact SOP, essay & academic resume mentoring',
-        'Complete university application filing & document audits',
-        'Realistic Embassy mock interviews & visa file preparation',
-        'Accommodation, foreign exchange & pre-departure orientations',
+        'SOP, Essays & Resume Mentoring',
+        'Application Filing & Document Review',
+        'Embassy Visa Mock Interviews',
+        'Pre-Departure & Forex Support',
       ],
       badge: 'Step 3: Flawless Execution',
     },
@@ -91,7 +91,7 @@ export default function Approach() {
           </h2>
 
           <p style={{ fontSize: '1.05rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
-            Inspired by proven educational frameworks, G3B Education guides students through a structured three-step journey — from discovering innate strengths to landing on your dream international campus.
+            A structured three-step journey from discovering innate strengths to landing on your dream international campus.
           </p>
         </div>
 
@@ -110,7 +110,7 @@ export default function Approach() {
                 background: '#ffffff',
                 borderRadius: '16px',
                 border: '1px solid #e2e8f0',
-                padding: '36px 28px',
+                padding: '32px 26px',
                 display: 'flex',
                 flexDirection: 'column',
                 position: 'relative',
@@ -118,25 +118,25 @@ export default function Approach() {
                 transition: 'transform 0.25s ease, box-shadow 0.25s ease',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
                 <div
                   style={{
-                    width: '54px',
-                    height: '54px',
+                    width: '50px',
+                    height: '50px',
                     borderRadius: '14px',
                     background: `${stage.accent}15`,
                     color: stage.accent,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1.4rem',
+                    fontSize: '1.35rem',
                   }}
                 >
                   <i className={stage.icon} aria-hidden="true" />
                 </div>
                 <span
                   style={{
-                    fontSize: '2rem',
+                    fontSize: '1.9rem',
                     fontWeight: 900,
                     color: '#e2e8f0',
                     fontFamily: "'Poppins', sans-serif",
@@ -149,7 +149,7 @@ export default function Approach() {
 
               <div
                 style={{
-                  fontSize: '0.75rem',
+                  fontSize: '0.74rem',
                   fontWeight: 700,
                   textTransform: 'uppercase',
                   letterSpacing: '0.06em',
@@ -165,7 +165,7 @@ export default function Approach() {
                   fontSize: '1.45rem',
                   fontWeight: 800,
                   color: '#0B2C5F',
-                  margin: '0 0 6px 0',
+                  margin: '0 0 4px 0',
                 }}
               >
                 {stage.title}
@@ -173,10 +173,10 @@ export default function Approach() {
 
               <div
                 style={{
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  color: '#475569',
-                  marginBottom: '16px',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  color: '#1e293b',
+                  marginBottom: '12px',
                 }}
               >
                 {stage.tagline}
@@ -184,18 +184,18 @@ export default function Approach() {
 
               <p
                 style={{
-                  fontSize: '0.94rem',
+                  fontSize: '0.92rem',
                   color: '#64748b',
-                  lineHeight: 1.6,
+                  lineHeight: 1.55,
                   marginBottom: '20px',
                 }}
               >
                 {stage.description}
               </p>
 
-              <div style={{ marginTop: 'auto', borderTop: '1px solid #f1f5f9', paddingTop: '18px' }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0B2C5F', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
-                  Key Deliverables:
+              <div style={{ marginTop: 'auto', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0B2C5F', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+                  Core Focus & Deliverables:
                 </div>
                 <ul style={{ margin: 0, paddingLeft: 0, listStyle: 'none' }}>
                   {stage.highlights.map((h, idx) => (
@@ -205,10 +205,11 @@ export default function Approach() {
                         display: 'flex',
                         alignItems: 'flex-start',
                         gap: '8px',
-                        fontSize: '0.86rem',
-                        color: '#334155',
+                        fontSize: '0.88rem',
+                        color: '#1e293b',
+                        fontWeight: 500,
                         marginBottom: '8px',
-                        lineHeight: 1.45,
+                        lineHeight: 1.4,
                       }}
                     >
                       <i className="fas fa-check" style={{ color: stage.accent, fontSize: '11px', marginTop: '3px', flexShrink: 0 }} aria-hidden="true" />
@@ -225,7 +226,7 @@ export default function Approach() {
           style={{
             background: 'linear-gradient(135deg, #0B2C5F 0%, #1e3a8a 100%)',
             borderRadius: '16px',
-            padding: '32px 36px',
+            padding: '30px 36px',
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
