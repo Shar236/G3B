@@ -62,12 +62,31 @@ export const defaultHomeData = {
     { value: '98%', label: 'Visa Success Rate' },
   ],
   whyFeatures: [
-    { id: 1, icon: 'fas fa-check-circle', text: 'Certified career counsellors & psychometric practitioners' },
-    { id: 2, icon: 'fas fa-compass', text: 'Objective university shortlisting & profile alignment' },
-    { id: 3, icon: 'fas fa-passport', text: 'End-to-end visa assistance & mock visa interviews' },
-    { id: 4, icon: 'fas fa-hand-holding-usd', text: 'Transparent guidance with zero hidden commercial biases' },
+    { id: 1, icon: 'fas fa-brain', text: 'Psychometric assessment & career guidance' },
+    { id: 2, icon: 'fas fa-user-tie', text: 'Expert advisors with personalized guidance' },
+    { id: 3, icon: 'fas fa-globe', text: 'Global network of top-tier universities' },
+    { id: 4, icon: 'fas fa-passport', text: 'End-to-end support from application to visa' },
   ],
-  certifications: [],
+  certifications: [
+    {
+      id: 1,
+      altText: 'UCLA Extension Global Career Counselling Certification',
+      imageUrl: 'https://images.pexels.com/photos/39296651/pexels-photo-39296651.png?auto=compress&cs=tinysrgb&w=400',
+      fullUrl: 'https://images.pexels.com/photos/39296651/pexels-photo-39296651.png',
+    },
+    {
+      id: 2,
+      altText: 'Certified Career Counselling Professional',
+      imageUrl: 'https://images.pexels.com/photos/39296579/pexels-photo-39296579.png?auto=compress&cs=tinysrgb&w=400',
+      fullUrl: 'https://images.pexels.com/photos/39296579/pexels-photo-39296579.png',
+    },
+    {
+      id: 3,
+      altText: 'Professional Education Guidance Certification',
+      imageUrl: 'https://images.pexels.com/photos/39296552/pexels-photo-39296552.jpeg?auto=compress&cs=tinysrgb&w=400',
+      fullUrl: 'https://images.pexels.com/photos/39296552/pexels-photo-39296552.jpeg',
+    },
+  ],
   services: [
     { id: 1, title: 'Grade 9+ & High School Roadmap', description: 'Early subject selection, profile building, and extracurricular guidance for ambitious high school students.', features: ['Subject stream selection', 'Summer programme planning', 'Extracurricular profiling'] },
     { id: 2, title: 'University Shortlisting & Strategy', description: 'Data-driven selection of reach, match, and safety universities aligned with your career goals and budget.', features: ['Course & college matching', 'Budget & ROI calculation', 'Application strategy'] },

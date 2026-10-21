@@ -41,7 +41,7 @@ export default function Home() {
   const settings = activeData.settings || defaultHomeData.settings
   const stats = (activeData.stats && activeData.stats.length > 0) ? activeData.stats : defaultHomeData.stats
   const whyFeatures = (activeData.whyFeatures && activeData.whyFeatures.length > 0) ? activeData.whyFeatures : defaultHomeData.whyFeatures
-  const certifications = activeData.certifications || defaultHomeData.certifications
+  const certifications = (activeData.certifications && activeData.certifications.length > 0) ? activeData.certifications : defaultHomeData.certifications
   const services = (activeData.services && activeData.services.length > 0) ? activeData.services : defaultHomeData.services
   const destinations = (activeData.destinations && activeData.destinations.length > 0) ? activeData.destinations : defaultHomeData.destinations
   const gallery = activeData.gallery || defaultHomeData.gallery

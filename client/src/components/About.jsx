@@ -1,32 +1,48 @@
 import { resolveMediaUrl } from '../api/client.js'
 
+const DEFAULT_CERTIFICATIONS = [
+  {
+    id: 1,
+    altText: 'UCLA Extension Global Career Counselling Certification',
+    imageUrl: 'https://images.pexels.com/photos/39296651/pexels-photo-39296651.png?auto=compress&cs=tinysrgb&w=400',
+    fullUrl: 'https://images.pexels.com/photos/39296651/pexels-photo-39296651.png',
+  },
+  {
+    id: 2,
+    altText: 'Certified Career Counselling Professional',
+    imageUrl: 'https://images.pexels.com/photos/39296579/pexels-photo-39296579.png?auto=compress&cs=tinysrgb&w=400',
+    fullUrl: 'https://images.pexels.com/photos/39296579/pexels-photo-39296579.png',
+  },
+  {
+    id: 3,
+    altText: 'Professional Education Guidance Certification',
+    imageUrl: 'https://images.pexels.com/photos/39296552/pexels-photo-39296552.jpeg?auto=compress&cs=tinysrgb&w=400',
+    fullUrl: 'https://images.pexels.com/photos/39296552/pexels-photo-39296552.jpeg',
+  },
+]
+
 /**
  * Section B: "Why Choose G3B Education" & Team/Founder Profile
- * Features authentic credentials (15+ years guiding students, lead consultant),
- * improved responsive image handling, clear value proposition, and no unapproved claims.
+ * Features authentic credentials and certifications, clean founder profile without unapproved claims.
  */
-export default function About({ content = {}, settings = {}, features = [] }) {
+export default function About({ content = {}, settings = {}, features = [], certifications = [] }) {
   const founderName = settings.founder_name || 'Minal Kulkarni'
-  const founderRole = settings.founder_role || 'Founder & Chief Career Mentor'
+  const founderRole = settings.founder_role || 'Founder, G3B Education'
   const paragraphs = (content.why?.body || '').split('\n').filter((line) => line.trim().length > 0)
 
   const defaultParagraphs = [
-    'At G3B Education, we empower students to unlock their authentic potential through personalized career guidance, scientific psychometric assessment, and structured overseas education roadmaps.',
-    'With more than 15 years of mentoring experience, we believe every student deserves honest, transparent, and student-first advice. Whether choosing subjects in high school or applying for competitive Master’s degrees abroad, our certified counsellors guide you with complete clarity.',
+    'At G3B Education, we empower students to unlock their full potential through transformative international education experiences. Our core strength is career guidance backed by scientific psychometric assessment, combined with expert advisors, personalized counselling, and a global network of top-tier universities — so you choose the right course and country with clarity.',
+    'Our student-centric approach, unparalleled support services, and proven track record of success set us apart. By choosing G3B Education, you’ll gain access to a world of academic and professional opportunities, and join a community of like-minded individuals who share your passion for global learning and growth.',
   ]
 
   const displayParagraphs = paragraphs.length > 0 ? paragraphs : defaultParagraphs
+  const certsToDisplay = certifications && certifications.length > 0 ? certifications : DEFAULT_CERTIFICATIONS
 
   return (
     <section className="section" id="why">
       <div className="container">
         <div className="why-choose" id="team">
           <div className="why-content">
-            <div className="section-eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--color-accent, #e64e15)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>
-              <i className="fas fa-shield-halved" aria-hidden="true" />
-              <span>Authentic & Transparent Guidance</span>
-            </div>
-
             <h2 className="section-title" style={{ textAlign: 'left', marginBottom: '16px' }}>
               {content.why?.heading || 'Why Choose G3B Education?'}
             </h2>
@@ -38,73 +54,64 @@ export default function About({ content = {}, settings = {}, features = [] }) {
             ))}
 
             {features.length > 0 ? (
-              <div className="why-features" style={{ marginTop: '24px' }}>
+              <div className="why-features">
                 {features.map((feature) => (
-                  <div className="feature-item" key={feature.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(230, 78, 21, 0.1)', color: '#e64e15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-                      <i className={feature.icon || 'fas fa-check'} style={{ fontSize: '13px' }} aria-hidden="true" />
-                    </div>
-                    <span style={{ fontWeight: 600, color: 'var(--color-primary-dark, #0B2C5F)', fontSize: '0.96rem' }}>{feature.text}</span>
+                  <div className="feature-item" key={feature.id}>
+                    <i className={feature.icon || 'fas fa-check'} aria-hidden="true" />
+                    <span>{feature.text}</span>
                   </div>
                 ))}
               </div>
             ) : null}
-
-            <div className="why-credentials-strip" style={{ marginTop: '28px', padding: '16px 20px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <i className="fas fa-award" style={{ color: '#0B2C5F', fontSize: '1.2rem' }} aria-hidden="true" />
-                <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0B2C5F' }}>15+ Years Mentoring</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Guiding Global Aspirants</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <i className="fas fa-brain" style={{ color: '#e64e15', fontSize: '1.2rem' }} aria-hidden="true" />
-                <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0B2C5F' }}>Psychometric Profiling</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Certified Practitioners</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <i className="fas fa-hand-holding-heart" style={{ color: '#059669', fontSize: '1.2rem' }} aria-hidden="true" />
-                <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0B2C5F' }}>Zero Commercial Bias</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>100% Student-First Advice</div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="why-image-wrap">
-            <div className="why-image" style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 20px 40px -15px rgba(11,44,95,0.2)' }}>
+            <div className="why-image">
               <img
-                src={settings.founder_image_url ? resolveMediaUrl(settings.founder_image_url) : 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=800'}
+                src={settings.founder_image_url ? resolveMediaUrl(settings.founder_image_url) : 'https://images.pexels.com/photos/39014435/pexels-photo-39014435.jpeg?auto=compress&cs=tinysrgb&w=900'}
                 alt={settings.founder_image_alt || founderName}
                 loading="lazy"
                 decoding="async"
                 width="400"
-                height="480"
-                style={{ width: '100%', height: '440px', objectFit: 'cover', display: 'block' }}
+                height="450"
+                style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
               />
-              <div
-                className="why-image-badge"
-                style={{
-                  position: 'absolute',
-                  bottom: '16px',
-                  left: '16px',
-                  right: '16px',
-                  background: 'rgba(11, 44, 95, 0.94)',
-                  backdropFilter: 'blur(8px)',
-                  padding: '16px 20px',
-                  borderRadius: '12px',
-                  color: '#ffffff',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-                }}
-              >
-                <div style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em' }}>{founderName}</div>
-                <div style={{ fontSize: '0.85rem', color: '#93c5fd', fontWeight: 600, marginTop: '2px' }}>{founderRole}</div>
+              <div className="why-image-badge">
+                <strong>{founderName}</strong>
+                <span>{founderRole}</span>
               </div>
             </div>
+
+            {certsToDisplay && certsToDisplay.length > 0 ? (
+              <div className="certs-block">
+                <h4>
+                  <i className="fas fa-certificate" aria-hidden="true" />
+                  {settings.certifications_heading || 'Certifications & Credentials'}
+                </h4>
+                <div className="certs-grid">
+                  {certsToDisplay.map((certification) => (
+                    <a
+                      key={certification.id}
+                      className="cert-item"
+                      href={resolveMediaUrl(certification.fullUrl || certification.imageUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={certification.altText}
+                    >
+                      <img
+                        src={resolveMediaUrl(certification.imageUrl)}
+                        alt={certification.altText}
+                        loading="lazy"
+                        decoding="async"
+                        width="120"
+                        height="80"
+                        style={{ objectFit: 'contain' }}
+                      />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

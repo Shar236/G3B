@@ -147,6 +147,8 @@ export default function Header({ settings = {} }) {
   const location = useLocation()
   const navigate = useNavigate()
   const navRef = useRef(null)
+  const mobileToggleRef = useRef(null)
+  const dropdownTriggerRefs = useRef({})
   const { openModal } = useCounsellingModal()
 
   const brand = settings.brand_name || 'G3B Education'
@@ -159,28 +161,33 @@ export default function Header({ settings = {} }) {
   useEffect(() => {
     setMobileMenuOpen(false)
     setActiveDropdown(null)
-  }, [location.pathname])
+  }, [location.pathname, location.search, location.hash])
 
   // Close dropdown on click outside or Escape key
   useEffect(() => {
-    function handleClickOutside(event) {
+    function handlePointerDown(event) {
       if (navRef.current && !navRef.current.contains(event.target)) {
-        setActiveDropdown(null)
-      }
-    }
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') {
         setActiveDropdown(null)
         setMobileMenuOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        const trigger = activeDropdown !== null
+          ? dropdownTriggerRefs.current[activeDropdown]
+          : mobileToggleRef.current
+        setActiveDropdown(null)
+        setMobileMenuOpen(false)
+        trigger?.focus()
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
     document.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('pointerdown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [])
+  }, [activeDropdown])
 
   const handleLinkClick = (url, e) => {
     setMobileMenuOpen(false)
@@ -251,7 +258,7 @@ export default function Header({ settings = {} }) {
           aria-label="Primary site navigation"
           id="main-navigation"
         >
-          <ul className="g3b-menu" role="menubar">
+          <ul className="g3b-menu">
             {NAVIGATION_TREE.map((item, idx) => {
               const hasChildren = Boolean(item.children && item.children.length > 0)
               const isOpen = activeDropdown === idx
@@ -260,11 +267,10 @@ export default function Header({ settings = {} }) {
               if (!hasChildren) {
                 const isInternal = item.url.startsWith('/') && !item.url.startsWith('/#')
                 return (
-                  <li key={idx} role="none" className="nav-item">
+                  <li key={idx} className="nav-item">
                     {isInternal ? (
                       <Link
                         to={item.url}
-                        role="menuitem"
                         className={`nav-link${active ? ' active' : ''}`}
                         onClick={(e) => handleLinkClick(item.url, e)}
                       >
@@ -273,7 +279,6 @@ export default function Header({ settings = {} }) {
                     ) : (
                       <a
                         href={item.url}
-                        role="menuitem"
                         className={`nav-link${active ? ' active' : ''}`}
                         onClick={(e) => handleLinkClick(item.url, e)}
                       >
@@ -289,22 +294,32 @@ export default function Header({ settings = {} }) {
               return (
                 <li
                   key={idx}
-                  role="none"
                   className={`nav-item has-dropdown${isOpen ? ' dropdown-open' : ''}`}
-                  onMouseEnter={() => setActiveDropdown(idx)}
-                  onMouseLeave={() => setActiveDropdown(null)}
+                  onPointerEnter={(event) => {
+                    if (event.pointerType !== 'touch' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                      setActiveDropdown(idx)
+                    }
+                  }}
+                  onPointerLeave={(event) => {
+                    if (event.pointerType !== 'touch' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                      setActiveDropdown(null)
+                    }
+                  }}
                 >
                   <button
                     type="button"
-                    role="menuitem"
                     className={`nav-link dropdown-toggle${active ? ' active' : ''}`}
-                    aria-haspopup="true"
+                    ref={(element) => { dropdownTriggerRefs.current[idx] = element }}
+                    aria-controls={`navigation-dropdown-${idx}`}
                     aria-expanded={isOpen}
                     onClick={() => setActiveDropdown(isOpen ? null : idx)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
+                      if (e.key === 'ArrowDown') {
                         e.preventDefault()
-                        setActiveDropdown(isOpen ? null : idx)
+                        setActiveDropdown(idx)
+                        requestAnimationFrame(() => {
+                          document.getElementById(`navigation-dropdown-${idx}`)?.querySelector('a')?.focus()
+                        })
                       }
                     }}
                   >
@@ -323,12 +338,10 @@ export default function Header({ settings = {} }) {
 
                   {/* Dropdown Menu Container */}
                   <div
+                    id={`navigation-dropdown-${idx}`}
                     className={`dropdown-menu ${isMega ? 'mega-menu' : 'standard-dropdown'}`}
-                    role="menu"
                     aria-label={item.label}
-                    style={{
-                      display: isOpen ? 'block' : 'none',
-                    }}
+                    hidden={!isOpen}
                   >
                     <div className={isMega ? 'mega-menu-grid' : 'dropdown-list'}>
                       {item.children.map((child, cIdx) => {
@@ -352,11 +365,10 @@ export default function Header({ settings = {} }) {
                         )
 
                         return (
-                          <div key={cIdx} role="none" className="dropdown-item-wrapper">
+                          <div key={cIdx} className="dropdown-item-wrapper">
                             {isChildInternal ? (
                               <Link
                                 to={child.url}
-                                role="menuitem"
                                 className={`dropdown-link${childActive ? ' active' : ''}`}
                                 onClick={(e) => handleLinkClick(child.url, e)}
                               >
@@ -365,7 +377,6 @@ export default function Header({ settings = {} }) {
                             ) : (
                               <a
                                 href={child.url}
-                                role="menuitem"
                                 className={`dropdown-link${childActive ? ' active' : ''}`}
                                 onClick={(e) => handleLinkClick(child.url, e)}
                               >
@@ -409,6 +420,7 @@ export default function Header({ settings = {} }) {
           <button
             type="button"
             className="nav-toggle"
+            ref={mobileToggleRef}
             aria-expanded={mobileMenuOpen}
             aria-controls="main-navigation"
             aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}

@@ -115,7 +115,23 @@ const WHY_FEATURES = [
   { icon: 'fas fa-passport', text: 'End-to-end support from application to visa' },
 ];
 
-const CERTIFICATIONS = [];
+const CERTIFICATIONS = [
+  {
+    alt_text: 'UCLA Extension Global Career Counselling Certification',
+    image_url: 'https://images.pexels.com/photos/39296651/pexels-photo-39296651.png?auto=compress&cs=tinysrgb&w=400',
+    full_url: 'https://images.pexels.com/photos/39296651/pexels-photo-39296651.png',
+  },
+  {
+    alt_text: 'Certified Career Counselling Professional',
+    image_url: 'https://images.pexels.com/photos/39296579/pexels-photo-39296579.png?auto=compress&cs=tinysrgb&w=400',
+    full_url: 'https://images.pexels.com/photos/39296579/pexels-photo-39296579.png',
+  },
+  {
+    alt_text: 'Professional Education Guidance Certification',
+    image_url: 'https://images.pexels.com/photos/39296552/pexels-photo-39296552.jpeg?auto=compress&cs=tinysrgb&w=400',
+    full_url: 'https://images.pexels.com/photos/39296552/pexels-photo-39296552.jpeg',
+  },
+];
 
 const SERVICES = [
   {
