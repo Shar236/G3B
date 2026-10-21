@@ -65,6 +65,31 @@ async function renderPublic(...components) {
   return userEvent.setup()
 }
 
+test('shared navigation expands Services, supports ArrowDown, and restores focus on Escape', async () => {
+  const user = await renderPublic()
+  const menuToggle = screen.getByRole('button', { name: 'Open navigation menu' })
+  await user.click(menuToggle)
+  assert.equal(menuToggle.getAttribute('aria-expanded'), 'true')
+
+  const servicesToggle = screen.getByRole('button', { name: 'Our Services' })
+  await user.click(servicesToggle)
+  const servicesPanel = document.getElementById('navigation-dropdown-2')
+  assert.equal(servicesToggle.getAttribute('aria-expanded'), 'true')
+  assert.equal(servicesPanel.hidden, false)
+  assert.equal(servicesPanel.querySelectorAll('.dropdown-item-wrapper').length, 9)
+  assert.ok(within(servicesPanel).getByRole('link', { name: /View All Services/ }))
+
+  await user.click(servicesToggle)
+  assert.equal(servicesPanel.hidden, true)
+  await user.click(servicesToggle)
+  await user.keyboard('{ArrowDown}')
+  await waitFor(() => assert.equal(document.activeElement, within(servicesPanel).getByRole('link', { name: /Career Counselling/ })))
+  await user.keyboard('{Escape}')
+  assert.equal(menuToggle.getAttribute('aria-expanded'), 'false')
+  assert.equal(servicesToggle.getAttribute('aria-expanded'), 'false')
+  assert.equal(document.activeElement, menuToggle)
+})
+
 test('pathway tabs support Arrow/Home/End keyboard navigation, linked panels, and workshop booking', async () => {
   const user = await renderPublic(Pathways)
   const school = await screen.findByRole('tab', { name: /Grade 9/ })

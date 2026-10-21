@@ -144,6 +144,7 @@ export const NAVIGATION_TREE = [
 export default function Header({ settings = {} }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
+  const [pinnedDropdown, setPinnedDropdown] = useState(null)
   const location = useLocation()
   const navigate = useNavigate()
   const navRef = useRef(null)
@@ -161,6 +162,7 @@ export default function Header({ settings = {} }) {
   useEffect(() => {
     setMobileMenuOpen(false)
     setActiveDropdown(null)
+    setPinnedDropdown(null)
   }, [location.pathname, location.search, location.hash])
 
   // Close dropdown on click outside or Escape key
@@ -168,15 +170,17 @@ export default function Header({ settings = {} }) {
     function handlePointerDown(event) {
       if (navRef.current && !navRef.current.contains(event.target)) {
         setActiveDropdown(null)
+        setPinnedDropdown(null)
         setMobileMenuOpen(false)
       }
     }
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
-        const trigger = activeDropdown !== null
-          ? dropdownTriggerRefs.current[activeDropdown]
-          : mobileToggleRef.current
+        const trigger = mobileMenuOpen
+          ? mobileToggleRef.current
+          : dropdownTriggerRefs.current[activeDropdown]
         setActiveDropdown(null)
+        setPinnedDropdown(null)
         setMobileMenuOpen(false)
         trigger?.focus()
       }
@@ -187,11 +191,12 @@ export default function Header({ settings = {} }) {
       document.removeEventListener('pointerdown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [activeDropdown])
+  }, [activeDropdown, mobileMenuOpen])
 
   const handleLinkClick = (url, e) => {
     setMobileMenuOpen(false)
     setActiveDropdown(null)
+    setPinnedDropdown(null)
 
     if (url.startsWith('/#') || url.startsWith('#')) {
       const hash = url.includes('#') ? url.slice(url.indexOf('#')) : ''
@@ -215,6 +220,7 @@ export default function Header({ settings = {} }) {
     e.preventDefault()
     setMobileMenuOpen(false)
     setActiveDropdown(null)
+    setPinnedDropdown(null)
     if (settings.header_cta_url && settings.header_cta_url.startsWith('http')) {
       window.open(settings.header_cta_url, '_blank', 'noopener,noreferrer')
     } else {
@@ -296,13 +302,19 @@ export default function Header({ settings = {} }) {
                   key={idx}
                   className={`nav-item has-dropdown${isOpen ? ' dropdown-open' : ''}`}
                   onPointerEnter={(event) => {
-                    if (event.pointerType !== 'touch' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                    const canHover = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+                      ? window.matchMedia('(hover: hover) and (pointer: fine)').matches
+                      : true
+                    if (event.pointerType !== 'touch' && canHover) {
                       setActiveDropdown(idx)
                     }
                   }}
                   onPointerLeave={(event) => {
-                    if (event.pointerType !== 'touch' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-                      setActiveDropdown(null)
+                    const canHover = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+                      ? window.matchMedia('(hover: hover) and (pointer: fine)').matches
+                      : true
+                    if (event.pointerType !== 'touch' && canHover) {
+                      if (pinnedDropdown !== idx) setActiveDropdown(null)
                     }
                   }}
                 >
@@ -312,7 +324,15 @@ export default function Header({ settings = {} }) {
                     ref={(element) => { dropdownTriggerRefs.current[idx] = element }}
                     aria-controls={`navigation-dropdown-${idx}`}
                     aria-expanded={isOpen}
-                    onClick={() => setActiveDropdown(isOpen ? null : idx)}
+                    onClick={() => {
+                      if (isOpen && pinnedDropdown === idx) {
+                        setActiveDropdown(null)
+                        setPinnedDropdown(null)
+                      } else {
+                        setActiveDropdown(idx)
+                        setPinnedDropdown(idx)
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'ArrowDown') {
                         e.preventDefault()
@@ -365,7 +385,7 @@ export default function Header({ settings = {} }) {
                         )
 
                         return (
-                          <div key={cIdx} className="dropdown-item-wrapper">
+                          <div key={cIdx} className={`dropdown-item-wrapper${child.isHighlight ? ' is-highlight' : ''}`}>
                             {isChildInternal ? (
                               <Link
                                 to={child.url}
@@ -424,7 +444,11 @@ export default function Header({ settings = {} }) {
             aria-expanded={mobileMenuOpen}
             aria-controls="main-navigation"
             aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            onClick={() => setMobileMenuOpen((v) => !v)}
+            onClick={() => {
+              setMobileMenuOpen((v) => !v)
+              setActiveDropdown(null)
+              setPinnedDropdown(null)
+            }}
           >
             <i className={mobileMenuOpen ? 'fas fa-xmark' : 'fas fa-bars'} aria-hidden="true" />
           </button>
