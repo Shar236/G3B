@@ -54,7 +54,7 @@ export async function enrichData() {
         { tier: '1-on-1 Private Mentoring', highlight: false, description: 'Dedicated personal tutor tailored exclusively to your weak sections and pace' }
       ],
       trainers: [
-        { name: 'Minal Kulkarni', title: 'Lead Career Consultant & Founder', credentials: '15+ Years Guiding Global Aspirants' },
+        { name: 'Minal Kulkarni', title: 'Lead Career Consultant & Founder', credentials: 'Founder, G3B Education' },
         { name: 'Senior Language Specialist', title: 'IELTS / PTE Master Evaluator', credentials: '10+ Years Test Prep Mentorship' }
       ],
       faqs: [

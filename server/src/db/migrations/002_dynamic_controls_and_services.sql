@@ -84,6 +84,6 @@ INSERT IGNORE INTO site_settings (setting_key, setting_value, setting_group) VAL
   ('tracking_code_head', '', 'seo'),
   ('tracking_code_body', '', 'seo'),
   ('hero_bg_image_url', '', 'homepage'),
-  ('founder_credentials_text', 'Lead Career Consultant & Founder · 15+ Years Guiding Global Aspirants', 'homepage'),
+  ('founder_credentials_text', '', 'homepage'),
   ('services_hero_heading', 'Empowering Your Global Journey from Dream to Departure', 'homepage'),
   ('services_hero_subheading', 'Explore our 6-pillar end-to-end support model designed to guide you through career discovery, exam preparation, university admissions, and overseas relocation.', 'homepage');

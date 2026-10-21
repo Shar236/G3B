@@ -8,7 +8,6 @@ import { resolveMediaUrl } from '../api/client.js'
 export default function About({ content = {}, settings = {}, features = [] }) {
   const founderName = settings.founder_name || 'Minal Kulkarni'
   const founderRole = settings.founder_role || 'Founder & Chief Career Mentor'
-  const credentialsText = settings.founder_credentials_text || 'Lead Career Consultant & Founder · 15+ Years Guiding Global Aspirants'
   const paragraphs = (content.why?.body || '').split('\n').filter((line) => line.trim().length > 0)
 
   const defaultParagraphs = [
@@ -104,10 +103,6 @@ export default function About({ content = {}, settings = {}, features = [] }) {
               >
                 <div style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.01em' }}>{founderName}</div>
                 <div style={{ fontSize: '0.85rem', color: '#93c5fd', fontWeight: 600, marginTop: '2px' }}>{founderRole}</div>
-                <div style={{ fontSize: '0.78rem', color: '#fbbf24', marginTop: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <i className="fas fa-award" aria-hidden="true" />
-                  <span>{credentialsText}</span>
-                </div>
               </div>
             </div>
           </div>
