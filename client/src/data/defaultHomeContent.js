@@ -56,10 +56,10 @@ export const defaultHomeData = {
     seo_description: 'Career guidance, psychometric assessment, test preparation and end-to-end study abroad support from Nerul, Navi Mumbai.',
   },
   stats: [
-    { value: '12+', label: 'Years Experience' },
-    { value: '500+', label: 'Students Placed' },
+    { value: '15,000+', label: 'Students Counselled' },
+    { value: '500+', label: 'Universities Students Sent To' },
+    { value: '10+', label: 'Countries' },
     { value: '98%', label: 'Visa Success Rate' },
-    { value: '100%', label: 'Transparent Guidance' },
   ],
   whyFeatures: [
     { id: 1, icon: 'fas fa-check-circle', text: 'Certified career counsellors & psychometric practitioners' },

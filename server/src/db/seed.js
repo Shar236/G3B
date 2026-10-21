@@ -103,7 +103,7 @@ const CONTENT_BLOCKS = [
 
 const STATS = [
   { value: '15,000+', label: 'Students Counselled' },
-  { value: '15+', label: 'Years Experience' },
+  { value: '500+', label: 'Universities Students Sent To' },
   { value: '10+', label: 'Countries' },
   { value: '98%', label: 'Visa Success Rate' },
 ];
@@ -120,7 +120,7 @@ const CERTIFICATIONS = [];
 const SERVICES = [
   {
     title: 'Test Preparation & Language Support',
-    description: 'Coaching for IELTS, TOEFL, PTE, GRE and English Speaking with TESOL certified trainers.',
+    description: 'Coaching for IELTS, TOEFL, PTE, GRE and English Speaking with experienced language mentors.',
     image_url: 'https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?auto=format&fit=crop&w=600&q=80',
     features: ['8 Full Length Mock Tests', 'Live & Offline Classes', '70+ Module-wise Mock Tests'],
   },
@@ -305,8 +305,8 @@ const PROCESS_STEPS = [
   {
     step_number: 2,
     title: 'Test Preparation',
-    description: 'IELTS, TOEFL, PTE, GRE, GMAT coaching with TESOL certified trainers & 8+ mock tests',
-    badge: 'TESOL Trainers',
+    description: 'IELTS, TOEFL, PTE, GRE, GMAT coaching with experienced faculty & 8+ mock tests',
+    badge: 'Expert Trainers',
     icon: 'fas fa-book-open',
   },
   {

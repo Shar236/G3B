@@ -28,8 +28,8 @@ get_header();
           <span class="stat-label">Students Counselled</span>
         </div>
         <div class="stat-item">
-          <span class="stat-number">15+</span>
-          <span class="stat-label">Years Mentoring</span>
+          <span class="stat-number">500+</span>
+          <span class="stat-label">Universities Students Sent To</span>
         </div>
         <div class="stat-item">
           <span class="stat-number">10+</span>
@@ -168,7 +168,7 @@ get_header();
           <img class="service-img" src="https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?auto=format&fit=crop&w=600&q=80" alt="Test Preparation & Language Support" />
           <div class="service-body">
             <h3>Test Preparation & Language Support</h3>
-            <p>Coaching for IELTS, TOEFL, PTE, GRE and English Speaking with TESOL certified trainers.</p>
+            <p>Coaching for IELTS, TOEFL, PTE, GRE and English Speaking with experienced language mentors.</p>
             <ul>
               <li>8 Full Length Mock Tests</li>
               <li>Live & Offline Classes</li>
@@ -481,8 +481,8 @@ get_header();
           <div class="step-number">2</div>
           <div class="step-icon"><i class="fas fa-book-open"></i></div>
           <h4>Test Preparation</h4>
-          <p>IELTS, TOEFL, PTE, GRE, GMAT coaching with TESOL certified trainers & 8+ mock tests</p>
-          <span class="step-badge">TESOL Trainers</span>
+          <p>IELTS, TOEFL, PTE, GRE, GMAT coaching with experienced faculty & 8+ mock tests</p>
+          <span class="step-badge">Expert Trainers</span>
         </div>
         <div class="step">
           <div class="step-number">3</div>

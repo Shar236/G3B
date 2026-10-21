@@ -2,13 +2,13 @@ import { resolveMediaUrl } from '../api/client.js'
 
 /**
  * Section B: "Why Choose G3B Education" & Team/Founder Profile
- * Features authentic credentials (TESOL Master Trainer, 15+ years guiding students),
+ * Features authentic credentials (15+ years guiding students, lead consultant),
  * improved responsive image handling, clear value proposition, and no unapproved claims.
  */
 export default function About({ content = {}, settings = {}, features = [] }) {
   const founderName = settings.founder_name || 'Minal Kulkarni'
   const founderRole = settings.founder_role || 'Founder & Chief Career Mentor'
-  const credentialsText = settings.founder_credentials_text || 'TESOL Certified Master Trainer · 15+ Years Guiding Global Aspirants'
+  const credentialsText = settings.founder_credentials_text || 'Lead Career Consultant & Founder · 15+ Years Guiding Global Aspirants'
   const paragraphs = (content.why?.body || '').split('\n').filter((line) => line.trim().length > 0)
 
   const defaultParagraphs = [
@@ -53,10 +53,10 @@ export default function About({ content = {}, settings = {}, features = [] }) {
 
             <div className="why-credentials-strip" style={{ marginTop: '28px', padding: '16px 20px', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <i className="fas fa-graduation-cap" style={{ color: '#0B2C5F', fontSize: '1.2rem' }} aria-hidden="true" />
+                <i className="fas fa-award" style={{ color: '#0B2C5F', fontSize: '1.2rem' }} aria-hidden="true" />
                 <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0B2C5F' }}>TESOL Certified</div>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Master Test Prep Faculty</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0B2C5F' }}>15+ Years Mentoring</div>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Guiding Global Aspirants</div>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

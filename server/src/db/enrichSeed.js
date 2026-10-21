@@ -7,8 +7,8 @@ export async function enrichData() {
     {
       title: 'Test Preparation & Language Support',
       slug: 'test-preparation',
-      subtitle: 'Crack IELTS, TOEFL, PTE & GRE with TESOL Certified Master Trainers',
-      badge: 'TESOL Certified Faculty',
+      subtitle: 'Crack IELTS, TOEFL, PTE & GRE with Experienced Language Mentors',
+      badge: 'Expert Faculty',
       icon: 'fas fa-language',
       description: 'Comprehensive, structured coaching for IELTS, TOEFL, PTE, GRE, and Spoken English. We provide personalized diagnostic tests, 70+ module-wise mock tests, live interactive feedback, and proven score-maximization strategies tailored to your target universities.',
       packages: [
@@ -54,13 +54,13 @@ export async function enrichData() {
         { tier: '1-on-1 Private Mentoring', highlight: false, description: 'Dedicated personal tutor tailored exclusively to your weak sections and pace' }
       ],
       trainers: [
-        { name: 'Minal Kulkarni', title: 'Lead Test Prep Consultant & Founder', credentials: 'TESOL Certified, 15+ Yrs Experience' },
-        { name: 'Senior Language Specialist', title: 'IELTS / PTE Master Evaluator', credentials: 'British Council & IDP Certified Faculty' }
+        { name: 'Minal Kulkarni', title: 'Lead Career Consultant & Founder', credentials: '15+ Years Guiding Global Aspirants' },
+        { name: 'Senior Language Specialist', title: 'IELTS / PTE Master Evaluator', credentials: '10+ Years Test Prep Mentorship' }
       ],
       faqs: [
         { q: 'How many mock tests are included in the IELTS/PTE course?', a: 'You receive 8 full-length simulated mock tests and more than 70 module-wise mock drills with comprehensive band score breakdowns and diagnostic reviews.' },
         { q: 'Can I attend online or in-person at the Nerul center?', a: 'We offer both hybrid flexible learning: live online interactive sessions as well as in-person classroom coaching at our Nerul, Navi Mumbai center.' },
-        { q: 'How often are speaking interviews conducted?', a: 'Speaking practice is conducted daily with our certified trainers, simulating real examiner conditions to eliminate hesitation and boost lexical resource and pronunciation.' }
+        { q: 'How often are speaking interviews conducted?', a: 'Speaking practice is conducted daily with our experienced trainers, simulating real examiner conditions to eliminate hesitation and boost lexical resource and pronunciation.' }
       ]
     },
     {

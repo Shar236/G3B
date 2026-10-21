@@ -202,8 +202,8 @@ export default function ServicesPage() {
               <span className="services-stat-label">Years Mentoring Experience</span>
             </div>
             <div className="services-stat-card">
-              <span className="services-stat-value">TESOL</span>
-              <span className="services-stat-label">Certified Faculty</span>
+              <span className="services-stat-value">500+</span>
+              <span className="services-stat-label">Universities Students Sent To</span>
             </div>
           </div>
 

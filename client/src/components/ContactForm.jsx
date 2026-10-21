@@ -79,7 +79,7 @@ export default function ContactForm({ content = {}, settings = {}, options = [],
                 <i className="fas fa-certificate" style={{ color: '#fbbf24' }} /> Certified Counselors
               </h4>
               <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1', lineHeight: 1.5 }}>
-                {settings.founder_credentials_text || 'TESOL Certified Master Trainer · 15+ Years Guiding Global Aspirants'}
+                {settings.founder_credentials_text || 'Lead Career Consultant & Founder · 15+ Years Guiding Global Aspirants'}
               </p>
             </div>
           </div>

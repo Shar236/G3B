@@ -26,7 +26,7 @@ export const NAVIGATION_TREE = [
         label: 'Our Team',
         url: '/#team',
         icon: 'fas fa-user-tie',
-        description: 'Certified career mentors & TESOL master trainers',
+        description: 'Experienced career mentors & admissions advisors',
       },
       {
         label: 'Our Approach',

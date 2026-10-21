@@ -55,7 +55,7 @@ const SETTINGS_SECTIONS = [
       { key: 'founder_role', label: 'Founder Designation / Title', type: 'text', placeholder: 'Founder, G3B Education' },
       { key: 'founder_image_url', label: 'Founder Profile Photo', type: 'image' },
       { key: 'founder_image_alt', label: 'Founder Photo Alt Text', type: 'text', placeholder: 'Minal Kulkarni, Founder' },
-      { key: 'founder_credentials_text', label: 'Founder Credentials Badge Text', type: 'text', placeholder: 'TESOL Certified Master Trainer · 15+ Years Experience' },
+      { key: 'founder_credentials_text', label: 'Founder Credentials Badge Text', type: 'text', placeholder: 'Lead Career Consultant & Founder · 15+ Years Guiding Global Aspirants' },
       { key: 'certifications_heading', label: 'Certifications Block Title', type: 'text', placeholder: 'Certifications & Credentials' },
     ],
   },

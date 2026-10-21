@@ -70,7 +70,7 @@ export default function PartnerPage() {
       icon: 'fas fa-chalkboard-user',
       tagline: 'Curriculum Synergies & Test Prep Workshops',
       description:
-        'Deliver specialized language workshops, communication modules, and test prep masterclasses led by our TESOL Certified faculty.',
+        'Deliver specialized language workshops, communication modules, and test prep masterclasses led by experienced language and admissions faculty.',
     },
     {
       title: 'Other Relevant Organizations',
@@ -450,7 +450,7 @@ export default function PartnerPage() {
                 Verified Credentials
               </h4>
               <p style={{ fontSize: '0.92rem', color: '#64748b', lineHeight: 1.55, margin: 0 }}>
-                Guidance led by TESOL Certified Master Trainers and certified psychometricians with over 15 years of proven industry experience.
+                Guidance led by senior career mentors, certified psychometricians, and admissions advisors with over 15 years of proven industry experience.
               </p>
             </div>
           </div>

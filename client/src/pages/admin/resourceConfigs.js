@@ -57,7 +57,7 @@ export const resourceConfigs = {
     fields: [
       { name: 'title', label: 'Service title', type: 'text', required: true, col: 'full' },
       { name: 'slug', label: 'URL slug (e.g. test-preparation)', type: 'text', placeholder: 'test-preparation' },
-      { name: 'badge', label: 'Feature badge', type: 'text', placeholder: 'TESOL Certified Faculty' },
+      { name: 'badge', label: 'Feature badge', type: 'text', placeholder: 'Expert Faculty' },
       { name: 'subtitle', label: 'Subtitle / Tagline', type: 'text', col: 'full', placeholder: 'Crack IELTS, TOEFL, PTE & GRE' },
       { name: 'icon', label: 'Font Awesome icon class', type: 'text', placeholder: 'fas fa-language' },
       { name: 'imageUrl', label: 'Header / Card Image', type: 'image', col: 'full' },
@@ -90,7 +90,7 @@ export const resourceConfigs = {
         label: 'Mentors & Trainers (JSON)',
         type: 'json',
         col: 'full',
-        placeholder: '[{"name": "Minal Kulkarni", "title": "Lead Consultant", "credentials": "TESOL Certified"}]',
+        placeholder: '[{"name": "Minal Kulkarni", "title": "Lead Consultant", "credentials": "15+ Years Experience"}]',
         hint: 'Array of mentor profiles handling this service.',
       },
       {
