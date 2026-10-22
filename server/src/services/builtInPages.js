@@ -1,5 +1,6 @@
 import { insights } from '../data/insights.js';
 import { pagesRepository } from '../repositories/pagesRepository.js';
+import studyAbroadRepository from '../repositories/studyAbroadRepository.js';
 
 // Use the public article source directly so crawler content and the React page
 // stay identical. The full repository is deployed together with client/dist.
@@ -16,6 +17,9 @@ function page(route, name, description, pageType, extra = {}) {
 
 export const builtInPages = [
   page('/insights', 'Study Abroad Insights', insightDescription, 'blog'),
+  page('/assessments', 'Career & Student Assessments', 'Explore guided student, professional, aptitude and personality assessments with G3B Education.', 'custom'),
+  page('/study-abroad/my-dream-college', 'Find Your Dream University Abroad', 'Explore G3B Education’s administrator-verified university catalogue and build a shortlist for your study abroad plan.', 'custom'),
+  page('/study-abroad/my-dream-program', 'Discover a Program That Matches Your Ambition', 'Search and compare administrator-verified international study programs with G3B Education.', 'custom'),
   page(
     '/partner-with-us',
     'Partner With G3B Education',
@@ -63,19 +67,38 @@ export function mergePublicPages(registered) {
 }
 
 export async function listPublicPagesWithDefaults() {
-  return mergePublicPages(await pagesRepository.list());
+  const [registered, universities, programs] = await Promise.all([
+    pagesRepository.list(), studyAbroadRepository.universities({ perPage: 100 }), studyAbroadRepository.programs({ perPage: 100 }),
+  ]);
+  const dynamic = [
+    ...universities.items.map((item) => page(`/study-abroad/universities/${item.slug}`, item.name, item.overview || `Review verified university information for ${item.name}.`, 'custom')),
+    ...programs.items.map((item) => page(`/study-abroad/programs/${item.slug}`, item.name, item.overview || `Review verified program information for ${item.name}.`, 'custom')),
+  ];
+  return mergePublicPages([...registered, ...dynamic]);
 }
 
 export async function findPublicPageWithDefaults(route) {
   const published = await pagesRepository.findPublishedByRoute(route);
   if (published) return withBuiltInDefaults(published);
   const fallback = builtInPages.find((item) => item.route === route);
-  if (!fallback || await pagesRepository.findRouteOwner(route)) return null;
-  return fallback;
+  if (fallback) return await pagesRepository.findRouteOwner(route) ? null : fallback;
+  const universitySlug = route.match(/^\/study-abroad\/universities\/([^/]+)$/)?.[1];
+  if (universitySlug) {
+    const item = await studyAbroadRepository.university(universitySlug);
+    return item ? page(route, item.name, item.overview || `Review verified university information for ${item.name}.`, 'custom') : null;
+  }
+  const programSlug = route.match(/^\/study-abroad\/programs\/([^/]+)$/)?.[1];
+  if (programSlug) {
+    const item = await studyAbroadRepository.program(programSlug);
+    return item ? page(route, item.name, item.overview || `Review verified program information for ${item.name}.`, 'custom') : null;
+  }
+  return null;
 }
 
 /** Render actual article copy into the root React replaces on startup. */
 export function renderBuiltInBody(route) {
+  const landing = builtInPages.find((item) => item.route === route && ['/assessments','/study-abroad/my-dream-college','/study-abroad/my-dream-program'].includes(route));
+  if (landing) return `<main class="section"><div class="container article-container"><h1>${escapeHtml(landing.name)}</h1><p>${escapeHtml(landing.seo.metaDescription)}</p></div></main>`;
   if (route === '/insights') {
     return `<main class="section"><div class="container article-container"><h1>Study Abroad Insights</h1><p>${insightDescription}</p>${insights.map((article) => `<article><h2><a href="/insights/${escapeHtml(article.slug)}">${escapeHtml(article.title)}</a></h2><p>${escapeHtml(article.excerpt)}</p></article>`).join('')}</div></main>`;
   }

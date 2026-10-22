@@ -112,11 +112,12 @@ export function createPageRenderer({ distDir = DEFAULT_CLIENT_DIST } = {}) {
 
     try {
       // Never prerender the private admin area, and always mark it noindex.
-      if (pathname === adminRoute || pathname.startsWith(`${adminRoute}/`)) {
+      if (pathname === adminRoute || pathname.startsWith(`${adminRoute}/`) || pathname === '/student' || pathname.startsWith('/student/')) {
         res
           .status(200)
           .type('html')
           .set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+          .set('Cache-Control', 'no-store')
           .send(injectHead(indexHtml, ADMIN_NOINDEX));
         return;
       }

@@ -364,6 +364,48 @@ export const resourceConfigs = {
     ],
   },
 
+  assessments: {
+    slug: 'assessments', route: 'assessments', label: 'Assessment Catalogue', singular: 'Assessment', icon: 'fas fa-brain',
+    description: 'Published assessment offerings, audiences, deliverables and access rules shown on the public Assessments page.',
+    listColumns: [
+      { name: 'title', label: 'Assessment' }, { name: 'category', label: 'Category' },
+      { name: 'accessMode', label: 'Access' }, { name: 'sortOrder', label: 'Order' },
+      { name: 'isActive', label: 'Published', render: (row) => row.isActive ? 'Yes' : 'No' },
+    ],
+    fields: [
+      { name: 'title', label: 'Assessment title', type: 'text', required: true, col: 'full' },
+      { name: 'slug', label: 'URL slug', type: 'text', required: true, placeholder: 'student-direction-profile' },
+      { name: 'category', label: 'Category', type: 'select', required: true, options: [
+        { value: 'student', label: 'Student assessments' }, { value: 'professional', label: 'Professional assessments' }, { value: 'insights', label: 'Aptitude & personality insights' },
+      ] },
+      { name: 'audience', label: 'Who it is for', type: 'text', required: true, col: 'full' },
+      { name: 'summary', label: 'Summary', type: 'textarea', required: true, col: 'full' },
+      { name: 'purpose', label: 'Purpose', type: 'textarea', col: 'full' },
+      { name: 'prerequisites', label: 'Prerequisites (only if verified)', type: 'textarea', col: 'full' },
+      { name: 'deliverables', label: 'Deliverables', type: 'textarea', col: 'full', hint: 'Enter one verified deliverable per line.' },
+      { name: 'icon', label: 'Font Awesome icon', type: 'text', placeholder: 'fas fa-brain' },
+      { name: 'imageUrl', label: 'Assessment image', type: 'image', col: 'full' },
+      { name: 'accessMode', label: 'Access mode', type: 'select', options: [{ value: 'request', label: 'Request access' }, { value: 'external', label: 'Configured external assessment' }] },
+      { name: 'launchUrl', label: 'Verified assessment URL', type: 'text', col: 'full', hint: 'Leave blank until an authorized assessment provider URL is configured.' },
+      numberField('sortOrder', 'Display order'), activeField,
+    ],
+  },
+
+  universities: {
+    slug:'universities',route:'universities',label:'Universities',singular:'University',icon:'fas fa-building-columns',description:'Verified universities shown in My Dream College. New records remain unpublished until explicitly enabled.',
+    listColumns:[{name:'name',label:'University'},{name:'country',label:'Country'},{name:'lastVerifiedDate',label:'Verified'},{name:'isActive',label:'Published',render:(row)=>row.isActive?'Yes':'No'}],
+    fields:[
+      {name:'name',label:'Official university name',type:'text',required:true,col:'full'},{name:'slug',label:'URL slug',type:'text',required:true},{name:'country',label:'Country',type:'text',required:true},{name:'city',label:'City',type:'text'},{name:'universityType',label:'University type',type:'text'},{name:'degreeLevels',label:'Degree levels',type:'text',col:'full'},{name:'studyAreas',label:'Study areas',type:'textarea',col:'full'},{name:'overview',label:'Overview',type:'textarea',col:'full'},{name:'entryRequirements',label:'Entry requirements',type:'textarea',col:'full'},{name:'tuitionMin',label:'Tuition minimum',type:'number'},{name:'tuitionMax',label:'Tuition maximum',type:'number'},{name:'currency',label:'Currency code',type:'text'},{name:'scholarshipsText',label:'Verified scholarship information',type:'textarea',col:'full'},{name:'englishRequirements',label:'English requirements',type:'textarea',col:'full'},{name:'intakes',label:'Verified intakes',type:'text',col:'full'},{name:'deadlinesText',label:'Verified deadlines',type:'textarea',col:'full'},{name:'officialUrl',label:'Official university URL',type:'text',required:true,col:'full'},{name:'sourceUrl',label:'Information source URL',type:'text',required:true,col:'full'},{name:'lastVerifiedDate',label:'Last verified date',type:'date',required:true},{name:'imageUrl',label:'Authorized image',type:'image',col:'full'},{name:'isFeatured',label:'Featured listing',type:'checkbox'},numberField('sortOrder','Display order'),activeField,
+    ],
+  },
+  programs: {
+    slug:'programs',route:'programs',label:'Study Programs',singular:'Program',icon:'fas fa-book-open',description:'Verified course catalogue connected to published universities.',
+    listColumns:[{name:'name',label:'Program'},{name:'universityId',label:'University ID'},{name:'subjectArea',label:'Subject'},{name:'degreeLevel',label:'Level'},{name:'isActive',label:'Published',render:(row)=>row.isActive?'Yes':'No'}],
+    fields:[
+      {name:'universityId',label:'University ID',type:'number',required:true},{name:'name',label:'Official program name',type:'text',required:true,col:'full'},{name:'slug',label:'URL slug',type:'text',required:true},{name:'subjectArea',label:'Subject area',type:'text',required:true},{name:'degreeLevel',label:'Degree level',type:'text',required:true},{name:'qualification',label:'Qualification',type:'text'},{name:'campusLocation',label:'Campus location',type:'text'},{name:'durationText',label:'Verified duration',type:'text'},{name:'studyMode',label:'Study mode',type:'text'},{name:'overview',label:'Overview',type:'textarea',col:'full'},{name:'curriculum',label:'Curriculum / modules',type:'textarea',col:'full'},{name:'learningOutcomes',label:'Learning outcomes',type:'textarea',col:'full'},{name:'entryRequirements',label:'Entry requirements',type:'textarea',col:'full'},{name:'academicPrerequisites',label:'Academic prerequisites',type:'textarea',col:'full'},{name:'englishRequirements',label:'English requirements',type:'textarea',col:'full'},{name:'tuitionAmount',label:'Annual tuition',type:'number'},{name:'currency',label:'Currency',type:'text'},{name:'additionalCosts',label:'Additional costs',type:'textarea',col:'full'},{name:'scholarshipsText',label:'Verified scholarship information',type:'textarea',col:'full'},{name:'intakes',label:'Verified intakes',type:'text'},{name:'deadlinesText',label:'Verified deadlines',type:'textarea',col:'full'},{name:'careerPathways',label:'Potential pathways (no guarantees)',type:'textarea',col:'full'},{name:'officialUrl',label:'Official program URL',type:'text',required:true,col:'full'},{name:'sourceUrl',label:'Information source URL',type:'text',required:true,col:'full'},{name:'lastVerifiedDate',label:'Last verified date',type:'date',required:true},{name:'isFeatured',label:'Featured program',type:'checkbox'},numberField('sortOrder','Display order'),activeField,
+    ],
+  },
+
   faqs: {
     slug: 'faqs',
     route: 'faqs',

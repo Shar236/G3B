@@ -55,6 +55,9 @@ export async function createEnquiry(req, res) {
     ipAddress: (req.ip || '').slice(0, 45),
     currentStatus: req.body.currentStatus,
     targetDegree: req.body.targetDegree,
+    studentId: req.student?.id ?? null,
+    preferredDate: req.body.preferredDate || null,
+    preferredTime: req.body.preferredTime || null,
   });
 
   let notifications = { admin: { sent: false }, visitor: { sent: false } };

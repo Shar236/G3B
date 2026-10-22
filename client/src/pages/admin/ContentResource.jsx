@@ -351,6 +351,16 @@ export default function ContentResource({ resource, config, allowCreate = true }
             value={value}
             onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
           />
+        ) : field.type === 'date' ? (
+          <input
+            id={id}
+            className="admin-input"
+            type="date"
+            required={Boolean(field.required)}
+            disabled={saving || Boolean(uploading)}
+            value={value ? String(value).slice(0, 10) : ''}
+            onChange={(event) => setForm((current) => ({ ...current, [field.name]: event.target.value }))}
+          />
         ) : field.type === 'image' ? (
           <div className="admin-image-field-wrap">
             <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>

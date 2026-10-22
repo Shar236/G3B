@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import api from '../api/client.js'
 import usePageSeo from '../hooks/usePageSeo.js'
-import { useCounsellingModal } from '../context/CounsellingContext.jsx'
+import '../styles/partner.css'
 
 export default function PartnerPage() {
-  const { openModal } = useCounsellingModal()
+  const submitting = useRef(false)
 
   // SEO metadata
   usePageSeo('/partner-with-us', {
@@ -95,7 +95,7 @@ export default function PartnerPage() {
     {
       number: '3',
       title: 'Direct Contact',
-      desc: 'A senior G3B partnerships representative reaches out via work email or phone within 2 business days.',
+      desc: 'Our team contacts you by email or phone to discuss your collaboration ideas.',
     },
     {
       number: '4',
@@ -154,6 +154,7 @@ export default function PartnerPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (submitting.current) return
     const clientErrors = validateClient()
     if (Object.keys(clientErrors).length > 0) {
       setErrors(clientErrors)
@@ -163,20 +164,21 @@ export default function PartnerPage() {
       return
     }
 
+    submitting.current = true
     setLoading(true)
     setStatusMessage(null)
     setErrors({})
 
     try {
       const response = await api.post('/api/partner-enquiries', formData)
-      if (response.data?.success) {
+      if (response.data?.success && response.data?.data?.id) {
         setStatusMessage({
           type: 'success',
           text:
             response.data.message ||
             'Thank you for your partnership enquiry! Our partnerships director will review your submission and connect with you shortly.',
         })
-        setSubmittedId(response.data.data?.id || 'G3B-PT')
+        setSubmittedId(response.data.data.id)
         setFormData({
           fullName: '',
           organizationName: '',
@@ -191,6 +193,8 @@ export default function PartnerPage() {
           consent: false,
           hp_address: '',
         })
+      } else {
+        throw new Error('Your enquiry could not be verified. Please try again or contact our team.')
       }
     } catch (err) {
       const backendDetails = err.response?.data?.details
@@ -201,9 +205,10 @@ export default function PartnerPage() {
         type: 'error',
         text:
           err.response?.data?.error ||
-          'We encountered an issue submitting your partnership enquiry. Please check your details and try again.',
+          err.message || 'We encountered an issue submitting your partnership enquiry. Please check your details and try again.',
       })
     } finally {
+      submitting.current = false
       setLoading(false)
     }
   }
@@ -216,7 +221,7 @@ export default function PartnerPage() {
         style={{
           background: 'linear-gradient(135deg, #071E42 0%, #0B2C5F 50%, #1e3a8a 100%)',
           color: '#ffffff',
-          padding: '80px 0 90px',
+          padding: 'var(--section-space) 0',
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -245,11 +250,12 @@ export default function PartnerPage() {
 
           <h1
             style={{
+              color: '#ffffff',
               fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)',
               fontWeight: 800,
               lineHeight: 1.2,
               marginBottom: '20px',
-              fontFamily: "'Poppins', sans-serif",
+              fontFamily: 'var(--font-heading)',
               letterSpacing: '-0.02em',
             }}
           >
@@ -272,7 +278,7 @@ export default function PartnerPage() {
           <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <a
               href="#partner-form"
-              className="btn btn-secondary"
+              className="btn btn-primary"
               style={{ padding: '14px 28px', fontSize: '1rem', fontWeight: 700 }}
               onClick={(e) => {
                 e.preventDefault()
@@ -291,7 +297,10 @@ export default function PartnerPage() {
                 color: '#ffffff',
                 borderColor: '#ffffff',
               }}
-              onClick={() => openModal({ serviceInterest: 'Institutional Partnership Discussion' })}
+              onClick={() => {
+                document.getElementById('partner-form')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+                document.getElementById('field-fullName')?.focus({ preventScroll: true })
+              }}
             >
               <i className="fas fa-comments" aria-hidden="true" /> Discuss a Partnership
             </button>
@@ -300,7 +309,7 @@ export default function PartnerPage() {
       </section>
 
       {/* 2. Partnership Opportunities */}
-      <section className="section" style={{ background: '#ffffff', padding: '80px 0' }}>
+      <section className="section" style={{ background: '#ffffff', padding: 'var(--section-space) 0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 50px' }}>
             <div
@@ -335,7 +344,7 @@ export default function PartnerPage() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
               gap: '28px',
             }}
           >
@@ -388,7 +397,7 @@ export default function PartnerPage() {
       </section>
 
       {/* 3. Why Collaborate With G3B */}
-      <section className="section section-alt" style={{ background: '#f1f5f9', padding: '80px 0' }}>
+      <section className="section section-alt" style={{ background: '#f1f5f9', padding: 'var(--section-space) 0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 50px' }}>
             <h2 className="section-title" style={{ fontSize: 'clamp(1.9rem, 3.5vw, 2.5rem)', marginBottom: '16px' }}>
@@ -402,7 +411,7 @@ export default function PartnerPage() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
               gap: '24px',
             }}
           >
@@ -458,7 +467,7 @@ export default function PartnerPage() {
       </section>
 
       {/* 4. How Partnership Works */}
-      <section className="section" style={{ background: '#ffffff', padding: '80px 0' }}>
+      <section className="section" style={{ background: '#ffffff', padding: 'var(--section-space) 0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 50px' }}>
             <h2 className="section-title" style={{ fontSize: 'clamp(1.9rem, 3.5vw, 2.5rem)', marginBottom: '16px' }}>
@@ -472,7 +481,7 @@ export default function PartnerPage() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
               gap: '20px',
             }}
           >
@@ -525,7 +534,7 @@ export default function PartnerPage() {
         id="partner-form"
         style={{
           background: '#f8fafc',
-          padding: '80px 0',
+          padding: 'var(--section-space) 0',
           borderTop: '1px solid #e2e8f0',
         }}
       >
@@ -565,7 +574,7 @@ export default function PartnerPage() {
               background: '#ffffff',
               borderRadius: '16px',
               border: '1px solid #e2e8f0',
-              padding: '40px',
+              padding: 'clamp(20px, 4vw, 40px)',
               boxShadow: '0 15px 35px -5px rgba(11,44,95,0.08)',
             }}
           >
@@ -618,7 +627,7 @@ export default function PartnerPage() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px', marginBottom: '20px' }}>
                 {/* Full Name */}
                 <div>
                   <label htmlFor="field-fullName" style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#0B2C5F', marginBottom: '6px' }}>
@@ -682,7 +691,7 @@ export default function PartnerPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px', marginBottom: '20px' }}>
                 {/* Work Email */}
                 <div>
                   <label htmlFor="field-email" style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#0B2C5F', marginBottom: '6px' }}>
@@ -765,7 +774,7 @@ export default function PartnerPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px', marginBottom: '20px' }}>
                 {/* Organization Type */}
                 <div>
                   <label htmlFor="field-organizationType" style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#0B2C5F', marginBottom: '6px' }}>
@@ -836,7 +845,7 @@ export default function PartnerPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px', marginBottom: '20px' }}>
                 {/* Website URL (optional) */}
                 <div>
                   <label htmlFor="field-websiteUrl" style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#0B2C5F', marginBottom: '6px' }}>
@@ -944,7 +953,7 @@ export default function PartnerPage() {
                     style={{ marginTop: '3px', cursor: 'pointer', width: '18px', height: '18px' }}
                   />
                   <span style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.5 }}>
-                    I agree to G3B Education’s privacy policy and consent to the G3B partnerships team contacting me regarding this collaboration inquiry.
+                    I consent to the G3B Education team contacting me regarding this partnership enquiry.
                   </span>
                 </label>
                 {errors.consent ? (

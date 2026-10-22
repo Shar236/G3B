@@ -105,8 +105,8 @@ export const enquiriesRepository = {
   async create(data) {
     const result = await query(
       `INSERT INTO enquiries
-         (full_name, email, phone, country_code, service_interest, preferred_destination, message, status, source, lead_source, landing_page, ip_address, current_status, target_degree)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?)`,
+         (full_name, email, phone, country_code, service_interest, preferred_destination, message, status, source, lead_source, landing_page, ip_address, current_status, target_degree, student_id, preferred_date, preferred_time)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.fullName,
         data.email,
@@ -121,6 +121,9 @@ export const enquiriesRepository = {
         data.ipAddress ?? null,
         data.currentStatus || null,
         data.targetDegree || null,
+        data.studentId ?? null,
+        data.preferredDate || null,
+        data.preferredTime || null,
       ],
     );
     return this.findById(result.insertId);

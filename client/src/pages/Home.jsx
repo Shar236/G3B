@@ -39,7 +39,7 @@ export default function Home() {
   const activeData = data || defaultHomeData
   const content = activeData.content || defaultHomeData.content
   const settings = activeData.settings || defaultHomeData.settings
-  const stats = (activeData.stats && activeData.stats.length > 0) ? activeData.stats : defaultHomeData.stats
+  const stats = (data?.stats && data.stats.length > 0) ? data.stats : []
   const whyFeatures = (activeData.whyFeatures && activeData.whyFeatures.length > 0) ? activeData.whyFeatures : defaultHomeData.whyFeatures
   const certifications = (activeData.certifications && activeData.certifications.length > 0) ? activeData.certifications : defaultHomeData.certifications
   const services = (activeData.services && activeData.services.length > 0) ? activeData.services : defaultHomeData.services

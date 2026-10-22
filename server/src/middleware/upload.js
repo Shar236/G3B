@@ -8,10 +8,12 @@ import ApiError from '../utils/ApiError.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const uploadsRoot = path.resolve(__dirname, '../../', env.uploads.dir);
+export const assessmentReportsRoot = path.resolve(__dirname, '../../private/assessment-reports');
 
 if (!fs.existsSync(uploadsRoot)) {
   fs.mkdirSync(uploadsRoot, { recursive: true });
 }
+if (!fs.existsSync(assessmentReportsRoot)) fs.mkdirSync(assessmentReportsRoot, { recursive: true });
 
 const ALLOWED_MIME = new Set([
   'image/jpeg',
@@ -48,5 +50,49 @@ export const uploadImage = multer({
     cb(null, true);
   },
 }).single('image');
+
+/** Upload multiple photos at once (up to 20 images). */
+export const uploadMultiplePhotos = multer({
+  storage,
+  limits: { fileSize: env.uploads.maxBytes, files: 20 },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_MIME.has(file.mimetype)) {
+      cb(new ApiError(400, 'Only JPEG, PNG, WEBP, GIF, AVIF or SVG images are allowed.'));
+      return;
+    }
+    cb(null, true);
+  },
+}).array('photos', 20);
+
+const ALLOWED_MEDIA_MIME = new Set([
+  ...ALLOWED_MIME,
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+]);
+
+/** General media upload middleware: accepts images or self-hosted video files up to 100MB. */
+export const uploadMediaFile = multer({
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_MEDIA_MIME.has(file.mimetype)) {
+      cb(new ApiError(400, 'Only JPEG, PNG, WEBP, GIF, AVIF, SVG or MP4/WebM videos are allowed.'));
+      return;
+    }
+    cb(null, true);
+  },
+}).single('file');
+
+const reportStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, assessmentReportsRoot),
+  filename: (_req, file, cb) => cb(null, `${Date.now()}-${crypto.randomBytes(12).toString('hex')}${path.extname(file.originalname).toLowerCase()}`),
+});
+
+export const uploadAssessmentReport = multer({
+  storage: reportStorage,
+  limits: { fileSize: env.uploads.maxBytes, files: 1 },
+  fileFilter: (_req, file, cb) => file.mimetype === 'application/pdf' ? cb(null, true) : cb(new ApiError(400, 'Assessment reports must be PDF files.')),
+}).single('report');
 
 export default uploadImage;

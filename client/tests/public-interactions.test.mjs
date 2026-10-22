@@ -28,28 +28,40 @@ const vite = await createServer({
   server: { middlewareMode: true, watch: null, ws: false },
   appType: 'custom',
   optimizeDeps: { noDiscovery: true },
+  ssr: { external: ['lucide-react'] },
 })
 
-const [{ default: PublicLayout }, { default: Pathways }, { default: PathwayFinder }, { default: KnowledgeHub }, { default: ConsultationForm }, { default: api }] = await Promise.all([
+const [{ default: PublicLayout }, { default: Pathways }, { default: PathwayFinder }, { default: KnowledgeHub }, { default: ConsultationForm }, { default: api }, { default: studentApi }, { default: StudentLayout }, { default: StudentAuth }, { default: StudentDashboard }] = await Promise.all([
   vite.ssrLoadModule('/src/components/layout/PublicLayout.jsx'),
   vite.ssrLoadModule('/src/components/Pathways.jsx'),
   vite.ssrLoadModule('/src/components/PathwayFinder.jsx'),
   vite.ssrLoadModule('/src/components/KnowledgeHub.jsx'),
   vite.ssrLoadModule('/src/components/ui/ConsultationForm.jsx'),
   vite.ssrLoadModule('/src/api/client.js'),
+  vite.ssrLoadModule('/src/api/studentApi.js'),
+  vite.ssrLoadModule('/src/pages/student/StudentLayout.jsx'),
+  vite.ssrLoadModule('/src/pages/student/StudentAuth.jsx'),
+  vite.ssrLoadModule('/src/pages/student/StudentDashboard.jsx'),
 ])
 
 const fixture = { content: {}, settings: {}, navigation: [], socialLinks: [], services: [], destinations: [], enquiryOptions: [] }
 const requests = []
 let respond
+let studentSession
 const reply = (config, data = {}) => ({ config, status: 200, statusText: 'OK', data, headers: {} })
 const refusal = (config, status, data) => new AxiosError('Request failed', 'ERR_BAD_RESPONSE', config, {}, { ...reply(config, data), status })
 
 beforeEach(() => {
   requests.length = 0
   respond = (config) => reply(config, { success: true, data: { id: 1 } })
+  studentSession = { student: null, csrfToken: null }
   api.defaults.adapter = async (config) => {
     if (config.url === '/api/home') return reply(config, { success: true, data: fixture })
+    requests.push({ config, payload: typeof config.data === 'string' ? JSON.parse(config.data) : config.data })
+    return respond(config)
+  }
+  studentApi.defaults.adapter = async (config) => {
+    if (config.url === '/api/student/session') return reply(config, { success: true, data: studentSession })
     requests.push({ config, payload: typeof config.data === 'string' ? JSON.parse(config.data) : config.data })
     return respond(config)
   }
@@ -76,7 +88,8 @@ test('shared navigation expands Services, supports ArrowDown, and restores focus
   const servicesPanel = document.getElementById('navigation-dropdown-2')
   assert.equal(servicesToggle.getAttribute('aria-expanded'), 'true')
   assert.equal(servicesPanel.hidden, false)
-  assert.equal(servicesPanel.querySelectorAll('.dropdown-item-wrapper').length, 9)
+  assert.equal(servicesPanel.querySelectorAll('.dropdown-item-wrapper').length, 10)
+  assert.ok(within(servicesPanel).getByRole('link', { name: /English Test Preparation/ }))
   assert.ok(within(servicesPanel).getByRole('link', { name: /View All Services/ }))
 
   await user.click(servicesToggle)
@@ -247,14 +260,15 @@ test('consultation prevents duplicate synchronous posts and keeps finder metadat
   const form = screen.getByRole('button', { name: 'Book Free Counselling Session' }).closest('form')
   act(() => { fireEvent.submit(form); fireEvent.submit(form) })
   await waitFor(() => assert.equal(requests.length, 1))
-  assert.equal(screen.getByRole('button', { name: /Confirming Booking/ }).disabled, true)
+  assert.equal(screen.getByRole('button', { name: /Sending Enquiry/ }).disabled, true)
   assert.equal(requests[0].payload.currentStatus, 'high_school')
   assert.equal(requests[0].payload.targetDegree, 'ug')
   assert.equal(requests[0].payload.preferredDestination, 'Canada')
   assert.equal(requests[0].payload.leadSource, 'assessment')
   assert.equal(requests[0].payload.phone, '+91 9876543210')
   await act(async () => complete())
-  assert.ok(screen.getByRole('heading', { name: 'Consultation Request Confirmed!' }))
+  assert.ok(screen.getByRole('heading', { name: 'Your enquiry has been received' }))
+  assert.ok(screen.getByText(/Your appointment is not confirmed yet/))
 })
 
 test('newsletter blocks duplicate synchronous submissions while a request is pending', async () => {
@@ -269,4 +283,82 @@ test('newsletter blocks duplicate synchronous submissions while a request is pen
   await waitFor(() => assert.ok(requests.length > 0))
   assert.equal(requests.length, 1)
   await act(async () => complete())
+})
+
+async function renderStudent(path) {
+  render(h(MemoryRouter, { initialEntries: [path] }, h(Routes, null,
+    h(Route, { element: h(PublicLayout) }, h(Route, { path: '/student', element: h(StudentLayout) },
+      h(Route, { path: 'login', element: h(StudentAuth) }),
+      h(Route, { path: 'register', element: h(StudentAuth, { register: true }) }),
+      h(Route, { path: 'dashboard', element: h(StudentDashboard) }),
+    )),
+  )))
+  return userEvent.setup()
+}
+
+const portalStudent = { id: 101, name: 'Asha Student', email: 'asha@example.com', phone: '+919876543210' }
+
+test('private student route sends anonymous visitors to student sign in', async () => {
+  await renderStudent('/student/dashboard')
+  assert.ok(await screen.findByRole('heading', { name: 'Welcome back' }))
+  assert.ok(screen.getByRole('link', { name: 'Create an account' }))
+  assert.equal(requests.some((entry) => entry.config.url.includes('/api/admin/')), false)
+})
+
+test('student registration enters the private dashboard with meaningful empty state', async () => {
+  respond = (config) => config.url === '/api/student/register'
+    ? reply(config, { success: true, data: { student: portalStudent, csrfToken: 'student-specific-csrf' } })
+    : reply(config, { success: true, data: { student: portalStudent, enquiries: [] } })
+  const user = await renderStudent('/student/register')
+  await screen.findByRole('heading', { name: 'Create your account' })
+  await waitFor(() => assert.equal(screen.getByRole('button', { name: 'Create student account' }).disabled, false))
+  await user.type(screen.getByLabelText('Full name'), portalStudent.name)
+  await user.type(screen.getByLabelText('Email address'), portalStudent.email)
+  await user.type(screen.getByLabelText('Phone number, with country code'), portalStudent.phone)
+  await user.type(screen.getByLabelText('Password'), 'ExampleStudentPass123!')
+  await user.click(screen.getByRole('button', { name: 'Create student account' }))
+  assert.ok(await screen.findByRole('heading', { name: 'Welcome, Asha.' }))
+  assert.ok(await screen.findByRole('heading', { name: 'Let’s talk about your goals' }))
+  assert.equal(screen.getByLabelText(/Email Address/).value, portalStudent.email)
+  assert.equal(screen.getByLabelText(/Phone Number/).value, '9876543210')
+  assert.equal(document.querySelector('meta[name="robots"]').content, 'noindex,nofollow,noarchive')
+  assert.equal(requests[0].config.url, '/api/student/register')
+})
+
+test('student dashboard renders real server enquiries and signs out using student CSRF', async () => {
+  studentSession = { student: portalStudent, csrfToken: 'student-specific-csrf' }
+  respond = (config) => config.url === '/api/student/dashboard'
+    ? reply(config, { success: true, data: { student: portalStudent, enquiries: [{ id: 57, serviceInterest: 'Career Counselling', status: 'new', message: 'Help me choose a suitable stream.', createdAt: '2026-10-21T10:00:00.000Z', preferredDate: '2026-10-25T00:00:00.000Z', preferredTime: 'Morning (9am–12pm IST)' }] } })
+    : reply(config, { success: true, data: { message: 'Signed out.' } })
+  const user = await renderStudent('/student/dashboard')
+  assert.ok(await screen.findByRole('heading', { name: 'Career Counselling' }))
+  assert.ok(screen.getByText('Enquiry received'))
+  assert.ok(screen.getByText('Help me choose a suitable stream.'))
+  assert.ok(screen.getByText(/Preferred contact:.*25 Oct 2026/))
+  await user.click(screen.getByRole('button', { name: 'Sign out' }))
+  assert.ok(await screen.findByRole('heading', { name: 'Welcome back' }))
+  const logout = requests.find((entry) => entry.config.url === '/api/student/logout')
+  assert.equal(logout.config.headers['X-Student-CSRF-Token'], 'student-specific-csrf')
+  assert.equal(logout.config.headers['X-CSRF-Token'], undefined)
+})
+
+test('expired student sessions return to sign in without a dashboard redirect loop', async () => {
+  studentSession = { student: portalStudent, csrfToken: 'student-specific-csrf' }
+  respond = (config) => { throw refusal(config, 401, { error: 'Please sign in to your student account.' }) }
+  await renderStudent('/student/dashboard')
+  assert.ok(await screen.findByRole('heading', { name: 'Welcome back' }))
+  assert.equal(requests.filter((entry) => entry.config.url === '/api/student/dashboard').length, 1)
+})
+
+test('booking saves optional preferred date and time, and echoes only student CSRF', async () => {
+  studentSession = { student: portalStudent, csrfToken: 'student-specific-csrf' }
+  render(h(ConsultationForm, { theme: 'light', initialValues: { fullName: portalStudent.name, email: portalStudent.email, phone: '9876543210', serviceInterest: 'Grade 9+ Counselling', leadSource: 'student-dashboard' } }))
+  fireEvent.change(screen.getByLabelText('Preferred contact date (optional)'), { target: { value: '2099-12-20' } })
+  fireEvent.change(screen.getByLabelText('Preferred time (optional, IST)'), { target: { value: 'Morning (9am–12pm IST)' } })
+  fireEvent.submit(screen.getByRole('button', { name: 'Book Free Counselling Session' }).closest('form'))
+  await screen.findByRole('heading', { name: 'Your enquiry has been received' })
+  assert.equal(requests.length, 1)
+  assert.equal(requests[0].payload.preferredDate, '2099-12-20')
+  assert.equal(requests[0].payload.preferredTime, 'Morning (9am–12pm IST)')
+  assert.equal(requests[0].config.headers['X-Student-CSRF-Token'], 'student-specific-csrf')
 })

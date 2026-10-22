@@ -49,6 +49,11 @@ export const createEnquiryRules = [
   body('landingPage').optional({ values: 'falsy' }).trim().isLength({ max: 500 }).withMessage('Invalid landing page.'),
   body('currentStatus').optional({ values: 'falsy' }).isIn(['high_school', 'college', 'working']).withMessage('Invalid current education or career status.'),
   body('targetDegree').optional({ values: 'falsy' }).isIn(['ug', 'pg', 'mba', 'undecided']).withMessage('Invalid target degree.'),
+  body('preferredDate').optional({ values: 'falsy' }).matches(/^\d{4}-\d{2}-\d{2}$/).bail().isISO8601({ strict: true }).bail().custom((value) => {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    return value >= today;
+  }).withMessage('Choose today or a future date.'),
+  body('preferredTime').optional({ values: 'falsy' }).isIn(['Morning (9am–12pm IST)', 'Afternoon (12pm–4pm IST)', 'Evening (4pm–7pm IST)']).withMessage('Choose a valid preferred time.'),
 ];
 
 export const ENQUIRY_STATUSES = ['new', 'contacted', 'in_progress', 'qualified', 'converted', 'completed', 'closed', 'archived'];

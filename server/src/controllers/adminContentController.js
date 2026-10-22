@@ -12,6 +12,9 @@ import {
   socialLinksRepository,
   navigationItemsRepository,
   faqsRepository,
+  assessmentListingsRepository,
+  universitiesRepository,
+  programsRepository,
 } from '../repositories/catalogRepository.js';
 import { contentBlocksRepository, settingsRepository } from '../repositories/settingsRepository.js';
 import ApiError from '../utils/ApiError.js';
@@ -38,6 +41,9 @@ export const resources = {
   'social-links': { repo: socialLinksRepository, reorderable: true },
   navigation: { repo: navigationItemsRepository, reorderable: true },
   faqs: { repo: faqsRepository, reorderable: true },
+  assessments: { repo: assessmentListingsRepository, reorderable: true },
+  universities: { repo: universitiesRepository, reorderable: true },
+  programs: { repo: programsRepository, reorderable: true },
 };
 
 function getResource(name) {

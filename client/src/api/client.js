@@ -221,6 +221,14 @@ export function createApiClient(options = {}) {
 
 export const api = createApiClient()
 export const clearApiSession = () => api.clearSession()
+export const apiGet = (url, config) => api.get(url, config)
+export const apiPost = (url, data, config) => api.post(url, data, config)
+export const apiPatch = (url, data, config) => api.patch(url, data, config)
+export const apiDelete = (url, config) => api.delete(url, config)
+export const requestJson = (url, options = {}) => {
+  const method = (options.method || 'GET').toLowerCase()
+  return api[method](url, options.body, options)
+}
 
 /** Resolve stored upload paths against an optional separate API origin. */
 export function resolveMediaUrl(url) {

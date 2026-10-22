@@ -25,12 +25,24 @@ import AuditLogs from './pages/admin/AuditLogs.jsx'
 import { resourceConfigs } from './pages/admin/resourceConfigs.js'
 
 import ServicesPage from './pages/ServicesPage.jsx'
+import ServiceDetailPage from './pages/ServiceDetailPage.jsx'
 import InsightPage from './pages/InsightPage.jsx'
 import PartnerPage from './pages/PartnerPage.jsx'
 import Unsubscribe from './pages/Unsubscribe.jsx'
 import Subscribers from './pages/admin/Subscribers.jsx'
 import Videos from './pages/admin/Videos.jsx'
 import PartnerEnquiries from './pages/admin/PartnerEnquiries.jsx'
+import AssessmentAssignments from './pages/admin/AssessmentAssignments.jsx'
+import StudentLayout from './pages/student/StudentLayout.jsx'
+import StudentAuth from './pages/student/StudentAuth.jsx'
+import StudentDashboard from './pages/student/StudentDashboard.jsx'
+import AssessmentsPage from './pages/AssessmentsPage.jsx'
+import StudyAbroadCatalogue from './pages/StudyAbroadCatalogue.jsx'
+import StudyAbroadDetailPage from './pages/StudyAbroadDetailPage.jsx'
+import MediaOverviewPage from './pages/media/MediaOverviewPage.jsx'
+import PhotosGalleryPage from './pages/media/PhotosGalleryPage.jsx'
+import VideosGalleryPage from './pages/media/VideosGalleryPage.jsx'
+import AdminMediaGallery from './pages/admin/AdminMediaGallery.jsx'
 
 /** Gate the admin area behind an authenticated administrator session. */
 function ProtectedRoute({ children }) {
@@ -65,10 +77,25 @@ export default function App() {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/services" element={<ServicesPage />} />
+        <Route path="/services/:slug" element={<ServiceDetailPage />} />
         <Route path="/insights" element={<InsightPage />} />
         <Route path="/insights/:slug" element={<InsightPage />} />
+        <Route path="/assessments" element={<AssessmentsPage />} />
+        <Route path="/study-abroad/my-dream-college" element={<StudyAbroadCatalogue mode="colleges" />} />
+        <Route path="/study-abroad/my-dream-program" element={<StudyAbroadCatalogue mode="programs" />} />
+        <Route path="/study-abroad/universities/:slug" element={<StudyAbroadDetailPage type="university" />} />
+        <Route path="/study-abroad/programs/:slug" element={<StudyAbroadDetailPage type="program" />} />
         <Route path="/partner-with-us" element={<PartnerPage />} />
+        <Route path="/about/media" element={<MediaOverviewPage />} />
+        <Route path="/about/media/photos" element={<PhotosGalleryPage />} />
+        <Route path="/about/media/videos" element={<VideosGalleryPage />} />
         <Route path="/unsubscribe" element={<Unsubscribe />} />
+        <Route path="/student" element={<StudentLayout />}>
+          <Route index element={<Navigate to="/student/dashboard" replace />} />
+          <Route path="login" element={<StudentAuth key="student-login" />} />
+          <Route path="register" element={<StudentAuth key="student-register" register />} />
+          <Route path="dashboard" element={<StudentDashboard />} />
+        </Route>
         <Route path="*" element={<NotFound />} />
       </Route>
 
@@ -88,11 +115,13 @@ export default function App() {
           <Route path="enquiries/:id" element={<EnquiryDetail />} />
           <Route path="partner-enquiries" element={<PartnerEnquiries />} />
           <Route path="subscribers" element={<Subscribers />} />
+          <Route path="assessment-assignments" element={<AssessmentAssignments />} />
         </Route>
         <Route element={<RoleGate roles={['admin', 'editor']} />}>
           <Route path="seo" element={<SeoManager />} />
           <Route path="seo/health" element={<SeoHealth />} />
           <Route path="media" element={<MediaLibrary />} />
+          <Route path="media-gallery" element={<AdminMediaGallery />} />
           <Route path="redirects" element={<RedirectManager />} />
           {Object.values(resourceConfigs).map((config) => (
             <Route

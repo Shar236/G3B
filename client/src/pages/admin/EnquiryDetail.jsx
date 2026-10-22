@@ -123,6 +123,7 @@ export default function EnquiryDetail() {
         <div><dt>Submission date</dt><dd>{displayDate(enquiry.createdAt)}</dd></div><div><dt>Last updated</dt><dd>{displayDate(enquiry.updatedAt)}</dd></div>
         <div><dt>Source / funnel step</dt><dd>{labelFor(enquiry.leadSource || enquiry.source || 'site')}</dd></div><div><dt>Landing page</dt><dd>{enquiry.landingPage || '—'}</dd></div>
         <div><dt>Assigned counsellor</dt><dd>{enquiry.assignedToName || 'Unassigned'}</dd></div><div><dt>Follow-up scheduled</dt><dd>{displayDate(enquiry.followUpAt)}</dd></div>
+        <div><dt>Preferred contact date</dt><dd>{enquiry.preferredDate ? displayDate(enquiry.preferredDate) : 'Not specified'}</dd></div><div><dt>Preferred contact time (IST)</dt><dd>{enquiry.preferredTime || 'Not specified'}</dd></div>
       </dl>
       <h3>Pathway assessment responses</h3>
       <dl className="admin-assessment"><div><dt>Current class / status</dt><dd>{labelFor(enquiry.currentStatus)}</dd></div><div><dt>Target degree</dt><dd>{enquiry.targetDegree ? enquiry.targetDegree.toUpperCase() : '—'}</dd></div><div><dt>Preferred destination</dt><dd>{enquiry.preferredDestination || '—'}</dd></div></dl>

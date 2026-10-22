@@ -11,6 +11,9 @@ import { subscribeRules, unsubscribeRules } from '../validators/subscriberValida
 
 import { createPartnerEnquiry } from '../controllers/partnerController.js';
 import { createPartnerEnquiryRules } from '../validators/partnerValidators.js';
+import { resolveStudent, optionalStudentCsrf } from '../middleware/studentAuth.js';
+import * as studyAbroad from '../controllers/studyAbroadController.js';
+import * as mediaGallery from '../controllers/mediaGalleryController.js';
 
 const router = Router();
 
@@ -38,10 +41,22 @@ router.get('/navigation', asyncHandler(content.listNavItems));
 router.get('/faqs', asyncHandler(content.listFaqs));
 router.get('/site-settings', asyncHandler(content.getSiteSettings));
 router.get('/content-blocks', asyncHandler(content.getContentBlocks));
+router.get('/assessments', asyncHandler(content.listAssessments));
+router.get('/universities', asyncHandler(studyAbroad.listUniversities));
+router.get('/universities/:slug', asyncHandler(studyAbroad.getUniversity));
+router.get('/programs', asyncHandler(studyAbroad.listPrograms));
+router.get('/programs/:slug', asyncHandler(studyAbroad.getProgram));
+
+// Media Gallery (Photos, Videos, Categories, Hub) ----------------------------
+router.get('/media/overview', asyncHandler(mediaGallery.getPublicMediaOverview));
+router.get('/media/photos', asyncHandler(mediaGallery.listPublicPhotos));
+router.get('/media/videos', asyncHandler(mediaGallery.listPublicVideos));
+router.get('/media/categories', asyncHandler(mediaGallery.getPublicMediaCategories));
+router.get('/media/item/:slugOrId', asyncHandler(mediaGallery.getPublicMediaItem));
 
 // Public enquiry / free counselling submission ---------------------------------
-router.post('/enquiries', enquiryRateLimiter, createEnquiryRules, validate, asyncHandler(createEnquiry));
-router.post('/counselling', enquiryRateLimiter, createEnquiryRules, validate, asyncHandler(createEnquiry));
+router.post('/enquiries', enquiryRateLimiter, resolveStudent, optionalStudentCsrf, createEnquiryRules, validate, asyncHandler(createEnquiry));
+router.post('/counselling', enquiryRateLimiter, resolveStudent, optionalStudentCsrf, createEnquiryRules, validate, asyncHandler(createEnquiry));
 router.post('/partner-enquiries', enquiryRateLimiter, createPartnerEnquiryRules, validate, asyncHandler(createPartnerEnquiry));
 router.post('/subscribers', enquiryRateLimiter, subscribeRules, validate, asyncHandler(subscribe));
 router.post('/subscribers/unsubscribe', enquiryRateLimiter, unsubscribeRules, validate, asyncHandler(unsubscribe));

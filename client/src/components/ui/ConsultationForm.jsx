@@ -1,5 +1,5 @@
 import { useState, useEffect, useId, useRef } from 'react'
-import api from '../../api/client.js'
+import studentApi, { getStudentSession } from '../../api/studentApi.js'
 import { parseApiError } from '../../api/client.js'
 
 export const COUNTRY_DIAL_CODES = [
@@ -44,6 +44,8 @@ export default function ConsultationForm({
     message: initialValues.message || '',
     currentStatus: initialValues.currentStatus || '',
     targetDegree: initialValues.targetDegree || '',
+    preferredDate: '',
+    preferredTime: '',
   })
 
   const [errors, setErrors] = useState({})
@@ -90,6 +92,8 @@ export default function ConsultationForm({
     if (form.message && form.message.length > 2000) {
       errs.message = 'Message must be 2000 characters or fewer.'
     }
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+    if (form.preferredDate && form.preferredDate < today) errs.preferredDate = 'Please choose today or a future date.'
 
     return errs
   }
@@ -113,7 +117,12 @@ export default function ConsultationForm({
     pendingRef.current = true
     setSubmitting(true)
     try {
-      const res = await api.post('/api/enquiries', {
+      const session = await getStudentSession()
+      if (initialValues.leadSource === 'student-dashboard' && !session.student) {
+        setNotice({ type: 'error', message: 'Your student session has expired. Sign in again before sending your enquiry.' })
+        return
+      }
+      const res = await studentApi.post('/api/enquiries', {
           fullName: form.fullName.trim(),
           email: form.email.trim(),
           phone: fullPhoneNumber,
@@ -123,9 +132,11 @@ export default function ConsultationForm({
           currentStatus: form.currentStatus || undefined,
           targetDegree: form.targetDegree || undefined,
           countryCode: form.dialCode,
+          preferredDate: form.preferredDate || undefined,
+          preferredTime: form.preferredTime || undefined,
           leadSource: initialValues.leadSource || (inModal ? 'consultation' : 'contact'),
           landingPage: `${window.location.pathname}${window.location.hash}`.slice(0, 500),
-        }, { notifyOnError: false })
+        })
 
       setSubmitted(true)
       if (onSuccess) onSuccess(res.data)
@@ -136,7 +147,7 @@ export default function ConsultationForm({
         type: 'error',
         message:
           parsed.status === 409
-            ? 'We already received this request a moment ago. A counsellor will reach out shortly!'
+            ? 'We already received this request. Our team will contact you to discuss availability.'
             : parsed.message || 'Unable to submit your request. Please try again.',
       })
     } finally {
@@ -147,15 +158,17 @@ export default function ConsultationForm({
 
   const resetForm = () => {
     setForm({
-      fullName: '',
-      email: '',
-      dialCode: '+91',
-      phone: '',
+      fullName: initialValues.fullName || '',
+      email: initialValues.email || '',
+      dialCode: initialValues.dialCode || '+91',
+      phone: initialValues.phone || '',
       serviceInterest: '',
       preferredDestination: '',
       message: '',
       currentStatus: '',
       targetDegree: '',
+      preferredDate: '',
+      preferredTime: '',
     })
     setErrors({})
     setNotice(null)
@@ -184,10 +197,10 @@ export default function ConsultationForm({
           <i className="fas fa-check" aria-hidden="true" />
         </div>
         <h3 style={{ fontSize: '22px', fontWeight: 800, color: isDark ? '#ffffff' : '#0B2C5F', margin: '0 0 8px 0' }}>
-          Consultation Request Confirmed!
+          Your enquiry has been received
         </h3>
         <p style={{ color: isDark ? 'rgba(255, 255, 255, 0.9)' : '#475569', fontSize: '15px', maxWidth: '440px', margin: '0 auto 16px', lineHeight: 1.6 }}>
-          Thank you, <strong>{form.fullName}</strong>. Your enquiry for <strong>{form.serviceInterest}</strong> has been received by our senior counsellors.
+          Thank you, <strong>{form.fullName}</strong>. Your enquiry for <strong>{form.serviceInterest}</strong> has been saved successfully.
         </p>
         <div
           style={{
@@ -202,10 +215,10 @@ export default function ConsultationForm({
           }}
         >
           <i className="fas fa-envelope" style={{ color: isDark ? '#fbbf24' : '#0B2C5F', marginRight: '6px' }} />
-          Our counsellors will review your request and contact you using the details provided.
+          Our team will contact you to discuss your goals and confirm a suitable session time. Your appointment is not confirmed yet.
         </div>
         <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
-          <i className="fas fa-rotate-left" aria-hidden="true" /> Book Another Session
+          <i className="fas fa-rotate-left" aria-hidden="true" /> Send Another Enquiry
         </button>
       </div>
     )
@@ -374,6 +387,18 @@ export default function ConsultationForm({
           <div className="form-group"><label htmlFor={`${id}-status`}>Current class / status</label><select id={`${id}-status`} value={form.currentStatus} onChange={update('currentStatus')}><option value="">Choose your stage (optional)</option><option value="high_school">High school / Grade 9–12</option><option value="college">College / graduate</option><option value="working">Working professional</option></select></div>
           <div className="form-group"><label htmlFor={`${id}-degree`}>Target degree</label><select id={`${id}-degree`} value={form.targetDegree} onChange={update('targetDegree')}><option value="">Choose your goal (optional)</option><option value="ug">Undergraduate</option><option value="pg">Postgraduate</option><option value="mba">MBA / executive study</option><option value="undecided">Help me decide</option></select></div>
         </div>
+        <div className="form-row">
+          <div className={`form-group${errors.preferredDate ? ' has-error' : ''}`}>
+            <label htmlFor={`${id}-preferred-date`}>Preferred contact date (optional)</label>
+            <input id={`${id}-preferred-date`} type="date" name="preferredDate" value={form.preferredDate} onChange={update('preferredDate')} min={new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())} aria-invalid={Boolean(errors.preferredDate)} aria-describedby={errors.preferredDate ? `${id}-date-error` : undefined} />
+            {errors.preferredDate ? <span className="field-error" id={`${id}-date-error`}>{errors.preferredDate}</span> : null}
+          </div>
+          <div className={`form-group${errors.preferredTime ? ' has-error' : ''}`}>
+            <label htmlFor={`${id}-preferred-time`}>Preferred time (optional, IST)</label>
+            <select id={`${id}-preferred-time`} name="preferredTime" value={form.preferredTime} onChange={update('preferredTime')} aria-invalid={Boolean(errors.preferredTime)}><option value="">Any suitable time</option>{['Morning (9am–12pm IST)', 'Afternoon (12pm–4pm IST)', 'Evening (4pm–7pm IST)'].map((time) => <option key={time}>{time}</option>)}</select>
+            {errors.preferredTime ? <span className="field-error">{errors.preferredTime}</span> : null}
+          </div>
+        </div>
         {/* Message / Query */}
         <div className={`form-group${errors.message ? ' has-error' : ''}`}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -413,7 +438,7 @@ export default function ConsultationForm({
           {submitting ? (
             <>
               <i className="fas fa-spinner fa-spin" aria-hidden="true" />
-              <span>Confirming Booking…</span>
+              <span>Sending Enquiry…</span>
             </>
           ) : (
             <>
@@ -425,7 +450,7 @@ export default function ConsultationForm({
 
         <p className="form-privacy-note" style={{ textAlign: 'center', marginTop: '12px', marginBottom: 0 }}>
           <i className="fas fa-shield-halved" style={{ marginRight: '4px', color: '#10b981' }} />
-          100% Free · No Obligation · Confidential Mentoring
+          Request free counselling. Our team will confirm availability with you.
         </p>
       </form>
     </div>

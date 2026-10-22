@@ -28,9 +28,12 @@ import {
 } from '../validators/seoValidators.js';
 import { mediaUpdateRules, mediaRenameRules } from '../validators/mediaValidators.js';
 import { createRedirectRules, updateRedirectRules } from '../validators/redirectValidators.js';
-import { uploadImage } from '../middleware/upload.js';
+import { uploadImage, uploadMediaFile, uploadMultiplePhotos, uploadAssessmentReport } from '../middleware/upload.js';
+import * as mediaGalleryAdmin from '../controllers/adminMediaGalleryController.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import * as assessments from '../controllers/assessmentController.js';
+import { body, param } from 'express-validator';
 
 const router = Router();
 
@@ -43,6 +46,7 @@ const adminRole = requireRole('admin');
 router.use('/enquiries', leadRole);
 router.use('/subscribers', leadRole);
 router.use('/partner-enquiries', leadRole);
+router.use('/assessment-assignments', leadRole);
 
 // --- Enquiries --------------------------------------------------------------
 router.get('/enquiries', enquiryListRules, validate, asyncHandler(enquiries.listEnquiries));
@@ -67,6 +71,10 @@ router.get(['/partner-enquiries/export', '/partner-enquiries/export.csv'], partn
 router.get('/partner-enquiries/:id', idParamRule, validate, asyncHandler(partner.getPartnerEnquiry));
 router.patch('/partner-enquiries/:id', updatePartnerEnquiryRules, validate, asyncHandler(partner.updatePartnerEnquiry));
 router.delete('/partner-enquiries/:id', adminRole, idParamRule, validate, asyncHandler(partner.deletePartnerEnquiry));
+
+router.get('/assessment-assignments', asyncHandler(assessments.listAssignments));
+router.patch('/assessment-assignments/:id', [param('id').isInt({ min: 1 }).toInt(), body('status').optional().isIn(['not_started','in_progress','completed']), body('progressPercent').optional().isInt({ min: 0, max: 100 }).toInt(), body('recommendation').optional({ values: 'null' }).trim().isLength({ max: 5000 })], validate, asyncHandler(assessments.updateAssignment));
+router.post('/assessment-assignments/:id/report', [param('id').isInt({ min: 1 }).toInt()], validate, uploadAssessmentReport, asyncHandler(assessments.uploadReport));
 
 router.get('/subscribers', subscriberListRules, validate, asyncHandler(subscribers.listSubscribers));
 router.get(['/subscribers/export', '/subscribers/export.csv'], subscriberListRules, validate, asyncHandler(subscribers.exportSubscribers));
@@ -117,6 +125,16 @@ router.patch('/media/:id', mediaUpdateRules, validate, asyncHandler(media.update
 router.post('/media/:id/rename', mediaRenameRules, validate, asyncHandler(media.renameMedia));
 router.post('/media/:id/optimize', idParamRule, validate, asyncHandler(media.reoptimizeMedia));
 router.delete('/media/:id', idParamRule, validate, asyncHandler(media.deleteMedia));
+
+// --- Media Gallery Manager (Photos & Videos) --------------------------------
+router.get('/media-gallery/stats', asyncHandler(mediaGalleryAdmin.getStats));
+router.get('/media-gallery', asyncHandler(mediaGalleryAdmin.listMedia));
+router.post('/media-gallery', uploadMediaFile, asyncHandler(mediaGalleryAdmin.createMedia));
+router.post('/media-gallery/bulk-photos', uploadMultiplePhotos, asyncHandler(mediaGalleryAdmin.bulkUploadPhotos));
+router.patch('/media-gallery/reorder', asyncHandler(mediaGalleryAdmin.reorderMedia));
+router.get('/media-gallery/:id', idParamRule, validate, asyncHandler(mediaGalleryAdmin.getMedia));
+router.patch('/media-gallery/:id', idParamRule, validate, asyncHandler(mediaGalleryAdmin.updateMedia));
+router.delete('/media-gallery/:id', idParamRule, validate, asyncHandler(mediaGalleryAdmin.deleteMedia));
 
 // --- Redirect manager -------------------------------------------------------
 router.get('/redirects', asyncHandler(redirects.listRedirects));
@@ -195,6 +213,9 @@ const RULES_KEY = {
   'social-links': 'socialLinks',
   navigation: 'navigation',
   faqs: 'faqs',
+  assessments: 'assessments',
+  universities: 'universities',
+  programs: 'programs',
 };
 
 /** Run an array of express-validator chains, then the shared `validate`. */

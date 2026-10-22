@@ -18,6 +18,9 @@ const boolField = (name, { partial = false } = {}) =>
 const urlField = (name, { partial = false, max = 500 } = {}) =>
   maybe(body(name).trim().isLength({ min: 1, max }).withMessage(`${name} is invalid.`).custom(isSafeAssetUrl).withMessage(`${name} must be an HTTP(S) URL or a local path.`), partial);
 
+const externalUrlField = (name, { partial = false } = {}) =>
+  maybe(body(name).trim().isURL({ protocols: ['http', 'https'], require_protocol: true, require_valid_protocol: true }).withMessage(`${name} must be a complete HTTP(S) URL.`).isLength({ max: 500 }), partial);
+
 const optionalText = (name, max = 2000) =>
   body(name).optional({ values: 'null' }).trim().isLength({ max }).withMessage(`${name} is too long.`);
 
@@ -165,6 +168,33 @@ const spec = {
     maybe(body('pageId').isInt({ min: 1 }).withMessage('Invalid page.').toInt(), partial).optional({ values: 'null' }),
     intField('sortOrder', { partial }),
     boolField('isActive', { partial }),
+  ],
+  assessments: (partial) => [
+    ...(partial ? idParamRule : []),
+    str('slug', { max: 160, partial, message: 'Assessment slug is required.' }).matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).withMessage('Use a lowercase URL slug.'),
+    str('title', { max: 200, partial, message: 'Assessment title is required.' }),
+    maybe(body('category').isIn(['student', 'professional', 'insights']).withMessage('Choose a valid assessment category.'), partial),
+    str('audience', { max: 300, partial, message: 'Audience is required.' }),
+    str('summary', { max: 3000, partial, message: 'Summary is required.' }),
+    optionalText('purpose', 3000),
+    optionalText('prerequisites', 2000),
+    optionalText('deliverables', 3000),
+    optionalText('icon', 80),
+    urlField('imageUrl', { partial, max: 500 }).optional({ values: 'falsy' }),
+    maybe(body('accessMode').isIn(['request', 'external']).withMessage('Invalid access mode.'), partial),
+    urlField('launchUrl', { partial, max: 500 }).optional({ values: 'falsy' }),
+    intField('sortOrder', { partial }),
+    boolField('isActive', { partial }),
+  ],
+  universities: (partial) => [
+    ...(partial ? idParamRule : []), str('slug',{max:180,partial,message:'Slug is required.'}).matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    str('name',{max:220,partial,message:'University name is required.'}), str('country',{max:100,partial,message:'Country is required.'}), optionalText('city',120), optionalText('universityType',80), optionalText('degreeLevels',500), optionalText('studyAreas',5000), optionalText('overview',10000), optionalText('entryRequirements',10000),
+    maybe(body('tuitionMin').isFloat({min:0}).toFloat(),partial).optional({values:'falsy'}), maybe(body('tuitionMax').isFloat({min:0}).toFloat(),partial).optional({values:'falsy'}), optionalText('currency',3), optionalText('scholarshipsText',5000), optionalText('englishRequirements',5000), optionalText('intakes',500), optionalText('deadlinesText',5000),
+    externalUrlField('officialUrl',{partial}), externalUrlField('sourceUrl',{partial}), maybe(body('lastVerifiedDate').isISO8601({strict:true}).withMessage('Use a valid verification date.'),partial), urlField('imageUrl',{partial}).optional({values:'falsy'}), boolField('isFeatured',{partial}), intField('sortOrder',{partial}), boolField('isActive',{partial}),
+  ],
+  programs: (partial) => [
+    ...(partial ? idParamRule : []), maybe(body('universityId').isInt({min:1}).toInt(),partial), str('slug',{max:200,partial,message:'Slug is required.'}).matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), str('name',{max:240,partial,message:'Program name is required.'}), str('subjectArea',{max:140,partial,message:'Subject area is required.'}), str('degreeLevel',{max:100,partial,message:'Degree level is required.'}),
+    optionalText('qualification',140),optionalText('campusLocation',160),optionalText('durationText',100),optionalText('studyMode',80),optionalText('overview',10000),optionalText('curriculum',10000),optionalText('learningOutcomes',10000),optionalText('entryRequirements',10000),optionalText('academicPrerequisites',5000),optionalText('englishRequirements',5000),maybe(body('tuitionAmount').isFloat({min:0}).toFloat(),partial).optional({values:'falsy'}),optionalText('currency',3),optionalText('additionalCosts',5000),optionalText('scholarshipsText',5000),optionalText('intakes',500),optionalText('deadlinesText',5000),optionalText('careerPathways',5000),externalUrlField('officialUrl',{partial}),externalUrlField('sourceUrl',{partial}),maybe(body('lastVerifiedDate').isISO8601({strict:true}),partial),boolField('isFeatured',{partial}),intField('sortOrder',{partial}),boolField('isActive',{partial}),
   ],
 };
 

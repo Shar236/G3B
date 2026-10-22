@@ -9,6 +9,7 @@ import CounsellingModal from '../ui/CounsellingModal.jsx'
 import { resolveMediaUrl } from '../../api/client.js'
 import ErrorBoundary from '../ui/ErrorBoundary.jsx'
 import defaultHomeData from '../../data/defaultHomeContent.js'
+import MotionEnhancer from '../ui/MotionEnhancer.jsx'
 
 const SiteContentContext = createContext(null)
 
@@ -24,6 +25,10 @@ export default function PublicLayout() {
   const { data, loading, error, reload } = useHomeContent()
   const location = useLocation()
   const siteData = data || defaultHomeData
+
+  useEffect(() => {
+    if (!location.hash) window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [location.pathname, location.hash])
 
   // Dynamic favicon and tracking script injection from Admin Settings
   useEffect(() => {
@@ -78,6 +83,7 @@ export default function PublicLayout() {
   return (
     <SiteContentContext.Provider value={{ data: siteData, rawData: data, loading, error, reload }}>
       <CounsellingProvider>
+        <div className="public-site">
         <a className="sr-only" href="#primary">
           Skip to content
         </a>
@@ -96,6 +102,8 @@ export default function PublicLayout() {
           services={siteData?.services}
           destinations={siteData?.destinations}
         />
+        <MotionEnhancer />
+        </div>
         <CounsellingModal />
       </CounsellingProvider>
     </SiteContentContext.Provider>

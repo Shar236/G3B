@@ -59,7 +59,7 @@ export function createApp() {
         origin: true,
         credentials: true,
         methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Request-ID'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Student-CSRF-Token', 'X-Request-ID'],
         exposedHeaders: ['X-Request-ID', 'Retry-After', 'Content-Disposition'],
         maxAge: 86400,
       });
@@ -79,7 +79,7 @@ export function createApp() {
     const supplied = req.get('x-request-id');
     req.requestId = typeof supplied === 'string' && /^[a-zA-Z0-9_-]{8,100}$/.test(supplied) ? supplied : crypto.randomUUID();
     res.setHeader('X-Request-ID', req.requestId);
-    if (req.path.startsWith('/api/admin') || req.path.startsWith('/api/auth')) res.setHeader('Cache-Control', 'no-store');
+    if (req.path.startsWith('/api/admin') || req.path.startsWith('/api/auth') || req.path.startsWith('/api/student')) res.setHeader('Cache-Control', 'no-store');
     next();
   });
 

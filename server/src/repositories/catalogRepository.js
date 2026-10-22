@@ -5,8 +5,8 @@ import ApiError from '../utils/ApiError.js';
 const toCamel = (key) => key.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
 const toSnake = (key) => key.replace(/[A-Z]/g, (char) => `_${char.toLowerCase()}`);
 
-const BOOLEAN_FIELDS = new Set(['isActive']);
-const NUMBER_FIELDS = new Set(['id', 'sortOrder', 'rating', 'stepNumber', 'serviceId', 'destinationId']);
+const BOOLEAN_FIELDS = new Set(['isActive', 'isFeatured']);
+const NUMBER_FIELDS = new Set(['id', 'sortOrder', 'rating', 'stepNumber', 'serviceId', 'destinationId', 'universityId', 'progressPercent']);
 
 /** Convert a database row into the camelCase shape exposed by the API. */
 export function mapRow(row) {
@@ -480,6 +480,13 @@ export const faqsRepository = createSimpleResource('faqs', [
   'is_active',
 ]);
 
+export const assessmentListingsRepository = createSimpleResource('assessment_listings', [
+  'slug', 'title', 'category', 'audience', 'summary', 'purpose', 'prerequisites', 'deliverables',
+  'icon', 'image_url', 'access_mode', 'launch_url', 'sort_order', 'is_active',
+]);
+export const universitiesRepository = createSimpleResource('universities', ['slug','name','country','city','university_type','degree_levels','study_areas','overview','entry_requirements','tuition_min','tuition_max','currency','scholarships_text','english_requirements','intakes','deadlines_text','official_url','source_url','last_verified_date','image_url','is_featured','sort_order','is_active']);
+export const programsRepository = createSimpleResource('programs', ['university_id','slug','name','subject_area','degree_level','qualification','campus_location','duration_text','study_mode','overview','curriculum','learning_outcomes','entry_requirements','academic_prerequisites','english_requirements','tuition_amount','currency','additional_costs','scholarships_text','intakes','deadlines_text','career_pathways','official_url','source_url','last_verified_date','is_featured','sort_order','is_active']);
+
 export default {
   servicesRepository,
   destinationsRepository,
@@ -494,4 +501,7 @@ export default {
   socialLinksRepository,
   navigationItemsRepository,
   faqsRepository,
+  assessmentListingsRepository,
+  universitiesRepository,
+  programsRepository,
 };

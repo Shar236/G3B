@@ -2,9 +2,9 @@ export const defaultHomeData = {
   content: {
     hero: {
       heading: 'Study Abroad with Expert Career Guidance & Psychometric Assessment',
-      subheading: 'Personalised university admissions, test prep, and profile building from Nerul, Navi Mumbai.',
-      body: 'We guide students from Grade 9 through post-graduation to discover the right courses, secure global admissions, and achieve visa success.',
-      ctaLabel: 'Book Free Counselling',
+      subheading: 'G3B Education – Your Gateway to the Right Career & University',
+      body: 'Start with scientific psychometric assessment and expert career guidance to discover your ideal path — then get IELTS/TOEFL/PTE coaching and end-to-end study abroad support for the USA, UK, Canada, Australia, Europe and more.',
+      ctaLabel: 'Start Your Journey',
       ctaUrl: '#contact',
     },
     why: {
@@ -47,17 +47,17 @@ export const defaultHomeData = {
   },
   settings: {
     brand_name: 'G3B Education',
-    contact_address: 'Shop No. 12, Nerul, Navi Mumbai, Maharashtra 400706',
-    contact_phone: '+91 98200 00000',
-    contact_phone_link: '+919820000000',
-    contact_email: 'info@g3beducation.com',
+    contact_address: 'G3B Education, 207, Om Sai Datta Niwas, Plot A32, Sector 20, Nerul West, Navi Mumbai 400706, Maharashtra, India',
+    contact_phone: '8928659569',
+    contact_phone_link: '+918928659569',
+    contact_email: 'admissions.g3beducation@gmail.com',
     working_hours: 'Mon - Sat: 10:00 AM - 7:00 PM',
     seo_title: 'G3B Education | Overseas Education & Career Guidance Navi Mumbai',
     seo_description: 'Career guidance, psychometric assessment, test preparation and end-to-end study abroad support from Nerul, Navi Mumbai.',
   },
   stats: [
     { value: '15,000+', label: 'Students Counselled' },
-    { value: '500+', label: 'Universities Students Sent To' },
+    { value: '500+', label: 'Partner Universities' },
     { value: '10+', label: 'Countries' },
     { value: '98%', label: 'Visa Success Rate' },
   ],
@@ -195,9 +195,9 @@ export const defaultHomeData = {
   ],
   gallery: [],
   testimonials: [
-    { id: 1, studentName: 'Aarav Sharma', destinationCountry: 'USA - MS in CS', quote: 'G3B Education made my US university applications stress-free. Their SOP review and visa interview mock rounds gave me huge confidence!', rating: 5 },
-    { id: 2, studentName: 'Pooja Iyer', destinationCountry: 'UK - MSc Management', quote: 'The counsellors helped me shortlist the best 1-year UK Master’s programmes within my budget. Got my visa in just 10 days!', rating: 5 },
-    { id: 3, studentName: 'Rohan Deshmukh', destinationCountry: 'Germany - MS Automotive', quote: 'Minal ma’am and the team guided me through the entire APS certification and public university application process for Germany.', rating: 5 },
+    { id: 1, authorName: 'Tanmay Pachpande', content: 'My experience with G3B Education, particularly with my consultant Minal Kulkarni, has been absolutely outstanding. Minal’s guidance went beyond simply ticking boxes. She helped me meticulously research and decide on the right university and course.' },
+    { id: 2, authorName: 'Neha Misar', content: 'Amazing experience with G3B Education Study Abroad! Their services are top-notch. Especially grateful to Minal Ma’am — the best motivator and counselor — and Mansi Ma’am who treated me like her own younger sister.' },
+    { id: 3, authorName: 'Zeba Shaikh', content: 'Meeting Minal Kulkarni truly changed my perspective. Thanks to her undying support and belief in me, I chose the path of studying abroad. Her faith motivated me to work harder. Highly recommend her.' },
   ],
   videos: [
     { id: 1, title: 'What Parents Say', category: 'What Parents Say', youtubeId: 'fET2RhoejWA', youtubeUrl: 'https://youtu.be/fET2RhoejWA', orientation: 'landscape', sortOrder: 0, isActive: true },

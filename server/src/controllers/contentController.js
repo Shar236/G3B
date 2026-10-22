@@ -14,6 +14,7 @@ import {
   faqsRepository,
 } from '../repositories/catalogRepository.js';
 import { contentBlocksRepository, settingsRepository } from '../repositories/settingsRepository.js';
+import assessmentRepository from '../repositories/assessmentRepository.js';
 
 /** Public, read-only content endpoints (only active rows are exposed). */
 
@@ -75,6 +76,10 @@ export async function getSiteSettings(_req, res) {
 
 export async function getContentBlocks(_req, res) {
   res.json({ success: true, data: await contentBlocksRepository.all() });
+}
+
+export async function listAssessments(_req, res) {
+  res.json({ success: true, data: await assessmentRepository.catalogue({ activeOnly: true }) });
 }
 
 /**
@@ -152,4 +157,5 @@ export default {
   getSiteSettings,
   getContentBlocks,
   getHome,
+  listAssessments,
 };

@@ -60,6 +60,9 @@ export const updateResource = (resource, id, payload) =>
 export const deleteResource = (resource, id) => api.delete(`/api/admin/${resource}/${id}`).then((r) => r.data.data)
 export const reorderResource = (resource, ids) =>
   api.patch(`/api/admin/${resource}/reorder`, { ids }).then((r) => r.data.data)
+export const listAssessmentAssignments = () => api.get('/api/admin/assessment-assignments').then((r) => r.data.data)
+export const updateAssessmentAssignment = (id, payload) => api.patch(`/api/admin/assessment-assignments/${id}`, payload).then((r) => r.data.data)
+export async function uploadAssessmentReport(id, file) { const formData=new FormData(); formData.append('report',file); return api.post(`/api/admin/assessment-assignments/${id}/report`,formData,{headers:{'Content-Type':'multipart/form-data'}}).then((r)=>r.data.data) }
 
 // --- Content blocks & settings ---------------------------------------------
 export const updateContentBlock = (key, payload) =>

@@ -1,0 +1,933 @@
+{
+  "base": "http://127.0.0.1:5173",
+  "results": [
+    {
+      "width": 320,
+      "route": "/",
+      "errors": [],
+      "viewport": 336,
+      "scrollWidth": 336,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": -40,
+          "right": 360
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 304,
+          "right": 592
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 248,
+          "right": 648
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 534,
+          "right": 574
+        },
+        {
+          "tag": "I",
+          "className": "fas fa-expand",
+          "left": 547,
+          "right": 561
+        },
+        {
+          "tag": "IMG",
+          "className": "",
+          "left": 367,
+          "right": 529
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-overlay",
+          "left": 304,
+          "right": 592
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 592,
+          "right": 880
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 536,
+          "right": 936
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 822,
+          "right": 862
+        }
+      ],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 320,
+      "route": "/services",
+      "errors": [],
+      "viewport": 320,
+      "scrollWidth": 320,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 320,
+      "route": "/partner-with-us",
+      "errors": [],
+      "viewport": 320,
+      "scrollWidth": 320,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 320,
+      "route": "/insights",
+      "errors": [],
+      "viewport": 320,
+      "scrollWidth": 320,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 320,
+      "route": "/student/login",
+      "errors": [],
+      "viewport": 320,
+      "scrollWidth": 320,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 375,
+      "route": "/",
+      "errors": [],
+      "viewport": 375,
+      "scrollWidth": 375,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": -44,
+          "right": 419
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 359,
+          "right": 702
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 299,
+          "right": 762
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 644,
+          "right": 684
+        },
+        {
+          "tag": "I",
+          "className": "fas fa-expand",
+          "left": 657,
+          "right": 671
+        },
+        {
+          "tag": "IMG",
+          "className": "",
+          "left": 434,
+          "right": 627
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-overlay",
+          "left": 359,
+          "right": 702
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 702,
+          "right": 1045
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 642,
+          "right": 1105
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 987,
+          "right": 1027
+        }
+      ],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 375,
+      "route": "/services",
+      "errors": [],
+      "viewport": 375,
+      "scrollWidth": 375,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 375,
+      "route": "/partner-with-us",
+      "errors": [],
+      "viewport": 375,
+      "scrollWidth": 375,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 375,
+      "route": "/insights",
+      "errors": [],
+      "viewport": 375,
+      "scrollWidth": 375,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 375,
+      "route": "/student/login",
+      "errors": [],
+      "viewport": 375,
+      "scrollWidth": 375,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 430,
+      "route": "/",
+      "errors": [],
+      "viewport": 430,
+      "scrollWidth": 430,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": -48,
+          "right": 478
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 414,
+          "right": 812
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 350,
+          "right": 876
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 754,
+          "right": 794
+        },
+        {
+          "tag": "I",
+          "className": "fas fa-expand",
+          "left": 767,
+          "right": 781
+        },
+        {
+          "tag": "IMG",
+          "className": "",
+          "left": 501,
+          "right": 725
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-overlay",
+          "left": 414,
+          "right": 812
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 812,
+          "right": 1210
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 748,
+          "right": 1274
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 1152,
+          "right": 1192
+        }
+      ],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 430,
+      "route": "/services",
+      "errors": [],
+      "viewport": 430,
+      "scrollWidth": 430,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 430,
+      "route": "/partner-with-us",
+      "errors": [],
+      "viewport": 430,
+      "scrollWidth": 430,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 430,
+      "route": "/insights",
+      "errors": [],
+      "viewport": 430,
+      "scrollWidth": 430,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 430,
+      "route": "/student/login",
+      "errors": [],
+      "viewport": 430,
+      "scrollWidth": 430,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 1,
+      "loading": false
+    },
+    {
+      "width": 768,
+      "route": "/",
+      "errors": [],
+      "viewport": 768,
+      "scrollWidth": 753,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": -64,
+          "right": 817
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 730,
+          "right": 1437
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 642,
+          "right": 1524
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 1379,
+          "right": 1419
+        },
+        {
+          "tag": "I",
+          "className": "fas fa-expand",
+          "left": 1392,
+          "right": 1406
+        },
+        {
+          "tag": "IMG",
+          "className": "",
+          "left": 934,
+          "right": 1233
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-overlay",
+          "left": 730,
+          "right": 1437
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 1437,
+          "right": 2144
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 1349,
+          "right": 2231
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 2086,
+          "right": 2126
+        }
+      ],
+      "footerOverlap": false,
+      "footerColumns": 2,
+      "loading": false
+    },
+    {
+      "width": 768,
+      "route": "/services",
+      "errors": [],
+      "viewport": 768,
+      "scrollWidth": 753,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 2,
+      "loading": false
+    },
+    {
+      "width": 768,
+      "route": "/partner-with-us",
+      "errors": [],
+      "viewport": 768,
+      "scrollWidth": 753,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 2,
+      "loading": false
+    },
+    {
+      "width": 768,
+      "route": "/insights",
+      "errors": [],
+      "viewport": 768,
+      "scrollWidth": 753,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 2,
+      "loading": false
+    },
+    {
+      "width": 768,
+      "route": "/student/login",
+      "errors": [],
+      "viewport": 768,
+      "scrollWidth": 753,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 2,
+      "loading": false
+    },
+    {
+      "width": 1024,
+      "route": "/",
+      "errors": [],
+      "viewport": 1024,
+      "scrollWidth": 1009,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": -75,
+          "right": 1084
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 978,
+          "right": 1926
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 873,
+          "right": 2031
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 1868,
+          "right": 1908
+        },
+        {
+          "tag": "I",
+          "className": "fas fa-expand",
+          "left": 1881,
+          "right": 1895
+        },
+        {
+          "tag": "IMG",
+          "className": "",
+          "left": 1257,
+          "right": 1647
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-overlay",
+          "left": 978,
+          "right": 1926
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 1926,
+          "right": 2873
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 1820,
+          "right": 2979
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 2815,
+          "right": 2855
+        }
+      ],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1024,
+      "route": "/services",
+      "errors": [],
+      "viewport": 1024,
+      "scrollWidth": 1009,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1024,
+      "route": "/partner-with-us",
+      "errors": [],
+      "viewport": 1024,
+      "scrollWidth": 1009,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1024,
+      "route": "/insights",
+      "errors": [],
+      "viewport": 1024,
+      "scrollWidth": 1009,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1024,
+      "route": "/student/login",
+      "errors": [],
+      "viewport": 1024,
+      "scrollWidth": 1009,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1280,
+      "route": "/",
+      "errors": [],
+      "viewport": 1280,
+      "scrollWidth": 1265,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": -78,
+          "right": 1343
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 1221,
+          "right": 2397
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 1098,
+          "right": 2519
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 2339,
+          "right": 2379
+        },
+        {
+          "tag": "I",
+          "className": "fas fa-expand",
+          "left": 2352,
+          "right": 2365
+        },
+        {
+          "tag": "IMG",
+          "className": "",
+          "left": 1614,
+          "right": 2004
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-overlay",
+          "left": 1221,
+          "right": 2397
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 2397,
+          "right": 3573
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 2274,
+          "right": 3695
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 3515,
+          "right": 3555
+        }
+      ],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1280,
+      "route": "/services",
+      "errors": [],
+      "viewport": 1280,
+      "scrollWidth": 1265,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1280,
+      "route": "/partner-with-us",
+      "errors": [],
+      "viewport": 1280,
+      "scrollWidth": 1265,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1280,
+      "route": "/insights",
+      "errors": [],
+      "viewport": 1280,
+      "scrollWidth": 1265,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1280,
+      "route": "/student/login",
+      "errors": [],
+      "viewport": 1280,
+      "scrollWidth": 1265,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1440,
+      "route": "/",
+      "errors": [],
+      "viewport": 1440,
+      "scrollWidth": 1425,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 1301,
+          "right": 2477
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 1178,
+          "right": 2599
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 2419,
+          "right": 2459
+        },
+        {
+          "tag": "I",
+          "className": "fas fa-expand",
+          "left": 2432,
+          "right": 2445
+        },
+        {
+          "tag": "IMG",
+          "className": "",
+          "left": 1694,
+          "right": 2084
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-overlay",
+          "left": 1301,
+          "right": 2477
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 2477,
+          "right": 3653
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 2354,
+          "right": 3775
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 3595,
+          "right": 3635
+        },
+        {
+          "tag": "I",
+          "className": "fas fa-expand",
+          "left": 3608,
+          "right": 3621
+        }
+      ],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1440,
+      "route": "/services",
+      "errors": [],
+      "viewport": 1440,
+      "scrollWidth": 1425,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1440,
+      "route": "/partner-with-us",
+      "errors": [],
+      "viewport": 1440,
+      "scrollWidth": 1425,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1440,
+      "route": "/insights",
+      "errors": [],
+      "viewport": 1440,
+      "scrollWidth": 1425,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1440,
+      "route": "/student/login",
+      "errors": [],
+      "viewport": 1440,
+      "scrollWidth": 1425,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1920,
+      "route": "/",
+      "errors": [],
+      "viewport": 1920,
+      "scrollWidth": 1905,
+      "offenders": [
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 1541,
+          "right": 2717
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 1418,
+          "right": 2839
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 2659,
+          "right": 2699
+        },
+        {
+          "tag": "I",
+          "className": "fas fa-expand",
+          "left": 2672,
+          "right": 2685
+        },
+        {
+          "tag": "IMG",
+          "className": "",
+          "left": 1934,
+          "right": 2324
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-overlay",
+          "left": 1541,
+          "right": 2717
+        },
+        {
+          "tag": "DIV",
+          "className": "slide",
+          "left": 2717,
+          "right": 3893
+        },
+        {
+          "tag": "DIV",
+          "className": "slide-bg-blur",
+          "left": 2594,
+          "right": 4015
+        },
+        {
+          "tag": "BUTTON",
+          "className": "slide-expand-btn",
+          "left": 3835,
+          "right": 3875
+        },
+        {
+          "tag": "I",
+          "className": "fas fa-expand",
+          "left": 3848,
+          "right": 3861
+        }
+      ],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1920,
+      "route": "/services",
+      "errors": [],
+      "viewport": 1920,
+      "scrollWidth": 1905,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1920,
+      "route": "/partner-with-us",
+      "errors": [],
+      "viewport": 1920,
+      "scrollWidth": 1905,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1920,
+      "route": "/insights",
+      "errors": [],
+      "viewport": 1920,
+      "scrollWidth": 1905,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    },
+    {
+      "width": 1920,
+      "route": "/student/login",
+      "errors": [],
+      "viewport": 1920,
+      "scrollWidth": 1905,
+      "offenders": [],
+      "footerOverlap": false,
+      "footerColumns": 4,
+      "loading": false
+    }
+  ]
+}

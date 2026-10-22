@@ -14,6 +14,7 @@ const primaryNav = [
   { to: adminPath('partner-enquiries'), label: 'Partner Enquiries', icon: 'fas fa-handshake' },
   { to: adminPath('enquiries/school'), label: 'Grade 9+ & Workshops', icon: 'fas fa-school' },
   { to: adminPath('subscribers'), label: 'Newsletter subscribers', icon: 'fas fa-envelope-open-text' },
+  { to: adminPath('assessment-assignments'), label: 'Assessment requests', icon: 'fas fa-clipboard-check' },
 ]
 
 const seoNav = [
@@ -21,6 +22,7 @@ const seoNav = [
   { to: adminPath('seo/health'), label: 'SEO Health', icon: 'fas fa-heart-pulse' },
   { to: adminPath('redirects'), label: 'Redirect Manager', icon: 'fas fa-signs-post' },
   { to: adminPath('media'), label: 'Image Library', icon: 'fas fa-images' },
+  { to: adminPath('media-gallery'), label: 'Media Gallery Manager', icon: 'fas fa-photo-film' },
 ]
 
 const systemNav = [

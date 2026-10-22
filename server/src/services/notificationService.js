@@ -18,6 +18,8 @@ function adminBody(enquiry) {
     `Email: ${enquiry.email}`,
     `Interested in: ${enquiry.serviceInterest}`,
     `Preferred destination: ${enquiry.preferredDestination || '—'}`,
+    `Preferred contact date: ${enquiry.preferredDate || 'Not specified'}`,
+    `Preferred contact time: ${enquiry.preferredTime || 'Not specified'}`,
     '',
     'Message:',
     enquiry.message || '—',
@@ -33,6 +35,8 @@ function adminHtml(enquiry) {
       <tr><td><strong>Email</strong></td><td>${escapeHtml(enquiry.email)}</td></tr>
       <tr><td><strong>Interested in</strong></td><td>${escapeHtml(enquiry.serviceInterest)}</td></tr>
       <tr><td><strong>Preferred destination</strong></td><td>${escapeHtml(enquiry.preferredDestination || '—')}</td></tr>
+      <tr><td><strong>Preferred contact date</strong></td><td>${escapeHtml(enquiry.preferredDate || 'Not specified')}</td></tr>
+      <tr><td><strong>Preferred contact time</strong></td><td>${escapeHtml(enquiry.preferredTime || 'Not specified')}</td></tr>
     </table>
     <p><strong>Message</strong></p>
     <p>${escapeHtml(enquiry.message || '—').replace(/\n/g, '<br />')}</p>
@@ -48,6 +52,9 @@ function visitorBody(enquiry) {
     'Your submission:',
     `  Service of interest: ${enquiry.serviceInterest}`,
     `  Preferred destination: ${enquiry.preferredDestination || '—'}`,
+    `  Preferred contact date: ${enquiry.preferredDate || 'Not specified'}`,
+    `  Preferred contact time: ${enquiry.preferredTime || 'Not specified'}`,
+    'Our team will confirm availability with you before arranging a session.',
     '',
     'G3B Education',
     'Career Guidance · Psychometric Assessment · Study Abroad',
@@ -61,7 +68,10 @@ function visitorHtml(enquiry) {
     <p>Thank you for contacting <strong>G3B Education</strong>. We have received your enquiry and a
     counsellor will get in touch with you shortly.</p>
     <p><strong>Service of interest:</strong> ${escapeHtml(enquiry.serviceInterest)}<br />
-    <strong>Preferred destination:</strong> ${escapeHtml(enquiry.preferredDestination || '—')}</p>
+    <strong>Preferred destination:</strong> ${escapeHtml(enquiry.preferredDestination || '—')}<br />
+    <strong>Preferred contact date:</strong> ${escapeHtml(enquiry.preferredDate || 'Not specified')}<br />
+    <strong>Preferred contact time:</strong> ${escapeHtml(enquiry.preferredTime || 'Not specified')}</p>
+    <p>Our team will confirm availability with you before arranging a session.</p>
     <p>G3B Education<br />Career Guidance · Psychometric Assessment · Study Abroad<br />
     8928659569 | admissions.g3beducation@gmail.com</p>
   `;
