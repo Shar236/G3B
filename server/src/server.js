@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import env, { validateEnv } from './config/env.js';
 import { createApp } from './app.js';
 import { queryOne, pingDatabase, closePool } from './config/db.js';
