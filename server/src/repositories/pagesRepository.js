@@ -2,7 +2,7 @@ import { query, queryOne, withTransaction } from '../config/db.js';
 
 const toCamel = (key) => key.replace(/_([a-z])/g, (_, char) => char.toUpperCase());
 
-/** mysql2 usually returns JSON columns already parsed, but never assume it. */
+/** PostgreSQL normally returns JSON columns parsed, but never assume it. */
 function parseJsonSafe(value, fallback = null) {
   if (value === null || value === undefined) return fallback;
   if (typeof value === 'object') return value;
@@ -212,9 +212,16 @@ export const pagesRepository = {
   },
 
   async findRouteOwner(route, excludeId = null) {
+    if (excludeId !== null && excludeId !== undefined) {
+      const row = await queryOne(
+        'SELECT id, name FROM pages WHERE route = ? AND id <> ? LIMIT 1',
+        [route, excludeId],
+      );
+      return row || null;
+    }
     const row = await queryOne(
-      'SELECT id, name FROM pages WHERE route = ? AND (? IS NULL OR id <> ?) LIMIT 1',
-      [route, excludeId, excludeId],
+      'SELECT id, name FROM pages WHERE route = ? LIMIT 1',
+      [route],
     );
     return row || null;
   },
@@ -239,7 +246,7 @@ export const pagesRepository = {
 
       await connection.execute(
         `INSERT INTO page_seo (page_id, meta_robots, status) VALUES (?, 'index,follow', ?)
-         ON DUPLICATE KEY UPDATE page_id = VALUES(page_id)`,
+         ON CONFLICT (page_id) DO NOTHING`,
         [result.insertId, payload.status === 'published' ? 'published' : 'draft'],
       );
 
@@ -394,11 +401,11 @@ export const pagesRepository = {
     const keys = Object.keys(values);
     const columns = ['page_id', 'section_key', ...keys];
     const placeholders = columns.map(() => '?').join(', ');
-    const updates = keys.map((key) => `${key} = VALUES(${key})`).join(', ');
+    const updates = keys.map((key) => `${key} = EXCLUDED.${key}`).join(', ');
 
     await query(
       `INSERT INTO page_sections (${columns.join(', ')}) VALUES (${placeholders})
-       ON DUPLICATE KEY UPDATE ${updates || 'section_key = VALUES(section_key)'}`,
+       ON CONFLICT (page_id, section_key) DO UPDATE SET ${updates || 'section_key = EXCLUDED.section_key'}`,
       [pageId, sectionKey, ...keys.map((key) => values[key])],
     );
 

@@ -86,7 +86,7 @@ export const usersRepository = {
     await query('UPDATE users SET failed_login_count = failed_login_count + 1 WHERE id = ?', [id]);
     const row = await queryOne('SELECT failed_login_count FROM users WHERE id = ? LIMIT 1', [id]);
     if (Number(row?.failed_login_count ?? 0) >= maxAttempts) {
-      await query('UPDATE users SET locked_until = DATE_ADD(NOW(), INTERVAL ? MINUTE) WHERE id = ?', [lockMinutes, id]);
+      await query("UPDATE users SET locked_until = NOW() + (? * INTERVAL '1 minute') WHERE id = ?", [lockMinutes, id]);
     }
   },
 
@@ -144,7 +144,7 @@ export const enquiriesRepository = {
   async findRecentDuplicate({ email, phone, minutes = 2 }) {
     const row = await queryOne(
       `SELECT id, created_at FROM enquiries
-       WHERE email = ? AND phone = ? AND created_at > (NOW() - INTERVAL ? MINUTE)
+       WHERE email = ? AND phone = ? AND created_at > (NOW() - (? * INTERVAL '1 minute'))
        ORDER BY created_at DESC LIMIT 1`,
       [email, phone, minutes],
     );
@@ -292,7 +292,7 @@ export const enquiriesRepository = {
        FROM enquiries e
        LEFT JOIN users u ON u.id = e.assigned_to
        WHERE e.follow_up_at IS NOT NULL AND e.anonymized_at IS NULL
-         AND e.follow_up_at <= (NOW() + INTERVAL ? DAY)
+         AND e.follow_up_at <= (NOW() + (? * INTERVAL '1 day'))
        ORDER BY e.follow_up_at ASC LIMIT ?`,
       [days, limit],
     );
@@ -363,7 +363,7 @@ export const enquiriesRepository = {
 
   async countSince(days = 7) {
     const row = await queryOne(
-      'SELECT COUNT(*) AS total FROM enquiries WHERE created_at > (NOW() - INTERVAL ? DAY)',
+      "SELECT COUNT(*) AS total FROM enquiries WHERE created_at > (NOW() - (? * INTERVAL '1 day'))",
       [days],
     );
     return Number(row.total);

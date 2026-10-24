@@ -43,11 +43,11 @@ export const integrationsRepository = {
     await query(
       `INSERT INTO integration_settings (provider, is_enabled, config, status, last_error)
        VALUES (?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         is_enabled = VALUES(is_enabled),
-         config = VALUES(config),
-         status = VALUES(status),
-         last_error = VALUES(last_error)`,
+       ON CONFLICT (provider) DO UPDATE SET
+         is_enabled = EXCLUDED.is_enabled,
+         config = EXCLUDED.config,
+         status = EXCLUDED.status,
+         last_error = EXCLUDED.last_error`,
       [
         provider,
         isEnabled ? 1 : 0,

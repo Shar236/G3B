@@ -1,9 +1,9 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { pool } from '../config/db.js';
+import { query } from '../config/db.js';
 
 export async function syncExistingVideosToRegistry() {
-  const [existing] = await pool.execute(`
+  const existing = await query(`
     INSERT INTO youtube_short_registry
       (youtube_id, source_url, title, channel_verified, verified_short, verification_source, title_overridden, thumbnail_url, availability, excluded, video_id, last_checked_at)
     SELECT
@@ -18,12 +18,12 @@ export async function syncExistingVideosToRegistry() {
       'available',
       0,
       v.id,
-      UTC_TIMESTAMP()
+      CURRENT_TIMESTAMP
     FROM video_testimonials v
     WHERE v.youtube_id IS NOT NULL AND v.youtube_id != ''
-    ON DUPLICATE KEY UPDATE
-      video_id = VALUES(video_id),
-      source_url = VALUES(source_url),
+    ON CONFLICT (youtube_id) DO UPDATE SET
+      video_id = EXCLUDED.video_id,
+      source_url = EXCLUDED.source_url,
       channel_verified = 1,
       verified_short = 1,
       availability = 'available'

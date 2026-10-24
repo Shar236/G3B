@@ -1,11 +1,7 @@
 import env, { validateEnv } from './config/env.js';
 import { createApp } from './app.js';
-import { pool, pingDatabase, closePool } from './config/db.js';
+import { queryOne, pingDatabase, closePool } from './config/db.js';
 import logger from './utils/logger.js';
-import { runMigrations } from './db/migrate.js';
-import { seedDatabase } from './db/seed.js';
-import { enrichData } from './db/enrichSeed.js';
-import { syncExistingVideosToRegistry } from './db/syncExistingVideos.js';
 import { startYouTubeSyncScheduler } from './services/youtubeSyncService.js';
 
 async function waitForDatabase(maxRetries = env.isProduction ? 5 : 1, delayMs = 2000) {
@@ -31,26 +27,10 @@ async function start() {
     await waitForDatabase();
     logger.info('Database connection established', { database: env.db.name, host: env.db.host });
 
-    // Ensure database tables exist and seed initial content if fresh/empty
-    try {
-      logger.info('Checking schema migrations...');
-      await runMigrations({ log: (msg) => logger.info(msg) });
-
-      const [rows] = await pool.query('SELECT COUNT(*) AS total FROM content_blocks');
-      if (!rows || rows.length === 0 || rows[0].total === 0) {
-        logger.info('Database is unseeded. Running seedDatabase()...');
-        await seedDatabase({ log: (msg) => logger.info(msg) });
-        await enrichData().catch((err) => logger.warn('Enrich data warning', { error: err.message }));
-        await syncExistingVideosToRegistry().catch((err) => logger.warn('Sync videos warning', { error: err.message }));
-        logger.info('Database auto-initialization and seeding completed successfully.');
-      } else {
-        logger.info(`Database already populated with ${rows[0].total} content blocks.`);
-      }
-    } catch (dbInitErr) {
-      logger.error('Database migration/seed error during startup', { error: dbInitErr.message });
-    }
+    const schema = await queryOne("SELECT to_regclass('public.content_blocks') AS table_name");
+    if (!schema?.table_name) throw new Error('PostgreSQL schema is missing. Run npm run migrate:supabase before starting the API.');
   } catch (error) {
-    logger.error('Could not connect to MySQL. Check DB_* values in server/.env', { error: error.message });
+    logger.error('Could not connect to Supabase PostgreSQL. Check DATABASE_URL.', { error: error.message });
     if (env.isProduction) process.exit(1);
     logger.warn('Starting anyway (development). Data endpoints will return 503 until the database is reachable.');
   }

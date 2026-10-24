@@ -31,8 +31,8 @@ export const subscribersRepository = {
     await query(
       `INSERT INTO newsletter_subscribers (email,phone,source,status,consent_at,unsubscribe_token_hash)
        VALUES (?,?,?,'active',NOW(),?)
-       ON DUPLICATE KEY UPDATE phone = COALESCE(VALUES(phone),phone), source = VALUES(source),
-         unsubscribe_token_hash = IF(status = 'unsubscribed' OR unsubscribe_token_hash IS NULL,VALUES(unsubscribe_token_hash),unsubscribe_token_hash),
+       ON CONFLICT (email) DO UPDATE SET phone = COALESCE(EXCLUDED.phone,newsletter_subscribers.phone), source = EXCLUDED.source,
+         unsubscribe_token_hash = CASE WHEN newsletter_subscribers.status = 'unsubscribed' OR newsletter_subscribers.unsubscribe_token_hash IS NULL THEN EXCLUDED.unsubscribe_token_hash ELSE newsletter_subscribers.unsubscribe_token_hash END,
          consent_at = NOW(), status = 'active', unsubscribed_at = NULL`,
       [email, phone || null, source, hashSubscriberToken(token)],
     );

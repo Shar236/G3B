@@ -391,7 +391,7 @@ export const videosRepository = {
   async list({ activeOnly = false } = {}) {
     // Gate every legacy duplicate by provider/ID, including exclusion tombstones
     // whose original linked row has been removed. Vimeo IDs remain independent.
-    const rows = await query(`SELECT v.*, r.thumbnail_url, r.availability FROM video_testimonials v LEFT JOIN youtube_short_registry r ON r.youtube_id = v.youtube_id AND v.youtube_url NOT REGEXP '^https?://(www[.]|player[.])?vimeo[.]com([/:])' ${activeOnly ? "WHERE v.is_active = 1 AND (r.id IS NULL OR (r.excluded = 0 AND (r.verification_source = 'admin' OR (r.channel_verified = 1 AND r.verified_short = 1 AND r.availability = 'available' AND r.last_checked_at > UTC_TIMESTAMP() - INTERVAL 30 DAY))))" : ''} ORDER BY v.sort_order ASC, v.id ASC`);
+    const rows = await query(`SELECT v.*, r.thumbnail_url, r.availability FROM video_testimonials v LEFT JOIN youtube_short_registry r ON r.youtube_id = v.youtube_id AND v.youtube_url !~ '^https?://(www[.]|player[.])?vimeo[.]com([/:])' ${activeOnly ? "WHERE v.is_active = 1 AND (r.id IS NULL OR (r.excluded = 0 AND (r.verification_source = 'admin' OR (r.channel_verified = 1 AND r.verified_short = 1 AND r.availability = 'available' AND r.last_checked_at > CURRENT_TIMESTAMP - INTERVAL '30 days'))))" : ''} ORDER BY v.sort_order ASC, v.id ASC`);
 
     // Existing duplicate records remain editable; public carousels receive one ID.
     const seen = new Set();
@@ -421,7 +421,7 @@ export const videosRepository = {
       const row = rows[0];
       if (!row) return false;
       if (parseVideoUrl(row.youtube_url)?.provider === 'youtube') {
-        await connection.execute(`INSERT INTO youtube_short_registry (youtube_id, source_url, excluded) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE excluded = 1, video_id = NULL`, [row.youtube_id, row.youtube_url]);
+        await connection.execute(`INSERT INTO youtube_short_registry (youtube_id, source_url, excluded) VALUES (?, ?, 1) ON CONFLICT (youtube_id) DO UPDATE SET excluded = 1, video_id = NULL`, [row.youtube_id, row.youtube_url]);
       }
       await connection.execute('DELETE FROM video_testimonials WHERE id = ?', [id]);
       return true;

@@ -31,7 +31,7 @@ export function appendDates(where, params, filters, alias) {
   if (filters.dateTo) {
     // A date-only upper bound includes that entire local database day.
     where.push(/^\d{4}-\d{2}-\d{2}$/.test(filters.dateTo)
-      ? `${alias}.created_at < DATE_ADD(?, INTERVAL 1 DAY)` : `${alias}.created_at <= ?`);
+      ? `${alias}.created_at < (?::date + INTERVAL '1 day')` : `${alias}.created_at <= ?`);
     params.push(filters.dateTo);
   }
 }

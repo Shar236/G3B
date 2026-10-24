@@ -1,13 +1,13 @@
 # G3B Education — Full-Stack Website
 
 The G3B Education website rebuilt as a production-ready full-stack application:
-a **React + Vite** single-page front end and an **Express + MySQL** REST API with a
+a **React + Vite** single-page front end and an **Express + Supabase PostgreSQL** REST API with a
 secure admin dashboard.
 
-All brand assets, copy, imagery, sections and external links were carried over from
-the supplied WordPress theme in [`g3b-wordpress-theme/`](./g3b-wordpress-theme).
+All brand assets, copy, imagery, sections and external links were ported
+from the original legacy WordPress theme.
 Nothing was invented: reviews, certifications, statistics and partner names come
-verbatim from the original `front-page.php`.
+verbatim from the original design.
 
 ---
 
@@ -32,9 +32,9 @@ G3b/
 │       │   └── admin/           login, layout, dashboard, enquiries, CRUD screens
 │       └── styles/theme.css     the original design system, ported 1:1
 │
-├── server/                      Express 4 + MySQL API
+├── server/                      Express 4 + Supabase PostgreSQL API
 │   ├── src/
-│   │   ├── config/              env validation + MySQL pool
+│   │   ├── config/              env validation + PostgreSQL pool
 │   │   ├── controllers/         business logic per route group
 │   │   ├── db/                  migrations, seed data, admin CLI
 │   │   ├── middleware/          auth/CSRF, validation, uploads, rate limits, errors
@@ -44,8 +44,6 @@ G3b/
 │   │   ├── utils/               ApiError, asyncHandler, logger, CSV
 │   │   └── validators/          express-validator rule sets
 │   └── tests/                   Vitest + Supertest suites
-│
-├── g3b-wordpress-theme/         the original theme (source of truth for content)
 └── package.json                 root convenience scripts
 ```
 
@@ -56,7 +54,8 @@ G3b/
 | Requirement | Version used |
 | --- | --- |
 | Node.js | 18+ (20+ recommended) |
-| MySQL | 8.0 |
+| Supabase PostgreSQL | hosted project |
+| MySQL | 8.0 (migration source only) |
 | npm | 9+ |
 
 ---
@@ -70,34 +69,34 @@ npm run install:all
 # or individually: npm install --prefix server && npm install --prefix client
 ```
 
-### 3.2 Create the database
+### 3.2 Prepare Supabase
 
-```sql
-CREATE DATABASE g3b_education CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
+Create an empty Supabase project and follow the guarded migration runbook in
+[`docs/SUPABASE_MIGRATION.md`](./docs/SUPABASE_MIGRATION.md). Do not paste a
+database password or service-role key into the frontend.
 
 ### 3.3 Configure the API
 
 Copy [`server/.env.example`](./server/.env.example) to `server/.env` and fill in real
-values. At minimum set `DB_USER`, `DB_PASSWORD` and a long random `JWT_SECRET`:
+values. At minimum set the server-only `DATABASE_URL` and a long random `JWT_SECRET`:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
 `server/src/config/env.js` validates the environment at startup: missing
-`JWT_SECRET`, `DB_USER` or `DB_NAME` is a hard failure in production and a
+`JWT_SECRET` or PostgreSQL connection details are a hard failure in production and a
 warning in development.
 
-### 3.4 Run migrations and seed the original content
+### 3.4 Import and verify the existing database
 
 ```bash
-npm run migrate     # creates all tables (idempotent, tracked in schema_migrations)
-npm run seed        # loads the content supplied in the WordPress theme + first admin
+npm run migrate:supabase
+npm run verify:supabase
 ```
 
-`npm run db:setup` runs both. The seed also creates the first administrator from
-`ADMIN_NAME` / `ADMIN_EMAIL` / `ADMIN_PASSWORD`. Create additional admins any time:
+`npm run db:setup` runs the guarded import. Existing users and IDs are preserved.
+Create additional admins any time after import:
 
 ```bash
 npm run create-admin -- --name "Jane Doe" --email jane@example.com --password "S3curePass!" --role admin
@@ -215,7 +214,7 @@ State-changing admin requests must echo the `g3b_csrf` cookie value in the
 1. The form validates on the client **and** again on the server
    (`express-validator`, `422` + per-field messages).
 2. Recent duplicates (same email + phone within two minutes) are rejected with `409`.
-3. The record is written to MySQL; **success is shown only after the insert succeeds**.
+3. The record is written to PostgreSQL; **success is shown only after the insert succeeds**.
 4. The administrator is emailed and the visitor receives an optional confirmation.
 5. If email delivery fails *after* the row was saved, the enquiry is **never lost** —
    the notification is queued in `enquiry_notifications` and retried through
@@ -231,7 +230,7 @@ State-changing admin requests must echo the `g3b_csrf` cookie value in the
 - Three rate limiters: global, enquiry submission, and login
 - `bcrypt` (cost 12) password hashing; the last active administrator cannot be deleted, demoted or disabled
 - Parameterised SQL everywhere; validated and sanitised input; upload MIME/size limits
-- Centralised error handling that maps MySQL errors to safe HTTP responses
+- Centralised error handling that maps PostgreSQL errors to safe HTTP responses
 - Structured JSON request/error logging
 
 ---
@@ -262,7 +261,7 @@ The API suite covers the health endpoint, root ping, 404 handling, enquiry
 validation (including malformed emails), anonymous access denial on every admin
 route group, and — when a database is reachable — homepage content, enquiry
 persistence, duplicate rejection and admin login. Database-backed tests skip
-themselves automatically when MySQL is unavailable.
+themselves automatically when PostgreSQL is unavailable.
 
 ---
 
@@ -274,10 +273,10 @@ NODE_ENV=production npm start   # Express serves the API
 ```
 
 1. **API** – deploy `server/` behind a process manager (PM2, systemd) or a container.
-   Set `NODE_ENV=production`, a strong `JWT_SECRET`, real `DB_*` credentials,
+   Set `NODE_ENV=production`, a strong `JWT_SECRET`, the server-only `DATABASE_URL`,
    `COOKIE_SECURE=true`, `COOKIE_SAMESITE=strict`, and your production
-   `CLIENT_ORIGINS`. Run `npm run migrate` (and `npm run seed` for a fresh install)
-   during release.
+   `CLIENT_ORIGINS`. Run the one-time import before cutover; normal startup never
+   mutates the schema or seeds data.
 2. **Client** – deploy `client/dist` to any static host (Nginx, Netlify, Vercel, S3).
    Set `VITE_API_URL` to the public API origin **before building** so uploads and
    API calls resolve correctly.
@@ -300,7 +299,7 @@ NODE_ENV=production npm start   # Express serves the API
 | Symptom | Cause / fix |
 | --- | --- |
 | `Access denied for user …` | `DB_USER` / `DB_PASSWORD` wrong in `server/.env` |
-| `/api/health` returns `503` | MySQL is unreachable — start it and check the env values |
+| `/api/health` returns `503` | Supabase PostgreSQL is unreachable — check `DATABASE_URL` and project status |
 | Homepage shows "We could not load the website content" | The API is down or `/api/home` failed; check the API logs |
 | 401 on admin actions after login | Cookies blocked — use the same origin, or check `CLIENT_ORIGINS` / `COOKIE_SECURE` |
 | 403 "Invalid or missing CSRF token" | The `X-CSRF-Token` header is missing; the bundled axios client adds it automatically |
@@ -311,7 +310,7 @@ NODE_ENV=production npm start   # Express serves the API
 ## 12. Supplied-source fidelity
 
 The following were intentionally preserved from
-[`g3b-wordpress-theme/`](./g3b-wordpress-theme): the navy/amber design tokens,
+the original theme: the navy/amber design tokens,
 sticky header and footer, hero copy and CTAs, the founder profile and three
 certifications, the ten gallery images, the six services with their bullet lists,
 the six study destinations with their five points each, the six Google reviews with

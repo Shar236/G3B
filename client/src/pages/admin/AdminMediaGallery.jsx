@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   fetchAdminMedia,
   fetchAdminMediaStats,
@@ -909,7 +909,10 @@ function PhotoUploadModal({ categories, onClose, onSuccess }) {
               <textarea
                 rows={2}
                 value={caption}
-                onChange={(e) => setCaption(e.target.value)}
+                onChange={(e) => {
+                  setCaption(e.target.value)
+                  setDescription(e.target.value)
+                }}
                 placeholder="Brief caption visible in lightbox"
                 style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
               />
@@ -1094,6 +1097,19 @@ function BulkPhotosModal({ categories, onClose, onSuccess }) {
               <option value="draft">Draft</option>
             </select>
           </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+          <input
+            type="checkbox"
+            id="bulk-feat-checkbox"
+            checked={isFeatured}
+            onChange={(e) => setIsFeatured(e.target.checked)}
+            style={{ width: 18, height: 18 }}
+          />
+          <label htmlFor="bulk-feat-checkbox" style={{ fontWeight: 600, fontSize: '0.86rem', cursor: 'pointer' }}>
+            Feature these photos on the Main Media Gallery showcase
+          </label>
         </div>
       </form>
     </Modal>
@@ -1341,6 +1357,18 @@ function VideoCreateModal({ categories, onClose, onSuccess }) {
             onChange={(e) => setThumbnailUrl(e.target.value)}
             placeholder="Auto-detected from YouTube or enter image URL"
             style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: 'block', fontWeight: 600, fontSize: '0.84rem', marginBottom: 6 }}>
+            Or Upload Thumbnail Image File (optional)
+          </label>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => setThumbFile(e.target.files?.[0] || null)}
+            style={{ width: '100%' }}
           />
         </div>
 

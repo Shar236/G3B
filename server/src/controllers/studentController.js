@@ -22,7 +22,7 @@ export async function register(req, res) {
   let student;
   try { student = await studentRepository.create({ name, email, phone, passwordHash }); }
   catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') throw ApiError.conflict('An account with this email already exists. Please sign in.');
+    if (error.code === '23505') throw ApiError.conflict('An account with this email already exists. Please sign in.');
     throw error;
   }
   res.status(201).json({ success: true, data: await signIn(req, res, student) });

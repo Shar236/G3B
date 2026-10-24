@@ -12,7 +12,7 @@ export const assessmentRepository = {
   },
   async request(studentId, assessmentId) {
     await query(`INSERT INTO student_assessments (student_id, assessment_id) VALUES (?, ?)
-      ON DUPLICATE KEY UPDATE updated_at = updated_at`, [studentId, assessmentId]);
+      ON CONFLICT (student_id, assessment_id) DO UPDATE SET updated_at = student_assessments.updated_at`, [studentId, assessmentId]);
     return this.findStudentAssignment(studentId, assessmentId);
   },
   async findStudentAssignment(studentId, assessmentId) {
@@ -36,7 +36,7 @@ export const assessmentRepository = {
   async updateAssignment(id, payload) {
     const fields = { status: payload.status, progress_percent: payload.progressPercent, recommendation: payload.recommendation, report_file_name: payload.reportFileName, report_original_name: payload.reportOriginalName };
     const entries = Object.entries(fields).filter(([,value]) => value !== undefined);
-    if (entries.length) await query(`UPDATE student_assessments SET ${entries.map(([key])=>`${key} = ?`).join(', ')}, started_at = IF(? = 'in_progress' AND started_at IS NULL, NOW(), started_at), completed_at = IF(? = 'completed', NOW(), completed_at) WHERE id = ?`, [...entries.map(([,value])=>value), payload.status || '', payload.status || '', id]);
+    if (entries.length) await query(`UPDATE student_assessments SET ${entries.map(([key])=>`${key} = ?`).join(', ')}, started_at = CASE WHEN ? = 'in_progress' AND started_at IS NULL THEN NOW() ELSE started_at END, completed_at = CASE WHEN ? = 'completed' THEN NOW() ELSE completed_at END WHERE id = ?`, [...entries.map(([,value])=>value), payload.status || '', payload.status || '', id]);
     const row = await queryOne(`SELECT sa.*, a.title, s.name AS student_name, s.email AS student_email FROM student_assessments sa JOIN assessment_listings a ON a.id=sa.assessment_id JOIN students s ON s.id=sa.student_id WHERE sa.id=?`, [id]);
     return row ? mapRow(row) : null;
   },

@@ -27,7 +27,7 @@ function parseDatabaseUrl(urlStr) {
     const sslParam = (parsed.searchParams.get('ssl') || parsed.searchParams.get('sslmode') || parsed.searchParams.get('ssl-mode') || '').toLowerCase();
     return {
       host: parsed.hostname,
-      port: parsed.port ? Number(parsed.port) : 3306,
+      port: parsed.port ? Number(parsed.port) : 5432,
       user: decodeURIComponent(parsed.username || ''),
       password: decodeURIComponent(parsed.password || ''),
       name: parsed.pathname.replace(/^\//, ''),
@@ -38,7 +38,7 @@ function parseDatabaseUrl(urlStr) {
   }
 }
 
-const dbUrl = parseDatabaseUrl(process.env.MYSQL_URL || process.env.DATABASE_URL);
+const dbUrl = parseDatabaseUrl(process.env.DATABASE_URL || process.env.SUPABASE_DB_URL);
 
 const env = {
   nodeEnv,
@@ -71,15 +71,16 @@ const env = {
   })(),
 
   db: {
-    host: process.env.DB_HOST || process.env.MYSQLHOST || process.env.MYSQL_HOST || dbUrl?.host || (isProduction ? '' : 'localhost'),
-    port: toInt(process.env.DB_PORT || process.env.MYSQLPORT || process.env.MYSQL_PORT || dbUrl?.port, 3306),
-    name: process.env.DB_NAME || process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE || dbUrl?.name || (isProduction ? '' : 'g3b_education'),
-    user: process.env.DB_USER || process.env.MYSQLUSER || process.env.MYSQL_USER || dbUrl?.user || (isProduction ? '' : 'root'),
-    password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || process.env.MYSQL_PASSWORD || dbUrl?.password || '',
+    url: process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '',
+    host: process.env.PGHOST || process.env.DB_HOST || dbUrl?.host || (isProduction ? '' : 'localhost'),
+    port: toInt(process.env.PGPORT || process.env.DB_PORT || dbUrl?.port, 5432),
+    name: process.env.PGDATABASE || process.env.DB_NAME || dbUrl?.name || (isProduction ? '' : 'postgres'),
+    user: process.env.PGUSER || process.env.DB_USER || dbUrl?.user || (isProduction ? '' : 'postgres'),
+    password: process.env.PGPASSWORD || process.env.DB_PASSWORD || dbUrl?.password || '',
     connectionLimit: toInt(process.env.DB_CONNECTION_LIMIT, 10),
     ssl: (() => {
       if (process.env.DB_SSL !== undefined) return toBool(process.env.DB_SSL, false);
-      if (process.env.MYSQL_SSL !== undefined) return toBool(process.env.MYSQL_SSL, false);
+      if (process.env.PGSSLMODE) return process.env.PGSSLMODE !== 'disable';
       if (dbUrl?.ssl) return true;
       return false;
     })(),
@@ -161,9 +162,9 @@ export function validateEnv() {
     if (!process.env.JWT_SECRET || env.auth.secret.length < 32) {
       problems.push('JWT_SECRET must be set to a random string of at least 32 characters in production.');
     }
-    if (!env.db.host) problems.push('DB_HOST (or MYSQLHOST / DATABASE_URL) is required in production.');
-    if (!env.db.user) problems.push('DB_USER (or MYSQLUSER / DATABASE_URL) is required in production.');
-    if (!env.db.name) problems.push('DB_NAME (or MYSQLDATABASE / DATABASE_URL) is required in production.');
+    if (!env.db.host) problems.push('DATABASE_URL (or PGHOST) is required in production.');
+    if (!env.db.user) problems.push('DATABASE_URL (or PGUSER) is required in production.');
+    if (!env.db.name) problems.push('DATABASE_URL (or PGDATABASE) is required in production.');
     if (env.cookie.sameSite === 'none' && !env.cookie.secure) {
       problems.push('COOKIE_SAMESITE=none requires COOKIE_SECURE=true in production.');
     }

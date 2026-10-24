@@ -61,7 +61,7 @@ export const partnerEnquiriesRepository = {
   async findRecentDuplicate({ email, phone, minutes = 2 }) {
     const row = await queryOne(
       `SELECT id, created_at FROM partner_enquiries
-       WHERE email = ? AND phone = ? AND created_at > (NOW() - INTERVAL ? MINUTE)
+       WHERE email = ? AND phone = ? AND created_at > (NOW() - (? * INTERVAL '1 minute'))
        ORDER BY created_at DESC LIMIT 1`,
       [email, phone, minutes],
     );

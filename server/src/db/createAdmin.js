@@ -3,7 +3,7 @@ import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { fileURLToPath } from 'node:url';
 import bcrypt from 'bcryptjs';
-import { pool } from '../config/db.js';
+import { query, closePool } from '../config/db.js';
 import env from '../config/env.js';
 
 /**
@@ -55,20 +55,20 @@ async function main() {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  const [rows] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
+  const rows = await query('SELECT id FROM users WHERE email = ?', [email]);
 
   if (rows.length > 0) {
-    await pool.execute('UPDATE users SET name = ?, password_hash = ?, role = ?, status = ?, auth_version = auth_version + 1 WHERE email = ?', [
+    await query('UPDATE users SET name = ?, password_hash = ?, role = ?, status = ?, auth_version = auth_version + 1 WHERE email = ?', [
       name,
       passwordHash,
       role,
       'active',
       email,
     ]);
-    await pool.execute('UPDATE auth_sessions SET revoked_at = COALESCE(revoked_at,NOW()) WHERE user_id = ?', [rows[0].id]);
+    await query('UPDATE auth_sessions SET revoked_at = COALESCE(revoked_at,NOW()) WHERE user_id = ?', [rows[0].id]);
     console.log(`[create-admin] updated existing user ${email} (role: ${role}).`);
   } else {
-    await pool.execute('INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?)', [
+    await query('INSERT INTO users (name, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?)', [
       name,
       email,
       passwordHash,
@@ -78,7 +78,7 @@ async function main() {
     console.log(`[create-admin] created ${role} ${email}.`);
   }
 
-  await pool.end();
+  await closePool();
 }
 
 const isDirectRun = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);

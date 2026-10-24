@@ -30,7 +30,7 @@ export const studentRepository = {
   },
   failedLogin(id) {
     return query(`UPDATE students SET failed_login_count = failed_login_count + 1,
-      locked_until = IF(failed_login_count >= 5, DATE_ADD(NOW(), INTERVAL 15 MINUTE), locked_until) WHERE id = ?`, [id]);
+      locked_until = CASE WHEN failed_login_count >= 5 THEN NOW() + INTERVAL '15 minutes' ELSE locked_until END WHERE id = ?`, [id]);
   },
   clearLoginFailures(id) {
     return query('UPDATE students SET failed_login_count = 0, locked_until = NULL WHERE id = ?', [id]);

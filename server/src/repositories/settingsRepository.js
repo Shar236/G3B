@@ -41,12 +41,12 @@ export const contentBlocksRepository = {
     await query(
       `INSERT INTO content_blocks (block_key, heading, subheading, body, cta_label, cta_url)
        VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         heading = VALUES(heading),
-         subheading = VALUES(subheading),
-         body = VALUES(body),
-         cta_label = VALUES(cta_label),
-         cta_url = VALUES(cta_url)`,
+       ON CONFLICT (block_key) DO UPDATE SET
+         heading = EXCLUDED.heading,
+         subheading = EXCLUDED.subheading,
+         body = EXCLUDED.body,
+         cta_label = EXCLUDED.cta_label,
+         cta_url = EXCLUDED.cta_url`,
       [
         blockKey,
         payload.heading ?? null,
@@ -95,7 +95,7 @@ export const settingsRepository = {
         await connection.execute(
           `INSERT INTO site_settings (setting_key, setting_value)
            VALUES (?, ?)
-           ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
+           ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value`,
           [key, value === null || value === undefined ? null : String(value)],
         );
       }

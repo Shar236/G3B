@@ -12,7 +12,7 @@ async function publish(connection, row, updates = {}) {
   if (!canPublish) return;
   if (!row.video_id) {
     // Link a pre-existing YouTube testimonial rather than creating a duplicate.
-    const [existing] = await connection.execute("SELECT id, title FROM video_testimonials WHERE youtube_id = ? AND youtube_url NOT REGEXP '^https?://(www[.]|player[.])?vimeo[.]com([/:])' ORDER BY id LIMIT 1 FOR UPDATE", [row.youtube_id]);
+    const [existing] = await connection.execute("SELECT id, title FROM video_testimonials WHERE youtube_id = ? AND youtube_url !~ '^https?://(www[.]|player[.])?vimeo[.]com([/:])' ORDER BY id LIMIT 1 FOR UPDATE", [row.youtube_id]);
     if (existing.length) {
       row.video_id = existing[0].id;
       // First synchronization must treat the existing catalogue title as editor
@@ -40,19 +40,19 @@ export const youtubeRepository = {
     return row ? { ...mapRow(row), lastResult: json(row.last_result) } : {};
   },
   async counts() {
-    const row = await queryOne(`SELECT COUNT(*) AS candidates, COALESCE(SUM(r.video_id IS NOT NULL AND r.excluded = 0 AND r.verified_short = 1 AND r.availability = 'available' AND v.is_active = 1 AND (r.verification_source = 'admin' OR r.last_checked_at > UTC_TIMESTAMP() - INTERVAL 30 DAY)), 0) AS published, COALESCE(SUM(r.verified_short = 0 AND r.excluded = 0), 0) AS pending, COALESCE(SUM(r.excluded = 1), 0) AS excluded, COALESCE(SUM(r.availability IN ('unavailable','embedding_disabled')), 0) AS unavailable FROM youtube_short_registry r LEFT JOIN video_testimonials v ON v.id = r.video_id`);
+    const row = await queryOne(`SELECT COUNT(*) AS candidates, COUNT(*) FILTER (WHERE r.video_id IS NOT NULL AND r.excluded = 0 AND r.verified_short = 1 AND r.availability = 'available' AND v.is_active = 1 AND (r.verification_source = 'admin' OR r.last_checked_at > CURRENT_TIMESTAMP - INTERVAL '30 days')) AS published, COUNT(*) FILTER (WHERE r.verified_short = 0 AND r.excluded = 0) AS pending, COUNT(*) FILTER (WHERE r.excluded = 1) AS excluded, COUNT(*) FILTER (WHERE r.availability IN ('unavailable','embedding_disabled')) AS unavailable FROM youtube_short_registry r LEFT JOIN video_testimonials v ON v.id = r.video_id`);
     return Object.fromEntries(Object.entries(row || {}).map(([key, value]) => [key, Number(value)]));
   },
   async list() { return (await query(`${select} ORDER BY v.sort_order ASC, r.published_at DESC, r.id DESC`)).map(map); },
   async find(id) { return map(await queryOne(`${select} WHERE r.id = ?`, [id])); },
   async allIds() { return (await query('SELECT youtube_id FROM youtube_short_registry')).map((row) => row.youtube_id); },
   async acquireLock(seconds = 150) {
-    const result = await query(`UPDATE youtube_sync_state SET lock_expires_at = UTC_TIMESTAMP() + INTERVAL ? SECOND, last_attempt_at = UTC_TIMESTAMP() WHERE id = 1 AND (lock_expires_at IS NULL OR lock_expires_at < UTC_TIMESTAMP())`, [seconds]);
+    const result = await query(`UPDATE youtube_sync_state SET lock_expires_at = CURRENT_TIMESTAMP + (? * INTERVAL '1 second'), last_attempt_at = CURRENT_TIMESTAMP WHERE id = 1 AND (lock_expires_at IS NULL OR lock_expires_at < CURRENT_TIMESTAMP)`, [seconds]);
     return result.affectedRows > 0;
   },
-  async fail(message) { await query('UPDATE youtube_sync_state SET last_error = ?, last_attempt_at = UTC_TIMESTAMP(), lock_expires_at = NULL WHERE id = 1', [message.slice(0, 1000)]); },
+  async fail(message) { await query('UPDATE youtube_sync_state SET last_error = ?, last_attempt_at = CURRENT_TIMESTAMP, lock_expires_at = NULL WHERE id = 1', [message.slice(0, 1000)]); },
   async register(video) {
-    await query(`INSERT INTO youtube_short_registry (youtube_id, source_url, title, channel_id, channel_verified, duration_seconds, published_at, thumbnail_url, availability, last_checked_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE source_url = VALUES(source_url), title = IF(title_overridden = 1 OR VALUES(channel_verified) = 0, title, VALUES(title)), channel_id = IF(VALUES(channel_verified) = 1, VALUES(channel_id), channel_id), channel_verified = GREATEST(channel_verified, VALUES(channel_verified)), duration_seconds = IF(VALUES(channel_verified) = 1, VALUES(duration_seconds), duration_seconds), published_at = IF(VALUES(channel_verified) = 1, VALUES(published_at), published_at), thumbnail_url = IF(VALUES(channel_verified) = 1, VALUES(thumbnail_url), thumbnail_url), availability = IF(VALUES(channel_verified) = 1, VALUES(availability), availability), last_checked_at = IF(VALUES(channel_verified) = 1, VALUES(last_checked_at), last_checked_at)`, [video.youtubeId, video.sourceUrl, video.title || '', video.channelId || null, video.channelVerified ? 1 : 0, video.durationSeconds || null, video.publishedAt ? new Date(video.publishedAt) : null, video.thumbnailUrl || null, video.availability || 'pending', video.channelVerified ? new Date() : null]);
+    await query(`INSERT INTO youtube_short_registry (youtube_id, source_url, title, channel_id, channel_verified, duration_seconds, published_at, thumbnail_url, availability, last_checked_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (youtube_id) DO UPDATE SET source_url = EXCLUDED.source_url, title = CASE WHEN youtube_short_registry.title_overridden = 1 OR EXCLUDED.channel_verified = 0 THEN youtube_short_registry.title ELSE EXCLUDED.title END, channel_id = CASE WHEN EXCLUDED.channel_verified = 1 THEN EXCLUDED.channel_id ELSE youtube_short_registry.channel_id END, channel_verified = GREATEST(youtube_short_registry.channel_verified, EXCLUDED.channel_verified), duration_seconds = CASE WHEN EXCLUDED.channel_verified = 1 THEN EXCLUDED.duration_seconds ELSE youtube_short_registry.duration_seconds END, published_at = CASE WHEN EXCLUDED.channel_verified = 1 THEN EXCLUDED.published_at ELSE youtube_short_registry.published_at END, thumbnail_url = CASE WHEN EXCLUDED.channel_verified = 1 THEN EXCLUDED.thumbnail_url ELSE youtube_short_registry.thumbnail_url END, availability = CASE WHEN EXCLUDED.channel_verified = 1 THEN EXCLUDED.availability ELSE youtube_short_registry.availability END, last_checked_at = CASE WHEN EXCLUDED.channel_verified = 1 THEN EXCLUDED.last_checked_at ELSE youtube_short_registry.last_checked_at END`, [video.youtubeId, video.sourceUrl, video.title || '', video.channelId || null, video.channelVerified ? 1 : 0, video.durationSeconds || null, video.publishedAt ? new Date(video.publishedAt) : null, video.thumbnailUrl || null, video.availability || 'pending', video.channelVerified ? new Date() : null]);
     return map(await queryOne(`${select} WHERE r.youtube_id = ?`, [video.youtubeId]));
   },
   async saveManual(data) {
@@ -92,19 +92,19 @@ export const youtubeRepository = {
       await connection.execute(
         `INSERT INTO youtube_short_registry
            (youtube_id, source_url, title, channel_verified, verified_short, verification_source, title_overridden, thumbnail_url, availability, excluded, video_id, last_checked_at)
-         VALUES (?, ?, ?, 1, 1, 'admin', 1, ?, 'available', 0, ?, UTC_TIMESTAMP())
-         ON DUPLICATE KEY UPDATE
-           source_url = VALUES(source_url),
-           title = VALUES(title),
+         VALUES (?, ?, ?, 1, 1, 'admin', 1, ?, 'available', 0, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT (youtube_id) DO UPDATE SET
+           source_url = EXCLUDED.source_url,
+           title = EXCLUDED.title,
            channel_verified = 1,
            verified_short = 1,
            verification_source = 'admin',
            title_overridden = 1,
-           thumbnail_url = VALUES(thumbnail_url),
+           thumbnail_url = EXCLUDED.thumbnail_url,
            availability = 'available',
            excluded = 0,
-           video_id = VALUES(video_id),
-           last_checked_at = UTC_TIMESTAMP()`,
+           video_id = EXCLUDED.video_id,
+           last_checked_at = CURRENT_TIMESTAMP`,
         [data.youtubeId, data.sourceUrl, data.title, data.thumbnailUrl, videoId]
       );
 
@@ -126,7 +126,7 @@ export const youtubeRepository = {
       if (updates.title !== undefined) { row.title = updates.title; row.title_overridden = 1; }
       // Keep the linked catalogue row while hidden, preserving editors' category,
       // enabled preference and ordering if they later restore or confirm it.
-      await connection.execute('UPDATE youtube_short_registry SET excluded = ?, verified_short = ?, verification_source = ?, title = ?, title_overridden = IF(?, 1, title_overridden), video_id = ? WHERE id = ?', [row.excluded, row.verified_short, row.verification_source, row.title, updates.title !== undefined ? 1 : 0, row.video_id, id]);
+      await connection.execute('UPDATE youtube_short_registry SET excluded = ?, verified_short = ?, verification_source = ?, title = ?, title_overridden = CASE WHEN ? = 1 THEN 1 ELSE title_overridden END, video_id = ? WHERE id = ?', [row.excluded, row.verified_short, row.verification_source, row.title, updates.title !== undefined ? 1 : 0, row.video_id, id]);
       await publish(connection, row, updates);
     });
     return this.find(id);
@@ -136,25 +136,25 @@ export const youtubeRepository = {
     await withTransaction(async (connection) => {
       const availableIds = entries.map((entry) => entry.youtubeId);
       if (availableIds.length) {
-        await connection.query('UPDATE youtube_short_registry SET availability = \'unavailable\', last_checked_at = UTC_TIMESTAMP() WHERE youtube_id NOT IN (?) AND verification_source != \'admin\'', [availableIds]);
-      } else await connection.execute("UPDATE youtube_short_registry SET availability = 'unavailable', last_checked_at = UTC_TIMESTAMP() WHERE verification_source != 'admin'");
+        await connection.query("UPDATE youtube_short_registry SET availability = 'unavailable', last_checked_at = CURRENT_TIMESTAMP WHERE youtube_id <> ALL(?) AND verification_source != 'admin'", [availableIds]);
+      } else await connection.execute("UPDATE youtube_short_registry SET availability = 'unavailable', last_checked_at = CURRENT_TIMESTAMP WHERE verification_source != 'admin'");
       for (const entry of entries) {
-        await connection.execute(`INSERT INTO youtube_short_registry (youtube_id, source_url, title, channel_id, channel_verified, verified_short, verification_source, duration_seconds, published_at, thumbnail_url, availability, last_checked_at) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE title = IF(title_overridden = 1, title, VALUES(title)), channel_id = VALUES(channel_id), channel_verified = 1, verified_short = IF(verification_source = 'admin', verified_short, VALUES(verified_short)), verification_source = IF(verification_source = 'admin', verification_source, VALUES(verification_source)), duration_seconds = VALUES(duration_seconds), published_at = VALUES(published_at), thumbnail_url = VALUES(thumbnail_url), availability = VALUES(availability), last_checked_at = UTC_TIMESTAMP()`, [entry.youtubeId, entry.sourceUrl, entry.title, channelId, Number(entry.verifiedShort), entry.verificationSource, entry.durationSeconds, entry.publishedAt ? new Date(entry.publishedAt) : null, entry.thumbnailUrl, entry.availability]);
+        await connection.execute(`INSERT INTO youtube_short_registry (youtube_id, source_url, title, channel_id, channel_verified, verified_short, verification_source, duration_seconds, published_at, thumbnail_url, availability, last_checked_at) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT (youtube_id) DO UPDATE SET title = CASE WHEN youtube_short_registry.title_overridden = 1 THEN youtube_short_registry.title ELSE EXCLUDED.title END, channel_id = EXCLUDED.channel_id, channel_verified = 1, verified_short = CASE WHEN youtube_short_registry.verification_source = 'admin' THEN youtube_short_registry.verified_short ELSE EXCLUDED.verified_short END, verification_source = CASE WHEN youtube_short_registry.verification_source = 'admin' THEN youtube_short_registry.verification_source ELSE EXCLUDED.verification_source END, duration_seconds = EXCLUDED.duration_seconds, published_at = EXCLUDED.published_at, thumbnail_url = EXCLUDED.thumbnail_url, availability = EXCLUDED.availability, last_checked_at = CURRENT_TIMESTAMP`, [entry.youtubeId, entry.sourceUrl, entry.title, channelId, Number(entry.verifiedShort), entry.verificationSource, entry.durationSeconds, entry.publishedAt ? new Date(entry.publishedAt) : null, entry.thumbnailUrl, entry.availability]);
         const [rows] = await connection.execute('SELECT * FROM youtube_short_registry WHERE youtube_id = ? FOR UPDATE', [entry.youtubeId]);
         const row = rows[0];
         await publish(connection, row);
         if (row.video_id && !row.title_overridden) await connection.execute('UPDATE video_testimonials SET title = ? WHERE id = ?', [entry.title, row.video_id]);
       }
-      await connection.execute('UPDATE youtube_sync_state SET channel_id = ?, uploads_playlist_id = ?, last_success_at = UTC_TIMESTAMP(), last_error = NULL, last_result = ?, lock_expires_at = NULL WHERE id = 1', [channelId, uploadsPlaylistId, JSON.stringify(result)]);
+      await connection.execute('UPDATE youtube_sync_state SET channel_id = ?, uploads_playlist_id = ?, last_success_at = CURRENT_TIMESTAMP, last_error = NULL, last_result = ?, lock_expires_at = NULL WHERE id = 1', [channelId, uploadsPlaylistId, JSON.stringify(result)]);
     });
   },
   /** Developer Policies III.E.4: refresh or remove cached API data after 30 days.
    * URLs, IDs, exclusions, and explicit editor titles remain admin registry data. */
   async expireMetadata() {
     await withTransaction(async (connection) => {
-      await connection.execute("UPDATE video_testimonials v JOIN youtube_short_registry r ON r.video_id = v.id SET v.title = 'G3B Education video' WHERE r.last_checked_at < UTC_TIMESTAMP() - INTERVAL 30 DAY AND r.title_overridden = 0 AND r.verification_source != 'admin'");
-      await connection.execute("UPDATE youtube_short_registry SET title = IF(title_overridden = 1, title, ''), thumbnail_url = NULL, duration_seconds = NULL, published_at = NULL, availability = 'pending', channel_id = NULL, channel_verified = 0 WHERE last_checked_at < UTC_TIMESTAMP() - INTERVAL 30 DAY AND verification_source != 'admin'");
-      await connection.execute('UPDATE youtube_sync_state SET channel_id = NULL, uploads_playlist_id = NULL, last_result = NULL WHERE last_success_at < UTC_TIMESTAMP() - INTERVAL 30 DAY');
+      await connection.execute("UPDATE video_testimonials v SET title = 'G3B Education video' FROM youtube_short_registry r WHERE r.video_id = v.id AND r.last_checked_at < CURRENT_TIMESTAMP - INTERVAL '30 days' AND r.title_overridden = 0 AND r.verification_source != 'admin'");
+      await connection.execute("UPDATE youtube_short_registry SET title = CASE WHEN title_overridden = 1 THEN title ELSE '' END, thumbnail_url = NULL, duration_seconds = NULL, published_at = NULL, availability = 'pending', channel_id = NULL, channel_verified = 0 WHERE last_checked_at < CURRENT_TIMESTAMP - INTERVAL '30 days' AND verification_source != 'admin'");
+      await connection.execute("UPDATE youtube_sync_state SET channel_id = NULL, uploads_playlist_id = NULL, last_result = NULL WHERE last_success_at < CURRENT_TIMESTAMP - INTERVAL '30 days'");
     });
   },
 };

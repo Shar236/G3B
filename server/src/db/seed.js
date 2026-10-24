@@ -1,8 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
 import env from '../config/env.js';
+import { getConnection } from '../config/db.js';
 
 /**
  * Seed the database with the content supplied in the original G3B Education
@@ -421,7 +421,9 @@ async function clearContentTables(connection) {
   ];
   for (const table of tables) {
     await connection.query(`DELETE FROM ${table}`);
-    await connection.query(`ALTER TABLE ${table} AUTO_INCREMENT = 1`);
+    if (!['content_blocks', 'site_settings'].includes(table)) {
+      await connection.query(`ALTER TABLE ${table} ALTER COLUMN id RESTART WITH 1`);
+    }
   }
 }
 
@@ -444,15 +446,7 @@ async function ensureAdmin(connection, log) {
 }
 
 export async function seedDatabase({ log = console.log } = {}) {
-  const connection = await mysql.createConnection({
-    host: env.db.host,
-    port: env.db.port,
-    user: env.db.user,
-    password: env.db.password,
-    database: env.db.name,
-    multipleStatements: true,
-    ssl: env.db.ssl ? { rejectUnauthorized: false } : undefined,
-  });
+  const connection = await getConnection();
 
   try {
     await clearContentTables(connection);

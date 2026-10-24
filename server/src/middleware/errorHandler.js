@@ -14,14 +14,14 @@ export function errorHandler(error, req, res, _next) {
   let message = error.message || 'Internal server error';
   let details = error.details;
 
-  // Translate common MySQL failures into friendly responses.
-  if (error.code === 'ER_DUP_ENTRY') {
+  // Translate common PostgreSQL failures into friendly responses.
+  if (error.code === '23505') {
     status = 409;
     message = 'A record with these details already exists.';
-  } else if (error.code === 'ER_NO_REFERENCED_ROW_2' || error.code === 'ER_ROW_IS_REFERENCED_2') {
+  } else if (error.code === '23503') {
     status = 409;
     message = 'This record is referenced by other data and cannot be changed.';
-  } else if (error.code === 'ECONNREFUSED' || error.code === 'ER_ACCESS_DENIED_ERROR' || error.code === 'ER_BAD_DB_ERROR') {
+  } else if (['ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND', '28P01', '3D000', '57P01'].includes(error.code)) {
     status = 503;
     message = 'Database is currently unavailable.';
   } else if (error.name === 'MulterError') {

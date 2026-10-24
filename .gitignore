@@ -10,12 +10,25 @@ client/dist/
 .env.local
 .env.*.local
 
+# Local database backups and migration reports (may contain production data)
+backups/
+server/migration-reports/
+
 # Local uploads created at runtime
 server/uploads/
+
+# Temporary files and QA outputs
+tmp/
+docs/qa-output/
 
 # Logs
 *.log
 npm-debug.log*
+
+# Test coverage & caches
+coverage/
+.turbo/
+.rollup.cache/
 
 # Editor / OS noise
 .DS_Store
