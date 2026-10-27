@@ -2,13 +2,12 @@ import { resolveMediaUrl } from '../api/client.js'
 import { useCounsellingModal } from '../context/CounsellingContext.jsx'
 
 const COUNTRY_FALLBACK_IMAGES = {
-  Australia: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=600&q=80',
-  'United Kingdom': 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80',
-  'United States': 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80',
-  Canada: 'https://images.unsplash.com/photo-1517935706615-2717063c2225?auto=format&fit=crop&w=600&q=80',
-  Germany: 'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=600&q=80',
-  France: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80',
-  Ireland: 'https://images.unsplash.com/photo-1549918864-48ac978761a4?auto=format&fit=crop&w=600&q=80',
+  Australia: '/images/services-australia.jpg',
+  'United Kingdom': '/images/services-uk.jpg',
+  'United States': '/images/services-usa.jpg',
+  Canada: '/images/services-canada.jpg',
+  Germany: '/images/services-germany.jpg',
+  France: '/images/services-france.jpg',
 }
 
 const COUNTRY_CODES = {
@@ -38,7 +37,8 @@ export default function Destinations({ content = {}, destinations = [] }) {
 
         <div className="destinations-grid">
           {destinations.map((destination) => {
-            const imageSrc = destination.imageUrl || COUNTRY_FALLBACK_IMAGES[destination.country] || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=600&q=80'
+            const localImage = COUNTRY_FALLBACK_IMAGES[destination.country] || '/images/services-campus.jpg'
+            const imageSrc = !destination.imageUrl || /^https:\/\/images\.unsplash\.com\//i.test(destination.imageUrl) ? localImage : destination.imageUrl
             const codeBadge = COUNTRY_CODES[destination.country] || destination.flagIcon || 'INT'
 
             return (
@@ -52,6 +52,11 @@ export default function Destinations({ content = {}, destinations = [] }) {
                     decoding="async"
                     width="600"
                     height="340"
+                    onError={(event) => {
+                      const fallback = COUNTRY_FALLBACK_IMAGES[destination.country] || '/images/services-campus.jpg'
+                      if (event.currentTarget.getAttribute('src') !== fallback) event.currentTarget.src = fallback
+                      else event.currentTarget.hidden = true
+                    }}
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   />
 

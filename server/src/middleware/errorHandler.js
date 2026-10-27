@@ -21,7 +21,7 @@ export function errorHandler(error, req, res, _next) {
   } else if (error.code === '23503') {
     status = 409;
     message = 'This record is referenced by other data and cannot be changed.';
-  } else if (['ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND', '28P01', '3D000', '57P01'].includes(error.code)) {
+  } else if (['ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND', '28P01', '3D000', '57P01', 'SELF_SIGNED_CERT_IN_CHAIN', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE', 'CERT_HAS_EXPIRED', 'ERR_TLS_CERT_ALTNAME_INVALID'].includes(error.code)) {
     status = 503;
     message = 'Database is currently unavailable.';
   } else if (error.name === 'MulterError') {

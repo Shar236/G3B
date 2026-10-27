@@ -6,6 +6,7 @@ import {
   getPage,
   listPageRevisions,
   listPages,
+  listPageCatalog,
   publishPageSeo,
   reorderPageSections,
   rollbackPageRevision,
@@ -68,6 +69,7 @@ function CharCount({ value, recommended }) {
 /** Pages & SEO manager: page registry, metadata editor, sections and revisions. */
 export default function SeoManager() {
   const [pages, setPages] = useState([])
+  const [catalog, setCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [notice, setNotice] = useState(null)
@@ -78,6 +80,7 @@ export default function SeoManager() {
 
   const [pageForm, setPageForm] = useState(null)
   const [seoForm, setSeoForm] = useState(SEO_FIELDS)
+  const [structuredDataText, setStructuredDataText] = useState('')
   const [saving, setSaving] = useState(null)
 
   const [pageModal, setPageModal] = useState(null)
@@ -92,7 +95,9 @@ export default function SeoManager() {
     setLoading(true)
     setError(null)
     try {
-      setPages(await listPages())
+      const [registered, discovered] = await Promise.all([listPages(), listPageCatalog()])
+      setPages(registered)
+      setCatalog(discovered)
     } catch (err) {
       setError(parseApiError(err))
     } finally {
@@ -122,6 +127,7 @@ export default function SeoManager() {
       })
       // A pending draft is what the admin last saved; show it so nothing appears lost.
       const pending = page.seo?.hasDraft ? page.seo?.draftPayload || {} : {}
+      setStructuredDataText(JSON.stringify(pending.structuredData ?? page.seo?.structuredData ?? null, null, 2))
       setSeoForm({
         ...SEO_FIELDS,
         ...Object.fromEntries(Object.entries(page.seo || {}).filter(([key]) => key in SEO_FIELDS)),
@@ -144,10 +150,13 @@ export default function SeoManager() {
     if (selectedId) await loadDetail(selectedId)
   }
 
-  const seoPayload = () => ({
-    ...seoForm,
-    structuredData: detail?.seo?.structuredData ?? null,
-  })
+  const seoPayload = () => {
+    let structuredData
+    try { structuredData = JSON.parse(structuredDataText || 'null') }
+    catch { throw new Error('Structured data must be valid JSON.') }
+    if (structuredData !== null && (typeof structuredData !== 'object' || Array.isArray(structuredData))) throw new Error('Structured data must be a JSON object or null.')
+    return { ...seoForm, structuredData }
+  }
 
   const handleSavePage = async (event) => {
     event.preventDefault()
@@ -205,6 +214,7 @@ export default function SeoManager() {
         name: pageModal.name,
         route: pageModal.route,
         pageType: pageModal.pageType,
+        template: pageModal.template,
         status: pageModal.status,
       })
       setPageModal(null)
@@ -327,7 +337,7 @@ export default function SeoManager() {
           <button
             type="button"
             className="btn btn-primary btn-sm"
-            onClick={() => setPageModal({ name: '', route: '/', pageType: 'custom', status: 'draft' })}
+            onClick={() => setPageModal({ name: '', route: '/', pageType: 'custom', template: 'managed', status: 'draft' })}
           >
             <i className="fas fa-plus" aria-hidden="true" /> Add page
           </button>
@@ -389,6 +399,14 @@ export default function SeoManager() {
           </div>
         )}
       </div>
+
+      {catalog.some((page) => !page.registered) ? <div className="admin-card">
+        <h2>Public pages available for CMS editing</h2>
+        <p className="hint">Registration keeps the existing layout. Edit its supported section fields, or explicitly choose CMS section rendering in Page settings. Nothing is registered or replaced automatically.</p>
+        <div className="table-wrap"><table className="admin-table"><thead><tr><th>Page</th><th>Route</th><th>Action</th></tr></thead><tbody>
+          {catalog.filter((page) => !page.registered).map((page) => <tr key={page.route}><td>{page.name}</td><td><code>{page.route}</code></td><td><button type="button" className="btn btn-ghost btn-sm" onClick={() => setPageModal({ name: page.name, route: page.route, pageType: page.pageType || 'custom', template: 'default', status: 'published' })}>Register for editing</button></td></tr>)}
+        </tbody></table></div>
+      </div> : null}
 
       {selectedId ? (
         detailLoading && !detail ? (
@@ -456,6 +474,14 @@ export default function SeoManager() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                  <div className="admin-field">
+                    <label htmlFor="page-template">Page rendering</label>
+                    <select id="page-template" className="admin-select" value={pageForm.template || 'default'} onChange={(event) => setPageForm((current) => ({ ...current, template: event.target.value }))}>
+                      <option value="default">Existing site layout</option>
+                      <option value="managed">Render published CMS sections</option>
+                    </select>
+                    <p className="hint">Managed rendering uses the sections below in their saved order. Include a form section to collect enquiries.</p>
                   </div>
                   <div className="admin-field">
                     <label htmlFor="page-status">Status</label>
@@ -541,6 +567,11 @@ export default function SeoManager() {
                 <CharCount value={seoForm.metaDescription} recommended={DESCRIPTION_RECOMMENDED} />
               </div>
 
+              <div className="admin-field">
+                <label htmlFor="seo-structured-data">Structured data (JSON-LD)</label>
+                <textarea id="seo-structured-data" className="admin-textarea" rows={8} value={structuredDataText} onChange={(event) => setStructuredDataText(event.target.value)} />
+                <p className="hint">Use a JSON object with accurate page information, or null to remove it. Save as draft or publish below.</p>
+              </div>
               <div className="admin-field">
                 <label>Search result preview</label>
                 <div className="admin-card" style={{ marginBottom: 0, padding: 16, background: '#f8fafc' }}>
@@ -848,6 +879,13 @@ export default function SeoManager() {
                       {type}
                     </option>
                   ))}
+                </select>
+              </div>
+              <div className="admin-field">
+                <label htmlFor="new-page-template">Page rendering</label>
+                <select id="new-page-template" className="admin-select" value={pageModal.template || 'managed'} onChange={(event) => setPageModal((current) => ({ ...current, template: event.target.value }))}>
+                  <option value="managed">Render published CMS sections</option>
+                  <option value="default">Existing site layout</option>
                 </select>
               </div>
               <div className="admin-field">

@@ -31,7 +31,7 @@ function parseDatabaseUrl(urlStr) {
       user: decodeURIComponent(parsed.username || ''),
       password: decodeURIComponent(parsed.password || ''),
       name: parsed.pathname.replace(/^\//, ''),
-      ssl: ['true', '1', 'require', 'required'].includes(sslParam),
+      ssl: ['true', '1', 'require', 'required', 'verify-ca', 'verify-full'].includes(sslParam),
     };
   } catch {
     return null;
@@ -82,7 +82,7 @@ const env = {
       if (process.env.DB_SSL !== undefined) return toBool(process.env.DB_SSL, false);
       if (process.env.PGSSLMODE) return process.env.PGSSLMODE !== 'disable';
       if (dbUrl?.ssl) return true;
-      return false;
+      return Boolean(dbUrl && /\.supabase\.(com|co)$/.test(dbUrl.host));
     })(),
   },
 
@@ -111,6 +111,7 @@ const env = {
     host: process.env.MAIL_HOST || '',
     port: toInt(process.env.MAIL_PORT, 587),
     secure: toBool(process.env.MAIL_SECURE, false),
+    requireTLS: toBool(process.env.MAIL_REQUIRE_TLS, true),
     user: process.env.MAIL_USER || '',
     password: process.env.MAIL_PASSWORD || '',
     from: process.env.MAIL_FROM || 'G3B Education <no-reply@g3beducation.com>',

@@ -24,6 +24,13 @@ const ALLOWED_MIME = new Set([
   'image/avif',
 ]);
 
+const EXTENSIONS = {
+  'image/jpeg': ['.jpg', '.jpeg'], 'image/png': ['.png'], 'image/webp': ['.webp'],
+  'image/gif': ['.gif'], 'image/svg+xml': ['.svg'], 'image/avif': ['.avif'],
+  'video/mp4': ['.mp4'], 'video/webm': ['.webm'], 'video/quicktime': ['.mov'],
+};
+export const validMediaExtension = (file) => EXTENSIONS[file.mimetype]?.includes(path.extname(file.originalname).toLowerCase()) === true;
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsRoot),
   filename: (_req, file, cb) => {
@@ -43,7 +50,7 @@ export const uploadImage = multer({
   storage,
   limits: { fileSize: env.uploads.maxBytes, files: 1 },
   fileFilter: (_req, file, cb) => {
-    if (!ALLOWED_MIME.has(file.mimetype)) {
+    if (!ALLOWED_MIME.has(file.mimetype) || !validMediaExtension(file)) {
       cb(new ApiError(400, 'Only JPEG, PNG, WEBP, GIF, AVIF or SVG images are allowed.'));
       return;
     }
@@ -56,7 +63,7 @@ export const uploadMultiplePhotos = multer({
   storage,
   limits: { fileSize: env.uploads.maxBytes, files: 20 },
   fileFilter: (_req, file, cb) => {
-    if (!ALLOWED_MIME.has(file.mimetype)) {
+    if (!ALLOWED_MIME.has(file.mimetype) || !validMediaExtension(file)) {
       cb(new ApiError(400, 'Only JPEG, PNG, WEBP, GIF, AVIF or SVG images are allowed.'));
       return;
     }
@@ -76,7 +83,7 @@ export const uploadMediaFile = multer({
   storage,
   limits: { fileSize: 100 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
-    if (!ALLOWED_MEDIA_MIME.has(file.mimetype)) {
+    if (!ALLOWED_MEDIA_MIME.has(file.mimetype) || !validMediaExtension(file)) {
       cb(new ApiError(400, 'Only JPEG, PNG, WEBP, GIF, AVIF, SVG or MP4/WebM videos are allowed.'));
       return;
     }
@@ -94,5 +101,15 @@ export const uploadAssessmentReport = multer({
   limits: { fileSize: env.uploads.maxBytes, files: 1 },
   fileFilter: (_req, file, cb) => file.mimetype === 'application/pdf' ? cb(null, true) : cb(new ApiError(400, 'Assessment reports must be PDF files.')),
 }).single('report');
+
+/** Private assignment PDFs are held in memory until stored in PostgreSQL. */
+export const uploadLearningPdf = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: Math.min(env.uploads.maxBytes, 10 * 1024 * 1024), files: 1 },
+  fileFilter: (_req, file, cb) => {
+    const valid = file.mimetype === 'application/pdf' && path.extname(file.originalname).toLowerCase() === '.pdf';
+    cb(valid ? null : ApiError.badRequest('Only PDF files are supported.'), valid);
+  },
+}).single('file');
 
 export default uploadImage;

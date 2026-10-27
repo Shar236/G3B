@@ -50,10 +50,8 @@
 .finder-actions .btn { padding: 12px 17px; font-size: .78rem; border-radius: 9px; }
 .finder-disclaimer { font-size: .65rem; color: var(--text-muted); margin-top: 14px; text-align: center; }
 .hub-section { background: var(--bg-alt); }
-.hub-grid { display: grid; grid-template-columns: .85fr 1.15fr; gap: 24px; }
-.hub-newsletter, .hub-guide { border: 1px solid var(--border); border-radius: 17px; background: white; padding: 30px; min-width: 0; }
-.hub-icon { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #edf3fa; color: var(--primary); border-radius: 13px; margin-bottom: 21px; }
-.hub-newsletter .g3b-eyebrow { display: flex; }
+.hub-grid { max-width: 920px; margin-inline: auto; }
+.hub-guide { border: 1px solid var(--border); border-radius: 17px; background: white; padding: 30px; min-width: 0; }
 .hub-grid h3 { font-size: 1.35rem; margin: 0 0 12px; }
 .hub-grid article > p, .guide-details > p { color: #596579; font-size: .87rem; line-height: 1.7; margin-bottom: 22px; }
 .hub-form > label:first-child { display: block; font-size: .76rem; color: var(--primary); font-weight: 650; margin-bottom: 7px; }
@@ -116,7 +114,6 @@
 :where(.pathway-section, .finder-section, .hub-section, .insights-section, .article-page) :is(a, button, input, [tabindex]):focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
 .hub-input-row input:focus-visible { outline-offset: 1px; }
 @media (max-width: 1050px) {
-  .hub-grid { grid-template-columns: 1fr 1fr; }
   .hub-guide { grid-template-columns: 1fr; }
   .guide-cover { display: none; }
   .finder-shell { padding: 33px; gap: 30px; }
@@ -131,7 +128,6 @@
   .finder-shell { padding: 29px; }
   .finder-intro > p { max-width: none; }
   .finder-note { margin-top: 16px; }
-  .hub-grid { grid-template-columns: 1fr; }
   .hub-guide { grid-template-columns: 150px 1fr; }
   .guide-cover { display: flex; }
   .insights-grid { grid-template-columns: 1fr; }
@@ -152,7 +148,7 @@
   .finder-actions .btn { padding: 12px; font-size: .7rem; }
   .finder-note { font-size: .65rem; }
   .finder-intro .g3b-eyebrow { font-size: .62rem; }
-  .hub-newsletter, .hub-guide { padding: 25px; }
+  .hub-guide { padding: 25px; }
   .hub-guide { grid-template-columns: 1fr; }
   .guide-cover { display: none; }
   .hub-input-row { flex-wrap: wrap; }

@@ -129,7 +129,7 @@ export function createPageRenderer({ distDir = DEFAULT_CLIENT_DIST } = {}) {
 
       if (page) {
         const tags = renderMetaTags(page, defaults, origin);
-        res.status(200).type('html').send(injectBuiltInBody(injectHead(indexHtml, tags), pathname));
+        res.status(200).type('html').send(injectBuiltInBody(injectHead(indexHtml, tags), pathname, page));
         return;
       }
 

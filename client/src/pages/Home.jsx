@@ -34,18 +34,21 @@ import defaultHomeData from '../data/defaultHomeContent.js'
  * Section I: Final Action CTA & Consultation Form
  */
 export default function Home() {
-  const { data } = useSiteContent()
+  const { data, rawData } = useSiteContent()
   const location = useLocation()
   const activeData = data || defaultHomeData
   const content = activeData.content || defaultHomeData.content
   const settings = activeData.settings || defaultHomeData.settings
-  const stats = (data?.stats && data.stats.length > 0) ? data.stats : []
+  const stats = rawData?.stats || []
   const whyFeatures = (activeData.whyFeatures && activeData.whyFeatures.length > 0) ? activeData.whyFeatures : defaultHomeData.whyFeatures
-  const certifications = (activeData.certifications && activeData.certifications.length > 0) ? activeData.certifications : defaultHomeData.certifications
-  const services = (activeData.services && activeData.services.length > 0) ? activeData.services : defaultHomeData.services
-  const destinations = (activeData.destinations && activeData.destinations.length > 0) ? activeData.destinations : defaultHomeData.destinations
+  const certifications = rawData?.certifications || []
+  const services = Array.isArray(rawData?.services) ? rawData.services : defaultHomeData.services
+  const destinations = Array.isArray(rawData?.destinations) ? rawData.destinations : defaultHomeData.destinations.map((destination) => ({
+    ...destination, stayBackTime: null, workRights: null, avgTuition: null,
+    points: ['Compare courses and entry requirements', 'Plan tuition and living costs with current institution information', 'Check official visa requirements before applying'],
+  }))
   const gallery = activeData.gallery || defaultHomeData.gallery
-  const testimonials = (activeData.testimonials && activeData.testimonials.length > 0) ? activeData.testimonials : defaultHomeData.testimonials
+  const testimonials = rawData?.testimonials || []
   const videos = (activeData.videos && activeData.videos.length > 0) ? activeData.videos : defaultHomeData.videos
   const enquiryOptions = (activeData.enquiryOptions && activeData.enquiryOptions.length > 0) ? activeData.enquiryOptions : defaultHomeData.enquiryOptions
 
@@ -81,7 +84,7 @@ export default function Home() {
       <Gallery content={content} images={gallery} />
 
       {/* Section C: Our 3-Stage Approach (Discover, Plan, Progress) */}
-      <Approach />
+      <Approach content={content} steps={rawData?.processSteps} />
 
       {/* Section D: Our Services */}
       <Services content={content} services={services} />
@@ -97,7 +100,7 @@ export default function Home() {
       <PartnerSection />
 
       {/* Section H: Resources and FAQs */}
-      <FaqSection />
+      <FaqSection content={content} items={rawData?.faqs} />
       <KnowledgeHub />
       <Insights />
 

@@ -15,6 +15,7 @@ Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, co
 globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window)
 globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window)
 globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window)
+dom.window.scrollTo = () => {}
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
 const { createElement: h, Fragment } = await import('react')
@@ -57,6 +58,7 @@ beforeEach(() => {
   studentSession = { student: null, csrfToken: null }
   api.defaults.adapter = async (config) => {
     if (config.url === '/api/home') return reply(config, { success: true, data: fixture })
+    if (config.url === '/api/seo/page') return reply(config, { success: true, data: null })
     requests.push({ config, payload: typeof config.data === 'string' ? JSON.parse(config.data) : config.data })
     return respond(config)
   }
@@ -77,6 +79,17 @@ async function renderPublic(...components) {
   return userEvent.setup()
 }
 
+function LegacyGuideSignup() { return h(KnowledgeHub, { allowSubscription: true }) }
+
+test('public planning guide has no newsletter or email signup and offers an ungated download', async () => {
+  await renderPublic(KnowledgeHub)
+  assert.equal(screen.queryByRole('textbox'), null)
+  assert.equal(screen.queryByRole('checkbox'), null)
+  assert.equal(document.querySelector('.hub-form, .hub-newsletter'), null)
+  assert.equal(screen.getByRole('link', { name: /Download your free guide/ }).getAttribute('href'), '/resources/g3b-global-education-guide.pdf')
+  assert.equal(requests.length, 0)
+})
+
 test('shared navigation expands Services, supports ArrowDown, and restores focus on Escape', async () => {
   const user = await renderPublic()
   const menuToggle = screen.getByRole('button', { name: 'Open navigation menu' })
@@ -88,7 +101,7 @@ test('shared navigation expands Services, supports ArrowDown, and restores focus
   const servicesPanel = document.getElementById('navigation-dropdown-2')
   assert.equal(servicesToggle.getAttribute('aria-expanded'), 'true')
   assert.equal(servicesPanel.hidden, false)
-  assert.equal(servicesPanel.querySelectorAll('.dropdown-item-wrapper').length, 10)
+  assert.equal(servicesPanel.querySelectorAll('.dropdown-item-wrapper').length, 11)
   assert.ok(within(servicesPanel).getByRole('link', { name: /English Test Preparation/ }))
   assert.ok(within(servicesPanel).getByRole('link', { name: /View All Services/ }))
 
@@ -178,26 +191,9 @@ test('finder restart clears answers and open destinations stay editable for work
   assert.ok(within(dialog).getByText('Open to destinations'))
 })
 
-test('newsletter validates email and consent before submitting then announces success', async () => {
-  const user = await renderPublic(KnowledgeHub)
-  const newsletter = document.querySelector('.hub-newsletter')
-  await user.click(within(newsletter).getByRole('button', { name: 'Subscribe' }))
-  assert.match(within(newsletter).getByRole('alert').textContent, /valid email/)
-  assert.equal(requests.length, 0)
-  await user.type(within(newsletter).getByLabelText('Your email address'), 'student@example.com')
-  await user.click(within(newsletter).getByRole('button', { name: 'Subscribe' }))
-  assert.match(within(newsletter).getByRole('alert').textContent, /subscription consent/)
-  assert.equal(requests.length, 0)
-  await user.click(within(newsletter).getByRole('checkbox'))
-  await user.click(within(newsletter).getByRole('button', { name: 'Subscribe' }))
-  await within(newsletter).findByRole('status')
-  assert.equal(requests.length, 1)
-  assert.equal(requests[0].config.url, '/api/subscribers')
-  assert.deepEqual(requests[0].payload, { email: 'student@example.com', consent: true, source: 'newsletter' })
-})
-
 test('guide gate submits the guide source and exposes a downloadable PDF only after success', async () => {
-  const user = await renderPublic(KnowledgeHub)
+  const user = await renderPublic(LegacyGuideSignup)
+  assert.equal(document.querySelector('.hub-newsletter'), null)
   const guide = document.querySelector('.hub-guide')
   assert.equal(within(guide).queryByRole('link', { name: /Download your free guide/ }), null)
   await user.type(within(guide).getByLabelText('Your email address'), 'parent@example.com')
@@ -212,21 +208,21 @@ test('guide gate submits the guide source and exposes a downloadable PDF only af
   assert.ok(pdf.length > 1000)
 })
 
-test('newsletter failure clears loading, preserves input, and supports a successful retry', async () => {
+test('guide failure clears loading, preserves input, and supports a successful retry', async () => {
   respond = (config) => { throw refusal(config, 429, { error: 'Please wait before subscribing again.' }) }
-  const user = await renderPublic(KnowledgeHub)
-  const newsletter = document.querySelector('.hub-newsletter')
-  await user.type(within(newsletter).getByLabelText('Your email address'), 'student@example.com')
-  await user.click(within(newsletter).getByRole('checkbox'))
-  await user.click(within(newsletter).getByRole('button', { name: 'Subscribe' }))
-  await within(newsletter).findByRole('alert')
-  assert.match(within(newsletter).getByRole('alert').textContent, /Please wait before subscribing again/)
-  assert.equal(within(newsletter).getByRole('button', { name: 'Subscribe' }).disabled, false)
-  assert.equal(within(newsletter).getByLabelText('Your email address').value, 'student@example.com')
+  const user = await renderPublic(LegacyGuideSignup)
+  const guide = document.querySelector('.hub-guide')
+  await user.type(within(guide).getByLabelText('Your email address'), 'student@example.com')
+  await user.click(within(guide).getByRole('checkbox'))
+  await user.click(within(guide).getByRole('button', { name: 'Get the guide' }))
+  await within(guide).findByRole('alert')
+  assert.match(within(guide).getByRole('alert').textContent, /Please wait before subscribing again/)
+  assert.equal(within(guide).getByRole('button', { name: 'Get the guide' }).disabled, false)
+  assert.equal(within(guide).getByLabelText('Your email address').value, 'student@example.com')
   assert.equal(requests.length, 1)
   respond = (config) => reply(config, { success: true })
-  await user.click(within(newsletter).getByRole('button', { name: 'Subscribe' }))
-  await within(newsletter).findByRole('status')
+  await user.click(within(guide).getByRole('button', { name: 'Get the guide' }))
+  await within(guide).findByRole('status')
   assert.equal(requests.length, 2)
 })
 
@@ -271,14 +267,14 @@ test('consultation prevents duplicate synchronous posts and keeps finder metadat
   assert.ok(screen.getByText(/Your appointment is not confirmed yet/))
 })
 
-test('newsletter blocks duplicate synchronous submissions while a request is pending', async () => {
+test('guide blocks duplicate synchronous submissions while a request is pending', async () => {
   let complete
   respond = (config) => new Promise((resolve) => { complete = () => resolve(reply(config, { success: true })) })
-  const user = await renderPublic(KnowledgeHub)
-  const newsletter = document.querySelector('.hub-newsletter')
-  await user.type(within(newsletter).getByLabelText('Your email address'), 'student@example.com')
-  await user.click(within(newsletter).getByRole('checkbox'))
-  const form = within(newsletter).getByRole('button', { name: 'Subscribe' }).closest('form')
+  const user = await renderPublic(LegacyGuideSignup)
+  const guide = document.querySelector('.hub-guide')
+  await user.type(within(guide).getByLabelText('Your email address'), 'student@example.com')
+  await user.click(within(guide).getByRole('checkbox'))
+  const form = within(guide).getByRole('button', { name: 'Get the guide' }).closest('form')
   act(() => { fireEvent.submit(form); fireEvent.submit(form) })
   await waitFor(() => assert.ok(requests.length > 0))
   assert.equal(requests.length, 1)

@@ -2,6 +2,7 @@ import { settingsRepository } from '../repositories/settingsRepository.js';
 import { absoluteUrl } from '../services/seoRenderer.js';
 import ApiError from '../utils/ApiError.js';
 import env from '../config/env.js';
+import { visibleHomepageSections } from '../../../shared/publicContentPolicy.js';
 import { listPublicPagesWithDefaults, findPublicPageWithDefaults } from '../services/builtInPages.js';
 
 /** The canonical site origin used for absolute URLs (canonical, OG, sitemap). */
@@ -35,11 +36,12 @@ function publicPage(page, req) {
     name: page.name,
     route: page.route,
     pageType: page.pageType,
+    template: page.template || 'default',
     isIndexable: page.isIndexable,
     updatedAt: page.updatedAt,
     canonical: absoluteUrl(origin, page.route),
     seo: publicSeo(page.seo),
-    sections: (page.sections || []).map((section) => ({
+    sections: (page.route === '/' ? visibleHomepageSections(page.sections || []) : page.sections || []).filter((section) => section.isActive !== false).map((section) => ({
       sectionKey: section.sectionKey,
       label: section.label,
       headingLevel: section.headingLevel,

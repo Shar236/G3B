@@ -25,8 +25,13 @@ import path from 'node:path';
 import mysql from 'mysql2/promise';
 import pg from 'pg';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { postgresConnectionOptions } from '../src/config/postgres.js';
+import { createHash } from 'node:crypto';
+import { createReadStream } from 'node:fs';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+const serverRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+dotenv.config({ path: path.join(serverRoot, '.env') });
 
 // ─────────────────────────────────────────────────────── helpers ────
 const { Client } = pg;
@@ -80,8 +85,8 @@ function pgType(column) {
   const type = column.DATA_TYPE.toLowerCase();
   if (type === 'tinyint') return column.COLUMN_TYPE === 'tinyint(1)' ? 'smallint' : 'smallint';
   if (['smallint', 'mediumint'].includes(type)) return 'integer';
-  if (type === 'int') return 'integer';
-  if (type === 'bigint') return 'bigint';
+  if (type === 'int') return /unsigned/i.test(column.COLUMN_TYPE) ? 'bigint' : 'integer';
+  if (type === 'bigint') return /unsigned/i.test(column.COLUMN_TYPE) ? 'numeric(20,0)' : 'bigint';
   if (['decimal', 'numeric'].includes(type)) return `numeric(${column.NUMERIC_PRECISION},${column.NUMERIC_SCALE})`;
   if (['float', 'double'].includes(type)) return 'double precision';
   if (['datetime', 'timestamp'].includes(type)) return 'timestamptz';
@@ -90,16 +95,16 @@ function pgType(column) {
   if (type === 'year') return 'integer';
   if (type === 'json') return 'jsonb';
   if (['blob', 'tinyblob', 'mediumblob', 'longblob', 'binary', 'varbinary'].includes(type)) return 'bytea';
-  if (['text', 'tinytext', 'mediumtext', 'longtext', 'enum', 'set'].includes(type)) return 'text';
+  if (['text', 'tinytext', 'mediumtext', 'longtext', 'enum'].includes(type)) return 'text';
   if (['char', 'varchar'].includes(type)) return `${type}(${column.CHARACTER_MAXIMUM_LENGTH})`;
-  return 'text';
+  throw new Error(`Unsupported MySQL data type requires an explicit conversion: ${type}`);
 }
 
 /** Convert MySQL DEFAULT value to PostgreSQL DEFAULT clause */
 function pgDefault(column) {
   if (column.COLUMN_DEFAULT === null) return '';
   const value = String(column.COLUMN_DEFAULT);
-  if (/^current_timestamp(?:\(\))?$/i.test(value)) return ' DEFAULT CURRENT_TIMESTAMP';
+  if (/^current_timestamp(?:\(\d*\))?$/i.test(value)) return ' DEFAULT CURRENT_TIMESTAMP';
   if (/^NULL$/i.test(value)) return '';
   if (/^-?\d+(\.\d+)?$/.test(value)) return ` DEFAULT ${value}`;
   return ` DEFAULT '${value.replaceAll("'", "''")}'`;
@@ -135,12 +140,12 @@ function topoSort(tableNames, foreignKeys) {
 // ──────────────────────────────────────────────────── main ────
 // Source MySQL connection parameters (never printed to stdout)
 const source = {
-  host: required('SOURCE_DB_HOST', process.env.DB_HOST),
-  port: Number(process.env.SOURCE_DB_PORT || process.env.DB_PORT || 3306),
-  user: required('SOURCE_DB_USER', process.env.DB_USER),
-  password: required('SOURCE_DB_PASSWORD', process.env.DB_PASSWORD),
-  database: required('SOURCE_DB_NAME', process.env.DB_NAME),
-  ssl: /^(1|true|required)$/i.test(process.env.SOURCE_DB_SSL || process.env.DB_SSL || ''),
+  host: required('SOURCE_DB_HOST'),
+  port: Number(process.env.SOURCE_DB_PORT || 3306),
+  user: required('SOURCE_DB_USER'),
+  password: required('SOURCE_DB_PASSWORD'),
+  database: required('SOURCE_DB_NAME'),
+  ssl: /^(1|true|required)$/i.test(process.env.SOURCE_DB_SSL || ''),
 };
 
 // Safety stop — must be explicitly enabled
@@ -160,6 +165,20 @@ if (!rawDestinationUrl) {
 }
 
 const destinationUrl = validateDestinationUrl(rawDestinationUrl);
+const backupPath = required('SOURCE_BACKUP_FILE');
+const backupHash = createHash('sha256');
+let hasSchema = false;
+let tail = Buffer.alloc(0);
+for await (const chunk of createReadStream(path.resolve(serverRoot, backupPath))) {
+  backupHash.update(chunk);
+  const text = Buffer.concat([tail, chunk]);
+  if (text.includes(Buffer.from('CREATE TABLE'))) hasSchema = true;
+  tail = text.subarray(-16);
+}
+if (!hasSchema) {
+  throw new Error('SOURCE_BACKUP_FILE must refer to a non-empty MySQL SQL dump. Preserve and independently verify it before import.');
+}
+const backupSha256 = backupHash.digest('hex');
 
 console.log('Connecting to source MySQL database…');
 const mysqlDb = await mysql.createConnection({
@@ -168,24 +187,33 @@ const mysqlDb = await mysql.createConnection({
   user: source.user,
   password: source.password,
   database: source.database,
-  ssl: source.ssl ? { rejectUnauthorized: false } : undefined,
+  ssl: source.ssl ? { rejectUnauthorized: true } : undefined,
+  supportBigNumbers: true,
+  bigNumberStrings: true,
+  dateStrings: true,
+  timezone: 'Z',
 });
 
 console.log('Connecting to destination Supabase PostgreSQL…');
 const postgres = new Client({
-  connectionString: destinationUrl,
-  ssl: { rejectUnauthorized: false },
+  ...postgresConnectionOptions(destinationUrl),
 });
-await postgres.connect();
 
 const report = {
   startedAt: new Date().toISOString(),
   source: source.database,
   tables: {},
   warnings: [],
+  backupSha256,
 };
+let committed = false;
+let transactionStarted = false;
 
 try {
+  await postgres.connect();
+  await mysqlDb.query("SET time_zone = '+00:00'");
+  await mysqlDb.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+  await mysqlDb.query('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
   // ── 1. Safety: verify destination is empty ──────────────────────
   const occupied = await postgres.query(
     "SELECT tablename FROM pg_tables WHERE schemaname = 'public'",
@@ -195,7 +223,7 @@ try {
     throw new Error(
       `Safety stop: destination public schema is not empty — found ${occupied.rowCount} table(s): ${tableList}. ` +
       'The migration script refuses to run against a populated schema. ' +
-      'If this is the correct empty project, drop the existing tables first. ' +
+      'Choose a separate empty destination project; preserve these existing tables. ' +
       'NEVER re-run this script against a populated Supabase schema.',
     );
   }
@@ -207,6 +235,18 @@ try {
   );
   const names = tables.map((row) => row.TABLE_NAME || row.table_name);
   console.log(`Source tables discovered: ${names.length}`);
+  report.tableCount = names.length;
+  const [engines] = await mysqlDb.query("SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND table_type = 'BASE TABLE' AND engine <> 'InnoDB'", [source.database]);
+  const [triggers] = await mysqlDb.query('SELECT trigger_name FROM information_schema.triggers WHERE trigger_schema = ?', [source.database]);
+  const [routines] = await mysqlDb.query('SELECT routine_name FROM information_schema.routines WHERE routine_schema = ?', [source.database]);
+  const [events] = await mysqlDb.query('SELECT event_name FROM information_schema.events WHERE event_schema = ?', [source.database]);
+  const [views] = await mysqlDb.query('SELECT table_name FROM information_schema.views WHERE table_schema = ?', [source.database]);
+  const [checks] = await mysqlDb.query('SELECT constraint_name FROM information_schema.check_constraints WHERE constraint_schema = ?', [source.database]);
+  const [specialIndexes] = await mysqlDb.query("SELECT index_name FROM information_schema.statistics WHERE table_schema = ? AND (sub_part IS NOT NULL OR expression IS NOT NULL OR index_type <> 'BTREE')", [source.database]);
+  report.sourceObjects = { tables: names.length, triggers: triggers.length, routines: routines.length, events: events.length, views: views.length, checks: checks.length, specialIndexes: specialIndexes.length };
+  if (engines.length || triggers.length || routines.length || events.length || views.length || checks.length || specialIndexes.length) {
+    throw new Error('Source has schema objects requiring explicit conversion (non-InnoDB tables, custom triggers, routines, events, views, checks or special indexes). Review the failure report before importing.');
+  }
 
   // ── 3. Read column metadata for all tables ───────────────────────
   const metadata = new Map();
@@ -224,6 +264,13 @@ try {
       [source.database, table],
     );
     metadata.set(table, { columns, keys });
+    if (columns.some((col) => col.GENERATION_EXPRESSION || /unsigned/i.test(col.COLUMN_TYPE) && col.DATA_TYPE === 'bigint' && /auto_increment/i.test(col.EXTRA || ''))) {
+      throw new Error(`Table ${table} has a generated column or unsigned bigint identity requiring an explicit conversion.`);
+    }
+    for (const column of columns) {
+      pgType(column);
+      if (/on update/i.test(column.EXTRA || '') && column.COLUMN_NAME !== 'updated_at') throw new Error(`Table ${table} has an automatic update column requiring a dedicated trigger.`);
+    }
   }
 
   // ── 4. Read all foreign keys for topological sort ────────────────
@@ -255,6 +302,11 @@ try {
   // ── 5. Begin single transaction: CREATE tables + INSERT data ─────
   console.log('Beginning database transaction…');
   await postgres.query('BEGIN');
+  transactionStarted = true;
+  await postgres.query("SET LOCAL TIME ZONE 'UTC'");
+  await postgres.query("SELECT pg_advisory_xact_lock(314159266)");
+  const occupiedAgain = await postgres.query("SELECT 1 FROM pg_tables WHERE schemaname = 'public' LIMIT 1");
+  if (occupiedAgain.rowCount) throw new Error('Destination became populated during preflight. Import stopped.');
 
   // CREATE TABLE statements
   for (const table of sortedNames) {
@@ -322,7 +374,9 @@ try {
       inserted += batch.length;
     }
 
-    report.tables[table] = { source: rows.length, destination: rows.length };
+    const counted = await postgres.query(`SELECT COUNT(*)::text AS total FROM public.${qi(table)}`);
+    report.tables[table] = { source: rows.length, destination: Number(counted.rows[0].total) };
+    if (report.tables[table].destination !== rows.length) throw new Error(`Row count mismatch before commit: ${table}`);
     if (rows.length > 0) console.log(`  Inserted ${inserted} rows → ${table}`);
   }
 
@@ -395,16 +449,21 @@ try {
     const colName = identityCol.COLUMN_NAME || identityCol.column_name;
     await postgres.query(
       `SELECT setval(
-         pg_get_serial_sequence('public.${table}', '${colName}'),
-         COALESCE((SELECT MAX(${qi(colName)}) FROM public.${qi(table)}), 1),
+         pg_get_serial_sequence($1, $2),
+         GREATEST(COALESCE((SELECT MAX(${qi(colName)}) FROM public.${qi(table)}), 1), 1),
          (SELECT COUNT(*) > 0 FROM public.${qi(table)})
-       )`,
+       )`, [`public.${qi(table)}`, colName],
     );
   }
 
   // ── 10. Enable RLS on every table ────────────────────────────────
   for (const table of sortedNames) {
     await postgres.query(`ALTER TABLE public.${qi(table)} ENABLE ROW LEVEL SECURITY`);
+    await postgres.query(`REVOKE ALL ON TABLE public.${qi(table)} FROM PUBLIC`);
+    for (const role of ['anon', 'authenticated']) {
+      const exists = await postgres.query('SELECT 1 FROM pg_roles WHERE rolname=$1', [role]);
+      if (exists.rowCount) await postgres.query(`REVOKE ALL ON TABLE public.${qi(table)} FROM ${qi(role)}`);
+    }
   }
 
   // ── 11. Create shared updated_at trigger function ─────────────────
@@ -420,7 +479,7 @@ try {
   for (const table of sortedNames) {
     const hasUpdatedAt = metadata
       .get(table)
-      .columns.some((c) => (c.COLUMN_NAME || c.column_name) === 'updated_at');
+      .columns.some((c) => (c.COLUMN_NAME || c.column_name) === 'updated_at' && /on update CURRENT_TIMESTAMP/i.test(c.EXTRA || ''));
     if (hasUpdatedAt) {
       const triggerName = `${table}_set_updated_at`.slice(0, 63);
       await postgres.query(
@@ -433,6 +492,7 @@ try {
 
   // ── 12. Commit ───────────────────────────────────────────────────
   await postgres.query('COMMIT');
+  committed = true;
   console.log('Transaction committed successfully.');
 
   // ── 13. Post-commit count verification ───────────────────────────
@@ -461,10 +521,11 @@ try {
 
   // ── 14. Write report ─────────────────────────────────────────────
   report.completedAt = new Date().toISOString();
-  report.status = 'verified';
+  report.status = 'counts_verified';
+  report.warnings.push('Row counts alone do not verify data content, collation semantics, authentication or business workflows. Run the independent verifier and cutover checks.');
   report.tableCount = sortedNames.length;
 
-  const reportDir = path.resolve(process.cwd(), 'migration-reports');
+  const reportDir = path.join(serverRoot, 'migration-reports');
   await fs.mkdir(reportDir, { recursive: true });
   const reportFile = path.join(reportDir, `supabase-migration-${Date.now()}.json`);
   await fs.writeFile(reportFile, JSON.stringify(report, null, 2));
@@ -473,19 +534,27 @@ try {
   console.log(`  Report saved to: ${reportFile}`);
   console.log('\nNext steps:');
   console.log('  1. Run npm run verify:supabase to confirm row counts');
-  console.log('  2. Run npm run create-admin to create the administrator account');
+  console.log('  2. Verify the existing administrator account and critical workflows');
   console.log('  3. Remove ALLOW_SUPABASE_SCHEMA_CREATE=true from server/.env');
   console.log('  4. Remove SOURCE_DB_* variables from server/.env');
 } catch (error) {
   try {
+    if (committed) throw new Error('already committed');
+    if (!transactionStarted) throw new Error('not started');
     await postgres.query('ROLLBACK');
     console.log('Transaction rolled back. No changes were made to the destination database.');
   } catch {
-    // Ignore rollback error if transaction already ended
+    if (committed) console.error('The import was committed; verification failed afterwards. Preserve the destination and investigate. Do not rerun the importer.');
   }
   report.status = 'failed';
-  report.error = error.message;
-  console.error('\nMigration failed:', error.message);
+  report.committed = committed;
+  report.error = { code: error.code || 'MIGRATION_FAILED', ...(!error.code ? { message: error.message } : {}) };
+  const failureDir = path.join(serverRoot, 'migration-reports');
+  await fs.mkdir(failureDir, { recursive: true });
+  const failureFile = path.join(failureDir, `supabase-migration-failed-${Date.now()}.json`);
+  await fs.writeFile(failureFile, JSON.stringify(report, null, 2), { flag: 'wx' });
+  console.error('Failure report:', failureFile);
+  console.error('\nMigration failed. Error code:', error.code || 'MIGRATION_FAILED');
   process.exitCode = 1;
 } finally {
   await mysqlDb.end();

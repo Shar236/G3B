@@ -5,10 +5,10 @@ import { useCounsellingModal } from '../context/CounsellingContext.jsx'
  * A three-stage framework (Discover, Plan, Progress) with concise, keyword-focused
  * deliverables and crisp summaries.
  */
-export default function Approach() {
+export default function Approach({ content = {}, steps }) {
   const { openModal } = useCounsellingModal()
 
-  const stages = [
+  const defaultStages = [
     {
       number: '01',
       title: 'Discover',
@@ -61,6 +61,12 @@ export default function Approach() {
       badge: 'Step 3: Flawless Execution',
     },
   ]
+  const stages = Array.isArray(steps) && steps.length ? steps.map((step, index) => ({
+    number: String(step.stepNumber || index + 1).padStart(2, '0'), title: step.title,
+    description: step.description, icon: step.icon || 'fas fa-compass',
+    accent: ['#2563eb', '#e64e15', '#059669'][index % 3], color: '#0B2C5F',
+    badge: `Step ${step.stepNumber || index + 1}`, tagline: '', highlights: [],
+  })) : defaultStages
 
   return (
     <section className="section" id="approach" style={{ background: '#f8fafc', padding: '80px 0' }}>
@@ -87,18 +93,18 @@ export default function Approach() {
           </div>
 
           <h2 className="section-title" style={{ fontSize: 'clamp(1.9rem, 3.5vw, 2.6rem)', marginBottom: '14px' }}>
-            Our 3-Stage Mentoring Approach
+            {content.process?.heading || `Our ${stages.length}-step mentoring approach`}
           </h2>
 
           <p style={{ fontSize: '1.05rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
-            A structured three-step journey from discovering innate strengths to landing on your dream international campus.
+            {content.process?.subheading || 'A structured journey from understanding your strengths to preparing your next step.'}
           </p>
         </div>
 
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
             gap: '28px',
             marginBottom: '40px',
           }}
@@ -193,7 +199,7 @@ export default function Approach() {
                 {stage.description}
               </p>
 
-              <div style={{ marginTop: 'auto', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+              {stage.highlights.length > 0 ? <div style={{ marginTop: 'auto', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0B2C5F', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
                   Core Focus & Deliverables:
                 </div>
@@ -217,7 +223,7 @@ export default function Approach() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </div> : null}
             </div>
           ))}
         </div>

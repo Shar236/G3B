@@ -103,7 +103,6 @@ const CONTENT_BLOCKS = [
 
 const STATS = [
   { value: '15,000+', label: 'Students Counselled' },
-  { value: '500+', label: 'Universities Students Sent To' },
   { value: '10+', label: 'Countries' },
   { value: '98%', label: 'Visa Success Rate' },
 ];

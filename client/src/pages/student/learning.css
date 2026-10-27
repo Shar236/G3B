@@ -1,0 +1,20 @@
+.student-learning { display: grid; gap: 25px; padding-block: 50px 80px; }
+.student-learning > header h1 { color: #0b2c5f; margin: 10px 0; }
+.student-learning > header p { color: #64778e; }
+.student-learning > header a { display: inline-block; margin-top: 12px; color: #175893; }
+.student-learning-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; }
+.student-learning h2 { color: #0b2c5f; margin-bottom: 17px; }
+.student-learning h3 { color: #173b67; margin: 18px 0 10px; font-size: 1rem; }
+.student-learning .student-tool-list button { width: 100%; text-align: left; border: 1px solid #dce6f1; border-radius: 9px; background: #fff; padding: 15px; display: grid; gap: 5px; cursor: pointer; }
+.student-learning .student-tool-list button.selected { border-color: #0b2c5f; background: #f1f6fb; }
+.student-learning .student-tool-panel > p,.student-learning-instructions { color: #596d84; line-height: 1.7; white-space: pre-wrap; }
+.student-learning-instructions { border-left: 3px solid #d7882b; padding-left: 14px; }
+.student-learning li { margin: 9px 0; }
+.student-announcement { border-top: 1px solid #e0e8f2; padding: 14px 0; }
+.student-announcement p { white-space: pre-wrap; }
+.student-announcement small { color: #64748b; }
+.student-learning-form { display: grid; gap: 12px; align-content: start; }
+.student-learning-form label { display: grid; gap: 6px; color: #355575; font-size: .83rem; }
+.student-learning-form input { border: 1px solid #d6e1ec; border-radius: 8px; padding: 10px; font: inherit; }
+.student-learning-form .btn { justify-self: start; }
+@media (max-width: 760px) { .student-learning-grid { grid-template-columns: 1fr; } }

@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "test": "node --test --test-concurrency=1 tests/*.test.mjs",
     "preview": "vite preview",
-    "start": "vite preview --host 0.0.0.0 --port ${PORT:-8080}"
+    "start": "node scripts/start-preview.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

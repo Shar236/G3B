@@ -18,6 +18,16 @@ const SETTINGS_SECTIONS = [
     ],
   },
   {
+    id: 'navigation',
+    title: 'Navigation & Footer Links',
+    icon: 'fas fa-compass',
+    description: 'Use the managed modes after editing Navigation Menu and Footer Links in Website content.',
+    fields: [
+      { key: 'navigation_mode', label: 'Header navigation', type: 'select', defaultValue: 'curated', options: [{ value: 'curated', label: 'Current grouped menu' }, { value: 'managed', label: 'Admin-managed links' }] },
+      { key: 'footer_navigation_mode', label: 'Footer links', type: 'select', defaultValue: 'curated', options: [{ value: 'curated', label: 'Current footer groups' }, { value: 'managed', label: 'Admin-managed footer links' }] },
+    ],
+  },
+  {
     id: 'contact',
     title: 'Contact & Office',
     icon: 'fas fa-location-dot',
@@ -86,6 +96,16 @@ const SETTINGS_SECTIONS = [
       { key: 'og_image_url', label: 'Open Graph (Social Share) Image URL', type: 'image' },
       { key: 'og_title', label: 'Open Graph Share Title', type: 'text', placeholder: 'G3B Education | Study Abroad' },
       { key: 'og_description', label: 'Open Graph Share Description', type: 'textarea', rows: 2 },
+    ],
+  },
+  {
+    id: 'email',
+    title: 'Student Email Templates',
+    icon: 'fas fa-envelope',
+    description: 'Assignment emails use these templates when server SMTP is configured. Use {{student}}, {{assignment}} and {{dueDate}} placeholders.',
+    fields: [
+      { key: 'assignment_email_subject', label: 'Assignment email subject', type: 'text', placeholder: 'New assignment: {{assignment}}' },
+      { key: 'assignment_email_body', label: 'Assignment email body', type: 'textarea', rows: 6, placeholder: 'Hello {{student}}, your assignment {{assignment}} is available. Due: {{dueDate}}.' },
     ],
   },
   {

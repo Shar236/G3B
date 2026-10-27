@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext.jsx'
 import { PageLoader, StateBlock } from './components/ui/StateBlock.jsx'
@@ -8,17 +9,17 @@ import NotFound from './pages/NotFound.jsx'
 import AdminLogin from './pages/admin/AdminLogin.jsx'
 import ForgotPassword from './pages/admin/ForgotPassword.jsx'
 import ResetPassword from './pages/admin/ResetPassword.jsx'
-import AdminLayout from './pages/admin/AdminLayout.jsx'
-import Dashboard from './pages/admin/Dashboard.jsx'
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout.jsx'))
+const Dashboard = lazy(() => import('./pages/admin/Dashboard.jsx'))
 import Enquiries from './pages/admin/Enquiries.jsx'
 import EnquiryDetail from './pages/admin/EnquiryDetail.jsx'
-import ContentResource from './pages/admin/ContentResource.jsx'
+const ContentResource = lazy(() => import('./pages/admin/ContentResource.jsx'))
 import ContentBlocks from './pages/admin/ContentBlocks.jsx'
 import Settings from './pages/admin/Settings.jsx'
 import Users from './pages/admin/Users.jsx'
-import SeoManager from './pages/admin/SeoManager.jsx'
+const SeoManager = lazy(() => import('./pages/admin/SeoManager.jsx'))
 import SeoHealth from './pages/admin/SeoHealth.jsx'
-import MediaLibrary from './pages/admin/MediaLibrary.jsx'
+const MediaLibrary = lazy(() => import('./pages/admin/MediaLibrary.jsx'))
 import RedirectManager from './pages/admin/RedirectManager.jsx'
 import Integrations from './pages/admin/Integrations.jsx'
 import AuditLogs from './pages/admin/AuditLogs.jsx'
@@ -30,19 +31,21 @@ import InsightPage from './pages/InsightPage.jsx'
 import PartnerPage from './pages/PartnerPage.jsx'
 import Unsubscribe from './pages/Unsubscribe.jsx'
 import Subscribers from './pages/admin/Subscribers.jsx'
-import Videos from './pages/admin/Videos.jsx'
+const Videos = lazy(() => import('./pages/admin/Videos.jsx'))
 import PartnerEnquiries from './pages/admin/PartnerEnquiries.jsx'
 import AssessmentAssignments from './pages/admin/AssessmentAssignments.jsx'
 import StudentLayout from './pages/student/StudentLayout.jsx'
 import StudentAuth from './pages/student/StudentAuth.jsx'
 import StudentDashboard from './pages/student/StudentDashboard.jsx'
+const StudentLearning = lazy(() => import('./pages/student/StudentLearning.jsx'))
+const LearningManager = lazy(() => import('./pages/admin/LearningManager.jsx'))
 import AssessmentsPage from './pages/AssessmentsPage.jsx'
-import StudyAbroadCatalogue from './pages/StudyAbroadCatalogue.jsx'
-import StudyAbroadDetailPage from './pages/StudyAbroadDetailPage.jsx'
-import MediaOverviewPage from './pages/media/MediaOverviewPage.jsx'
-import PhotosGalleryPage from './pages/media/PhotosGalleryPage.jsx'
-import VideosGalleryPage from './pages/media/VideosGalleryPage.jsx'
-import AdminMediaGallery from './pages/admin/AdminMediaGallery.jsx'
+const StudyAbroadCatalogue = lazy(() => import('./pages/StudyAbroadCatalogue.jsx'))
+const StudyAbroadDetailPage = lazy(() => import('./pages/StudyAbroadDetailPage.jsx'))
+const MediaOverviewPage = lazy(() => import('./pages/media/MediaOverviewPage.jsx'))
+const PhotosGalleryPage = lazy(() => import('./pages/media/PhotosGalleryPage.jsx'))
+const VideosGalleryPage = lazy(() => import('./pages/media/VideosGalleryPage.jsx'))
+const AdminMediaGallery = lazy(() => import('./pages/admin/AdminMediaGallery.jsx'))
 
 /** Gate the admin area behind an authenticated administrator session. */
 function ProtectedRoute({ children }) {
@@ -62,7 +65,7 @@ function RoleGate({ roles }) {
 
 export default function App() {
   return (
-    <Routes>
+    <Suspense fallback={<PageLoader label="Loading page…" />}><Routes>
       {/* Convenient shortcuts for admin login */}
       <Route path="/admin" element={<Navigate to={adminPath('login')} replace />} />
       <Route path="/admin/login" element={<Navigate to={adminPath('login')} replace />} />
@@ -95,6 +98,7 @@ export default function App() {
           <Route path="login" element={<StudentAuth key="student-login" />} />
           <Route path="register" element={<StudentAuth key="student-register" register />} />
           <Route path="dashboard" element={<StudentDashboard />} />
+          <Route path="learning" element={<StudentLearning />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Route>
@@ -116,6 +120,7 @@ export default function App() {
           <Route path="partner-enquiries" element={<PartnerEnquiries />} />
           <Route path="subscribers" element={<Subscribers />} />
           <Route path="assessment-assignments" element={<AssessmentAssignments />} />
+          <Route path="learning" element={<LearningManager />} />
         </Route>
         <Route element={<RoleGate roles={['admin', 'editor']} />}>
           <Route path="seo" element={<SeoManager />} />
@@ -139,6 +144,6 @@ export default function App() {
           <Route path="users" element={<Users />} />
         </Route>
       </Route>
-    </Routes>
+    </Routes></Suspense>
   )
 }

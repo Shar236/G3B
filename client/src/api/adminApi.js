@@ -87,6 +87,7 @@ export async function uploadImage(file) {
 
 // --- Pages & SEO Manager ----------------------------------------------------
 export const listPages = (params) => api.get('/api/admin/pages', { params }).then((r) => r.data.data)
+export const listPageCatalog = () => api.get('/api/admin/pages/catalog').then((r) => r.data.data)
 export const getPage = (id) => api.get(`/api/admin/pages/${id}`).then((r) => r.data.data)
 export const createPage = (payload) => api.post('/api/admin/pages', payload).then((r) => r.data.data)
 export const updatePage = (id, payload) => api.patch(`/api/admin/pages/${id}`, payload).then((r) => r.data.data)

@@ -11,10 +11,12 @@ import {
   enquiryOptionsRepository,
   socialLinksRepository,
   navigationItemsRepository,
+  footerLinksRepository,
   faqsRepository,
 } from '../repositories/catalogRepository.js';
 import { contentBlocksRepository, settingsRepository } from '../repositories/settingsRepository.js';
 import assessmentRepository from '../repositories/assessmentRepository.js';
+import { isRemovedHomepageSection, isRemovedPartnerStatistic } from '../../../shared/publicContentPolicy.js';
 
 /** Public, read-only content endpoints (only active rows are exposed). */
 
@@ -65,6 +67,9 @@ export async function listSocialLinks(_req, res) {
 export async function listNavItems(_req, res) {
   res.json({ success: true, data: await navigationItemsRepository.list({ activeOnly: true }) });
 }
+export async function listFooterLinks(_req, res) {
+  res.json({ success: true, data: await footerLinksRepository.list({ activeOnly: true }) });
+}
 
 export async function listFaqs(_req, res) {
   res.json({ success: true, data: await faqsRepository.list({ activeOnly: true }) });
@@ -103,6 +108,8 @@ export async function getHome(_req, res) {
     enquiryOptions,
     socialLinks,
     navigation,
+    footerLinks,
+    faqs,
   ] = await Promise.all([
     contentBlocksRepository.all(),
     settingsRepository.public(),
@@ -118,14 +125,16 @@ export async function getHome(_req, res) {
     enquiryOptionsRepository.list({ activeOnly: true }),
     socialLinksRepository.list({ activeOnly: true }),
     navigationItemsRepository.list({ activeOnly: true }),
+    footerLinksRepository.list({ activeOnly: true }),
+    faqsRepository.list({ activeOnly: true }),
   ]);
 
   res.json({
     success: true,
     data: {
-      content,
+      content: Object.fromEntries(Object.entries(content).filter(([key, block]) => !isRemovedHomepageSection({ key, ...block }))),
       settings,
-      stats,
+      stats: stats.filter((stat) => !isRemovedPartnerStatistic(stat)),
       whyFeatures,
       certifications,
       services,
@@ -137,6 +146,8 @@ export async function getHome(_req, res) {
       enquiryOptions,
       socialLinks,
       navigation,
+      footerLinks,
+      faqs,
     },
   });
 }

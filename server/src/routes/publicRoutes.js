@@ -38,6 +38,7 @@ router.get('/certifications', asyncHandler(content.listCertifications));
 router.get('/enquiry-options', asyncHandler(content.listEnquiryOptions));
 router.get('/social-links', asyncHandler(content.listSocialLinks));
 router.get('/navigation', asyncHandler(content.listNavItems));
+router.get('/footer-links', asyncHandler(content.listFooterLinks));
 router.get('/faqs', asyncHandler(content.listFaqs));
 router.get('/site-settings', asyncHandler(content.getSiteSettings));
 router.get('/content-blocks', asyncHandler(content.getContentBlocks));

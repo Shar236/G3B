@@ -1,28 +1,19 @@
 import pg from 'pg';
 import env from './env.js';
+import { postgresConnectionOptions, postgresTls } from './postgres.js';
 
 const { Pool } = pg;
 
-let connectionUrl = env.db.url;
-if (connectionUrl) {
-  try {
-    const parsed = new URL(connectionUrl);
-    parsed.searchParams.delete('sslmode');
-    parsed.searchParams.delete('ssl');
-    connectionUrl = parsed.toString();
-  } catch {
-    // Keep raw if invalid URL
-  }
-}
-
-export const pool = new Pool({
-  ...(connectionUrl ? { connectionString: connectionUrl } : {
+const databaseOptions = env.db.url ? postgresConnectionOptions(env.db.url, { ssl: env.db.ssl }) : {
     host: env.db.host, port: env.db.port, user: env.db.user,
     password: env.db.password, database: env.db.name,
-  }),
+    ssl: postgresTls(env.db.ssl),
+  };
+
+export const pool = new Pool({
+  ...databaseOptions,
   max: env.db.connectionLimit,
   connectionTimeoutMillis: 5000,
-  ssl: env.db.ssl ? { rejectUnauthorized: false } : undefined,
 });
 
 export function postgresSql(sql) {

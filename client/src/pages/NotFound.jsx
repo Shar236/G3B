@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import useDocumentMeta from '../hooks/useDocumentMeta.js'
 
 export default function NotFound() {
-  useDocumentMeta({ title: 'Page not found | G3B Education' })
+  useDocumentMeta({ title: 'Page not found | G3B Education', robots: 'noindex,follow' })
 
   return (
     <section className="section">

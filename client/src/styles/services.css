@@ -4,6 +4,14 @@
    Preserves natural word spacing and editorial visual hierarchy
    ========================================================================== */
 
+.services-overview .so-hero { background: radial-gradient(ellipse at 50% 20%, #fff, #edf4fa 65%, #e6eef7); color: #142d50; }
+.services-overview .so-hero h1 { color: #142d50 !important; }
+.services-overview .so-hero .so-secondary { color: #445971; background: #fff; border-color: #bdcbdc; box-shadow: none; }
+.services-overview .so-hero .so-secondary:hover { color: #142d50; background: #f2f6fb; }
+.services-overview .so-intro,
+.services-overview .so-hero-notes,
+.services-overview .so-secondary { color: #445971; }
+
 .services-overview {
   color: #536277;
   word-spacing: normal !important;

@@ -470,6 +470,10 @@ export const navigationItemsRepository = createSimpleResource('navigation_items'
   'is_button',
 ]);
 
+export const footerLinksRepository = createSimpleResource('footer_links', [
+  'group_name', 'label', 'url', 'sort_order', 'is_active',
+]);
+
 /** Standalone FAQs, optionally scoped to a page. */
 export const faqsRepository = createSimpleResource('faqs', [
   'question',
@@ -500,6 +504,7 @@ export default {
   enquiryOptionsRepository,
   socialLinksRepository,
   navigationItemsRepository,
+  footerLinksRepository,
   faqsRepository,
   assessmentListingsRepository,
   universitiesRepository,

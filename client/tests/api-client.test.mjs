@@ -2,7 +2,15 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { setTimeout as delay } from 'node:timers/promises'
 import axios, { AxiosError } from 'axios'
-import { createApiClient, getRetryDelay, onAuthExpired, parseApiError } from '../src/api/client.js'
+import { createApiClient, getRetryDelay, onAuthExpired, parseApiError, resolveMediaUrl } from '../src/api/client.js'
+
+test('bundled assets stay on the frontend origin while uploaded media uses the API origin', () => {
+  assert.equal(resolveMediaUrl('/images/services-campus.jpg'), '/images/services-campus.jpg')
+  assert.equal(resolveMediaUrl('/logo.png'), '/logo.png')
+  assert.equal(resolveMediaUrl('http://localhost:5000/images/services-uk.jpg'), '/images/services-uk.jpg')
+  assert.ok(resolveMediaUrl('/uploads/photo.webp').endsWith('/uploads/photo.webp'))
+  assert.equal(resolveMediaUrl('https://example.com/photo.webp'), 'https://example.com/photo.webp')
+})
 
 const reply = (config, data = {}, status = 200) => ({ config, status, data, headers: {}, statusText: String(status) })
 const refusal = (config, status, data = {}, headers = {}) => new AxiosError('Request failed', 'ERR_BAD_RESPONSE', config, {}, { ...reply(config, data, status), headers })

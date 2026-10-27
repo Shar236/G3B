@@ -24,6 +24,7 @@ const BLOCK_LABELS = {
   career_cta: 'Career mentor call to action',
   contact: 'Contact section',
   footer: 'Footer tagline',
+  faqs: 'Homepage FAQs introduction',
 }
 
 /** Edit the headings, descriptions and CTA labels of each homepage section. */
@@ -38,7 +39,8 @@ export default function ContentBlocks() {
     setLoading(true)
     setError(null)
     try {
-      setBlocks(await fetchContentBlocks())
+      const stored = await fetchContentBlocks()
+      setBlocks({ ...Object.fromEntries(Object.keys(BLOCK_LABELS).map((key) => [key, {}])), ...stored })
     } catch (err) {
       setError(parseApiError(err))
     } finally {

@@ -82,13 +82,12 @@ describe('seo renderer (pure functions)', () => {
 
 describe('public seo endpoints', () => {
   it('requires a route parameter', async () => {
-    if (!dbAvailable) return;
     const res = await request(app).get('/api/seo/page');
     expect(res.status).toBe(400);
   });
 
-  it('returns metadata for a published route', async () => {
-    if (!dbAvailable) return;
+  it('returns metadata for a published route', async (context) => {
+    if (!dbAvailable) return context.skip();
     const res = await request(app).get('/api/seo/page').query({ route: '/services' });
     expect(res.status).toBe(200);
     expect(res.body.data.route).toBe('/services');
@@ -96,14 +95,14 @@ describe('public seo endpoints', () => {
     expect(res.body.data.canonical).toMatch(/\/services$/);
   });
 
-  it('returns 404 for an unregistered route', async () => {
-    if (!dbAvailable) return;
+  it('returns 404 for an unregistered route', async (context) => {
+    if (!dbAvailable) return context.skip();
     const res = await request(app).get('/api/seo/page').query({ route: '/definitely-not-registered' });
     expect(res.status).toBe(404);
   });
 
-  it('never exposes draft payloads or private columns', async () => {
-    if (!dbAvailable) return;
+  it('never exposes draft payloads or private columns', async (context) => {
+    if (!dbAvailable) return context.skip();
     const res = await request(app).get('/api/seo/pages');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
@@ -121,14 +120,18 @@ describe('admin seo manager', () => {
     expect(res.status).toBe(401);
   });
 
-  it('runs the full page lifecycle with draft/publish and revisions', async () => {
-    if (!dbAvailable) return;
+  it('runs the full page lifecycle with draft/publish and revisions', async (context) => {
+    if (!dbAvailable) return context.skip();
 
     const session = await adminSession();
-    if (!session) return; // Administrator not seeded - nothing to assert.
+    if (!session) return context.skip();
 
     const authed = (method, url) =>
       request(app)[method](url).set('Cookie', session.cookies).set('X-CSRF-Token', session.csrf);
+
+    const catalog = await authed('get', '/api/admin/pages/catalog');
+    expect(catalog.status).toBe(200);
+    expect(catalog.body.data.some((page) => page.route === '/services/india-admissions')).toBe(true);
 
     const route = `/seo-test-${Date.now()}`;
     let pageId = null;
@@ -139,6 +142,7 @@ describe('admin seo manager', () => {
         name: 'SEO Test Page',
         route,
         pageType: 'custom',
+        template: 'managed',
         status: 'published',
       });
       expect(created.status).toBe(201);
@@ -198,6 +202,18 @@ describe('admin seo manager', () => {
       expect(section.status).toBe(200);
       expect(section.body.data.headingLevel).toBe('h1');
 
+      const imageSection = await authed('put', `/api/admin/pages/${pageId}/sections/hero`).send({
+        headingText: 'Edited persistent hero', imageUrl: '/images/services-campus.jpg', imageAlt: 'Graduates celebrating', ctaLabel: 'View services', ctaUrl: '/services',
+      });
+      expect(imageSection.status).toBe(200);
+      const editedPage = await request(app).get('/api/seo/page').query({ route });
+      expect(editedPage.body.data.template).toBe('managed');
+      expect(editedPage.body.data.sections[0]).toMatchObject({ headingText: 'Edited persistent hero', imageUrl: '/images/services-campus.jpg', imageAlt: 'Graduates celebrating', ctaUrl: '/services' });
+      await authed('put', `/api/admin/pages/${pageId}/sections/hero`).send({ imageUrl: '/images/services-uk.jpg', imageAlt: 'Tower Bridge in London' });
+      const replacedImage = await request(app).get('/api/seo/page').query({ route });
+      expect(replacedImage.body.data.sections[0].imageUrl).toBe('/images/services-uk.jpg');
+      expect(replacedImage.body.data.sections[0].imageAlt).toBe('Tower Bridge in London');
+
       const badLevel = await authed('put', `/api/admin/pages/${pageId}/sections/hero`).send({
         headingLevel: 'h9',
       });
@@ -244,5 +260,5 @@ describe('admin seo manager', () => {
         await query('DELETE FROM audit_logs WHERE entity_type = ? AND entity_id = ?', ['page', String(pageId)]);
       }
     }
-  });
+  }, 60000);
 });

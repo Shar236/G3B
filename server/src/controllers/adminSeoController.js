@@ -1,6 +1,14 @@
 import { pagesRepository } from '../repositories/pagesRepository.js';
 import ApiError from '../utils/ApiError.js';
 import { recordAudit } from '../services/auditLog.js';
+import { publicPageCatalog } from '../services/publicPageCatalog.js';
+import { listPublicPagesWithDefaults } from '../services/builtInPages.js';
+
+export async function listPageCatalog(_req, res) {
+  const [registered, published] = await Promise.all([pagesRepository.list(), listPublicPagesWithDefaults()]);
+  const routes = new Map([...publicPageCatalog, ...published, ...registered].map((page) => [page.route, page]));
+  res.json({ success: true, data: [...routes.values()].map(({ id, name, route, pageType, template, status }) => ({ id: id || null, name, route, pageType, template: template || 'default', status: status || 'published', registered: Boolean(id) })).sort((a, b) => a.route.localeCompare(b.route)) });
+}
 
 /** Shared route-uniqueness guard for create/update. */
 async function assertRouteAvailable(route, excludeId = null) {

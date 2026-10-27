@@ -93,7 +93,7 @@ describe('YouTube registry persistence', () => {
     stateDirty = true;
     const row = await youtubeRepository.register(fixture);
     await youtubeRepository.update(row.id, { verifiedShort: true, title: 'Editor-provided title', category: '' });
-    await query('UPDATE youtube_short_registry SET last_checked_at = UTC_TIMESTAMP() - INTERVAL 31 DAY WHERE id = ?', [row.id]);
+    await query("UPDATE youtube_short_registry SET last_checked_at = NOW() - INTERVAL '31 days' WHERE id = ?", [row.id]);
     expect((await videosRepository.list({ activeOnly: true })).some((video) => video.youtubeId === fixtureId)).toBe(false);
     await youtubeRepository.expireMetadata();
     expect(await youtubeRepository.find(row.id)).toMatchObject({ title: 'Editor-provided title', thumbnailUrl: null, durationSeconds: null, publishedAt: null, availability: 'pending', channelVerified: false, channelId: null });

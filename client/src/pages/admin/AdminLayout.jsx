@@ -15,6 +15,7 @@ const primaryNav = [
   { to: adminPath('enquiries/school'), label: 'Grade 9+ & Workshops', icon: 'fas fa-school' },
   { to: adminPath('subscribers'), label: 'Newsletter subscribers', icon: 'fas fa-envelope-open-text' },
   { to: adminPath('assessment-assignments'), label: 'Assessment requests', icon: 'fas fa-clipboard-check' },
+  { to: adminPath('learning'), label: 'Assignments & documents', icon: 'fas fa-file-pdf' },
 ]
 
 const seoNav = [

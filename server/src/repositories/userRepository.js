@@ -13,7 +13,7 @@ const SORTABLE = {
 
 export const usersRepository = {
   async findByEmail(email) {
-    return queryOne('SELECT * FROM users WHERE email = ? LIMIT 1', [email]);
+    return queryOne('SELECT * FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [email]);
   },
 
   async findById(id) {

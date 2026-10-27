@@ -39,6 +39,29 @@ export const resourceConfigs = {
     ],
   },
 
+  'footer-links': {
+    slug: 'footer-links',
+    route: 'footer-links',
+    label: 'Footer Links',
+    singular: 'Footer Link',
+    icon: 'fas fa-link',
+    description: 'Links grouped into footer columns when managed footer navigation is enabled.',
+    listColumns: [
+      { name: 'groupName', label: 'Group' },
+      { name: 'label', label: 'Label' },
+      { name: 'url', label: 'URL' },
+      { name: 'sortOrder', label: 'Order' },
+      { name: 'isActive', label: 'Visible', render: (row) => row.isActive ? 'Yes' : 'No' },
+    ],
+    fields: [
+      { name: 'groupName', label: 'Group name', type: 'text', required: true, placeholder: 'Company' },
+      { name: 'label', label: 'Link label', type: 'text', required: true },
+      { name: 'url', label: 'URL or path', type: 'text', required: true, placeholder: '/services or https://example.com' },
+      numberField('sortOrder', 'Display order'),
+      activeField,
+    ],
+  },
+
   services: {
     slug: 'services',
     route: 'services',

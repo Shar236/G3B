@@ -57,6 +57,8 @@ export function usePageSeo(route, fallback = {}) {
     image: seo?.ogImage || fallback.image,
     robots: seo?.metaRobots || fallback.robots,
     jsonLd: seo?.structuredData || fallback.jsonLd,
+    ogTitle: seo?.ogTitle,
+    ogDescription: seo?.ogDescription,
   })
 
   // Expose the published content so pages can render editable headings/copy.

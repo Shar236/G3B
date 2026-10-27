@@ -123,3 +123,4 @@
 @media (prefers-reduced-motion: reduce) {
   .g3b-site-header *, .g3b-site-footer * { transition: none; animation: none; }
 }
+.nav-managed-cta { color: #0b2c5f; background: #f5ad36; border-radius: 8px; }

@@ -2,6 +2,17 @@ import { Link } from 'react-router-dom'
 import { resolveMediaUrl } from '../api/client.js'
 import { useCounsellingModal } from '../context/CounsellingContext.jsx'
 
+function detailRoute(service) {
+  if (service.slug) return `/services/${encodeURIComponent(service.slug)}`
+  const title = service.title || ''
+  const match = /visa/i.test(title) ? 'visa-guidance' : /scholarship|funding/i.test(title) ? 'scholarships'
+    : /test|IELTS|TOEFL|GRE|PTE/i.test(title) ? 'english-test-preparation'
+      : /SOP|essay|resume|admission/i.test(title) ? 'admissions'
+        : /university|shortlist|abroad/i.test(title) ? 'study-abroad'
+          : /school|career|counselling/i.test(title) ? 'career-counselling' : null
+  return match ? `/services/${match}` : '/services'
+}
+
 /**
  * Service cards on the homepage with feature highlights, quick consultation CTAs,
  * and direct links to the comprehensive /services page.
@@ -101,7 +112,7 @@ export default function Services({ content = {}, services = [] }) {
                     <i className="fas fa-calendar-check" aria-hidden="true" /> Book Counselling
                   </button>
                   <Link
-                    to={`/services#${service.slug || service.id}`}
+                    to={detailRoute(service)}
                     className="btn btn-ghost btn-sm"
                     title="Read full service breakdown, coaching packages and FAQs"
                   >

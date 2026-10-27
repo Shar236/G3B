@@ -8,6 +8,8 @@ import asyncHandler from '../utils/asyncHandler.js';
 import * as assessments from '../controllers/assessmentController.js';
 import { param } from 'express-validator';
 import * as studyAbroad from '../controllers/studyAbroadController.js';
+import * as learning from '../controllers/learningController.js';
+import { uploadLearningPdf } from '../middleware/upload.js';
 
 const router = Router();
 const emailRule = () => body('email').trim().isEmail().withMessage('Enter a valid email address.').isLength({ max: 190 }).normalizeEmail({ gmail_remove_dots: false, gmail_remove_subaddress: false, outlookdotcom_remove_subaddress: false, yahoo_remove_subaddress: false, icloud_remove_subaddress: false });
@@ -21,6 +23,18 @@ router.post('/register', loginRateLimiter, [
 ], validate, asyncHandler(student.register));
 router.post('/login', loginRateLimiter, [emailRule(), body('password').isString().isLength({ min: 1, max: 200 }).withMessage('Enter your password.')], validate, asyncHandler(student.login));
 router.get('/dashboard', requireStudent, asyncHandler(student.dashboard));
+router.get('/learning', requireStudent, asyncHandler(learning.studentAssignments));
+router.get('/learning/:id', requireStudent, [param('id').isInt({ min: 1 }).toInt()], validate, asyncHandler(learning.studentAssignment));
+router.get('/learning/files/:fileId', requireStudent, [param('fileId').isInt({ min: 1 }).toInt()], validate, asyncHandler(learning.downloadStudentFile));
+router.post('/learning/:id/submission', requireStudent, studentCsrf, [param('id').isInt({ min: 1 }).toInt()], validate, uploadLearningPdf, asyncHandler(learning.submitAssignment));
+router.patch('/profile', requireStudent, studentCsrf, [
+  body('name').trim().isLength({ min: 2, max: 150 }),
+  body('phone').trim().matches(/^[+]?[\d][\d\s()-]{6,24}$/),
+], validate, asyncHandler(learning.updateProfile));
+router.post('/change-password', requireStudent, studentCsrf, [
+  body('currentPassword').isString().notEmpty(),
+  body('newPassword').isString().isLength({ min: 10, max: 72 }),
+], validate, asyncHandler(learning.changePassword));
 router.post('/assessments/:id/request', requireStudent, studentCsrf, [param('id').isInt({ min: 1 }).toInt()], validate, asyncHandler(assessments.requestAssessment));
 router.get('/assessments/:id/report', requireStudent, [param('id').isInt({ min: 1 }).toInt()], validate, asyncHandler(assessments.downloadStudentReport));
 router.put('/shortlist/universities/:id', requireStudent, studentCsrf, [param('id').isInt({min:1}).toInt(),body('save').isBoolean().toBoolean()], validate, asyncHandler(studyAbroad.saveUniversity));

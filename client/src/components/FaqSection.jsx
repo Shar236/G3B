@@ -6,11 +6,11 @@ import { useCounsellingModal } from '../context/CounsellingContext.jsx'
  * Section H: Frequently Asked Questions (Accessible Accordion)
  * Covers career counselling, study abroad planning, scholarships, and visa guidance.
  */
-export default function FaqSection() {
+export default function FaqSection({ content = {}, items }) {
   const { openModal } = useCounsellingModal()
   const [openIndex, setOpenIndex] = useState(0)
 
-  const faqs = [
+  const defaultFaqs = [
     {
       question: 'When is the best time to start planning for study abroad?',
       category: 'Planning & Roadmap',
@@ -27,7 +27,7 @@ export default function FaqSection() {
       question: 'Can students secure scholarships or financial aid for studying abroad?',
       category: 'Scholarships & Funding',
       answer:
-        'Yes! Many top universities in the US, UK, Australia, and Europe offer merit-based institutional scholarships ranging from 10% to 50% tuition reduction. Certain European public universities in Germany offer low or zero tuition fees. Our advisors guide you on application deadlines, eligibility criteria, and compelling scholarship essays.',
+        'Scholarships and financial aid depend on the institution, award and applicant. Check the funding provider’s current eligibility rules, deadlines and award amount, and plan how you would cover the remaining cost. We help you research opportunities and organise an accurate application; awards are not guaranteed.',
     },
     {
       question: 'How does G3B Education support the student visa application process?',
@@ -48,6 +48,7 @@ export default function FaqSection() {
         'You can click the "Free Counselling" button anywhere on our website, submit the contact form with your current grade and preferred destination, or visit our office at Nerul, Navi Mumbai. Our senior mentors will connect with you for a personalized discovery discussion.',
     },
   ]
+  const faqs = Array.isArray(items) && items.length ? items : defaultFaqs
 
   const toggle = (idx) => {
     setOpenIndex(openIndex === idx ? -1 : idx)
@@ -78,11 +79,11 @@ export default function FaqSection() {
           </div>
 
           <h2 className="section-title" style={{ fontSize: 'clamp(1.9rem, 3.5vw, 2.6rem)', marginBottom: '14px' }}>
-            Frequently Asked Questions
+            {content.faqs?.heading || 'Frequently Asked Questions'}
           </h2>
 
           <p style={{ fontSize: '1.05rem', color: '#64748b', lineHeight: 1.6, margin: 0 }}>
-            Find clear answers to common questions about career guidance, overseas university applications, test preparation, and student visas.
+            {content.faqs?.subheading || 'Find clear answers to common questions about career guidance, overseas university applications, test preparation, and student visas.'}
           </p>
         </div>
 
@@ -123,7 +124,7 @@ export default function FaqSection() {
                     fontFamily: 'inherit',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', minWidth: 0, flex: 1 }}>
                     <span
                       style={{
                         fontSize: '0.72rem',
@@ -168,8 +169,8 @@ export default function FaqSection() {
                   </div>
                 </button>
 
-                {isOpen ? (
                   <div
+                    hidden={!isOpen}
                     id={`faq-answer-${idx}`}
                     role="region"
                     aria-labelledby={`faq-btn-${idx}`}
@@ -183,7 +184,6 @@ export default function FaqSection() {
                   >
                     {faq.answer}
                   </div>
-                ) : null}
               </div>
             )
           })}

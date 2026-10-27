@@ -21,6 +21,7 @@ const NAVIGATION_TREE = [
       { label: 'Profile Building', url: '/services/profile-building', icon: 'fas fa-id-card', description: 'Plan skills, projects and meaningful experiences.' },
       { label: 'Study Abroad', url: '/services/study-abroad', icon: 'fas fa-globe', description: 'Explore countries, courses and universities.' },
       { label: 'Admissions Guidance', url: '/services/admissions', icon: 'fas fa-file-signature', description: 'Navigate documents, statements and applications.' },
+      { label: 'India Admissions', url: '/services/india-admissions', icon: 'fas fa-building-columns', description: 'Plan courses, eligibility and applications in India.' },
       { label: 'Scholarship Guidance', url: '/services/scholarships', icon: 'fas fa-hand-holding-dollar', description: 'Explore funding options and eligibility.' },
       { label: 'Visa Guidance', url: '/services/visa-guidance', icon: 'fas fa-passport', description: 'Prepare documents and understand next steps.' },
       { label: 'Pre-departure Support', url: '/services/pre-departure', icon: 'fas fa-plane-departure', description: 'Get ready for travel and student life abroad.' },
@@ -58,7 +59,7 @@ const COMPACT_QUERY = '(max-width: 1340px)'
 const canHover = () => Boolean(window.matchMedia?.('(hover: hover) and (pointer: fine)').matches)
 const isCompact = () => window.matchMedia ? window.matchMedia(COMPACT_QUERY).matches : true
 
-export default function Header({ settings = {} }) {
+export default function Header({ settings = {}, navigation = [] }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
   const [pinnedDropdown, setPinnedDropdown] = useState(null)
@@ -71,6 +72,9 @@ export default function Header({ settings = {} }) {
   const subheading = settings.header_subheading || 'Career Guidance · Study Abroad'
   const ctaLabel = settings.header_cta_label || 'Free Counselling'
   const logoUrl = settings.header_logo_url ? resolveMediaUrl(settings.header_logo_url) : '/logo.png'
+  const menu = settings.navigation_mode === 'managed'
+    ? navigation.filter((item) => /^\/|^#/.test(item.url || '')).map((item) => ({ label: item.label, url: item.url, isButton: item.isButton }))
+    : NAVIGATION_TREE
 
   const closeMenus = () => {
     setMobileMenuOpen(false)
@@ -195,10 +199,10 @@ export default function Header({ settings = {} }) {
         </Link>
         <nav className={`g3b-navigation${mobileMenuOpen ? ' open' : ''}`} aria-label="Primary site navigation" id="main-navigation">
           <ul className="g3b-menu">
-            {NAVIGATION_TREE.map((item, idx) => {
+            {menu.map((item, idx) => {
               const active = isItemActive(item)
               const isOpen = activeDropdown === idx
-              if (!item.children?.length) return <li key={item.label} className="nav-item"><Link to={item.url} className={`nav-link${active ? ' active' : ''}`} aria-current={active ? 'page' : undefined} onClick={() => handleLinkClick(item.url)}>{item.label}</Link></li>
+              if (!item.children?.length) return <li key={item.label} className="nav-item"><Link to={item.url} className={`nav-link${item.isButton ? ' nav-managed-cta' : ''}${active ? ' active' : ''}`} aria-current={active ? 'page' : undefined} onClick={() => handleLinkClick(item.url)}>{item.label}</Link></li>
               const isMega = item.children.length > 4
               return (
                 <li key={item.label} className={`nav-item has-dropdown${isOpen ? ' dropdown-open' : ''}`}

@@ -12,6 +12,7 @@ export const PUBLIC_SETTING_KEYS = new Set([
   'career_mentor_url', 'seo_title', 'seo_description', 'seo_keywords', 'favicon_url',
   'og_image_url', 'og_title', 'og_description', 'tracking_code_head', 'tracking_code_body',
   'services_hero_heading', 'services_hero_subheading',
+  'navigation_mode', 'footer_navigation_mode',
 ]);
 
 export function publicSettings(settings) {

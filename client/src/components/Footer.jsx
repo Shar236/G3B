@@ -37,7 +37,7 @@ function verifiedSocialLinks(links, phone) {
   return valid
 }
 
-export default function Footer({ settings = {}, content = {}, socialLinks = [] }) {
+export default function Footer({ settings = {}, content = {}, socialLinks = [], footerLinks = [] }) {
   const brand = settings.brand_name || 'G3B Education'
   const logoUrl = settings.header_logo_url ? resolveMediaUrl(settings.header_logo_url) : '/logo.png'
   const phone = settings.contact_phone || '8928659569'
@@ -46,6 +46,12 @@ export default function Footer({ settings = {}, content = {}, socialLinks = [] }
   const address = settings.contact_address || 'G3B Education, 207, Om Sai Datta Niwas, Plot A32, Sector 20, Nerul West, Navi Mumbai 400706, Maharashtra, India'
   const activeSocialLinks = verifiedSocialLinks(socialLinks.length ? socialLinks : defaultHomeData.socialLinks || [], phoneLink)
   const { openModal } = useCounsellingModal()
+  const groups = settings.footer_navigation_mode === 'managed'
+    ? Object.entries(footerLinks.reduce((grouped, item) => {
+      if (/^\/|^#|^https:\/\//i.test(item.url || '')) (grouped[item.groupName] ||= []).push([item.label, item.url])
+      return grouped
+    }, {})).map(([title, links]) => ({ title, links }))
+    : FOOTER_GROUPS
 
   return (
     <footer className="g3b-site-footer" id="footer">
@@ -53,7 +59,7 @@ export default function Footer({ settings = {}, content = {}, socialLinks = [] }
         <div className="g3b-footer-grid">
           <div className="g3b-footer-brand-column">
             <Link className="g3b-footer-brand" to="/" aria-label={`${brand} home`}><img src={logoUrl} alt="" width="48" height="48" /><span>{brand}<small>Guidance for your next chapter.</small></span></Link>
-            <p className="g3b-footer-about">Career counselling, psychometric assessment, IELTS / TOEFL / PTE coaching and study abroad guidance. Your goals, with a clearer way forward.</p>
+            <p className="g3b-footer-about">{settings.footer_about || 'Career counselling, psychometric assessment, IELTS / TOEFL / PTE coaching and study abroad guidance. Your goals, with a clearer way forward.'}</p>
             <address className="g3b-footer-contact">
               <a href={`tel:${phoneLink}`}><i className="fas fa-phone" aria-hidden="true" /><span>{phone}</span></a>
               <a href={`mailto:${email}`}><i className="fas fa-envelope" aria-hidden="true" /><span>{email}</span></a>
@@ -62,9 +68,9 @@ export default function Footer({ settings = {}, content = {}, socialLinks = [] }
             <div className="g3b-footer-social" aria-label="Connect with G3B">{activeSocialLinks.map((link) => <a key={link.platform} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={`G3B on ${link.platform}`} title={link.platform}><i className={link.icon} aria-hidden="true" /></a>)}</div>
             <button className="g3b-footer-book" type="button" onClick={() => openModal()}>Book a Session<i className="fas fa-arrow-right" aria-hidden="true" /></button>
           </div>
-          {FOOTER_GROUPS.map((group) => <nav key={group.title} className="g3b-footer-column" aria-label={`${group.title} links`}><h2>{group.title}</h2><ul>{group.links.map(([label, url]) => <li key={label}><Link to={url}>{label}</Link></li>)}</ul></nav>)}
+          {groups.map((group) => <nav key={group.title} className="g3b-footer-column" aria-label={`${group.title} links`}><h2>{group.title}</h2><ul>{group.links.map(([label, url]) => <li key={label}>{url.startsWith('https://') ? <a href={url} rel="noopener noreferrer">{label}</a> : <Link to={url}>{label}</Link>}</li>)}</ul></nav>)}
         </div>
-        <div className="g3b-footer-bottom"><p>© {new Date().getFullYear()} {brand}. All rights reserved.</p><p>{content.footer?.body || 'Career Guidance · Psychometric Assessment · Study Abroad'}</p><Link to="/partner-with-us">Partner With Us<i className="fas fa-arrow-up-right-from-square" aria-hidden="true" /></Link></div>
+        <div className="g3b-footer-bottom"><p>{(settings.footer_copyright || `© {year} ${brand}. All rights reserved.`).replace('{year}', new Date().getFullYear())}</p><p>{settings.footer_tagline || content.footer?.body || 'Career Guidance · Psychometric Assessment · Study Abroad'}</p><Link to="/partner-with-us">Partner With Us<i className="fas fa-arrow-up-right-from-square" aria-hidden="true" /></Link></div>
       </div>
       <button className="footer-to-top" type="button" aria-label="Back to top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}><i className="fas fa-arrow-up" aria-hidden="true" /></button>
     </footer>

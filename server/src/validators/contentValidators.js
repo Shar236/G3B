@@ -160,6 +160,14 @@ const spec = {
     boolField('openNewTab', { partial }),
     boolField('isButton', { partial }),
   ],
+  footerLinks: (partial) => [
+    ...(partial ? idParamRule : []),
+    str('groupName', { max: 80, partial, message: 'Footer group is required.' }),
+    str('label', { max: 120, partial, message: 'Link label is required.' }),
+    str('url', { max: 500, partial, message: 'Link URL is required.' }),
+    intField('sortOrder', { partial }),
+    boolField('isActive', { partial }),
+  ],
   faqs: (partial) => [
     ...(partial ? idParamRule : []),
     str('question', { max: 500, partial, message: 'Question is required.' }),

@@ -2,10 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { ArrowDown, ArrowRight, Check, ChevronDown, Home } from 'lucide-react'
 import { serviceBySlug } from '../data/services.js'
+import { BookOpenCheck } from 'lucide-react'
+import { useSiteContent } from '../components/layout/PublicLayout.jsx'
 import { useCounsellingModal } from '../context/CounsellingContext.jsx'
 import usePageSeo from '../hooks/usePageSeo.js'
 import '../styles/service-detail.css'
 import ServiceInteractive from '../components/ServiceInteractive.jsx'
+import { resolveMediaUrl } from '../api/client.js'
 
 function Faqs({ items, slug }) {
   const [open, setOpen] = useState(0)
@@ -35,14 +38,41 @@ function Faqs({ items, slug }) {
 
 export default function ServiceDetailPage() {
   const { slug } = useParams()
-  const service = serviceBySlug[slug]
+  const { data, loading } = useSiteContent()
+  const staticService = serviceBySlug[slug]
+  const cmsService = data?.services?.find((item) => item.slug === slug)
   const { openModal } = useCounsellingModal()
   const heroRef = useRef(null)
-
-  usePageSeo(
-    service ? `/services/${service.slug}` : '/services',
-    service ? { title: `${service.title} | G3B Education`, description: service.intro } : {}
+  const published = usePageSeo(
+    `/services/${slug}`,
+    staticService ? { title: `${staticService.title} | G3B Education`, description: staticService.intro } : { title: `${cmsService?.title || 'Service'} | G3B Education`, description: cmsService?.description }
   )
+  const sections = Object.fromEntries((published?.sections || []).map((section) => [section.sectionKey, section]))
+  const sectionItems = (prefix, pair = false) => {
+    const rows = (published?.sections || []).filter((section) => section.sectionKey.startsWith(`${prefix}-`))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+    return rows.length ? rows.map((row) => pair ? [row.headingText || row.label, row.description || ''] : row.description || row.headingText) : null
+  }
+  const base = staticService || (cmsService ? {
+    slug, title: cmsService.title, icon: BookOpenCheck, headline: cmsService.subtitle || cmsService.title,
+    intro: cmsService.description || '', audience: [], includes: [], process: [], outcomes: [], faqs: [], related: [],
+  } : null)
+  const service = base ? {
+    ...base,
+    image: sections.hero?.imageUrl || cmsService?.imageUrl || base.image,
+    alt: sections.hero?.imageAlt || cmsService?.imageAlt || base.alt || '',
+    title: cmsService?.title || base.title,
+    headline: sections.hero?.headingText || cmsService?.subtitle || base.headline,
+    headlineLines: sections.hero?.headingText || cmsService?.subtitle ? null : base.headlineLines,
+    intro: sections.hero?.description || cmsService?.description || base.intro,
+    audience: sectionItems('audience') || base.audience,
+    includes: sectionItems('include', true) || (cmsService?.features?.length ? cmsService.features.map((feature) => [feature, '']) : base.includes),
+    process: sectionItems('process', true) || (base.process.length ? base.process : [['Discuss goals', 'Tell us where you are and what you want to achieve.'], ['Build a plan', 'Review your options and agree on practical next steps.']]),
+    outcomes: sectionItems('outcome') || base.outcomes,
+    faqs: sectionItems('faq', true) || (cmsService?.faqs?.length ? cmsService.faqs.map((faq) => [faq.q || faq.question, faq.a || faq.answer]) : base.faqs),
+    ctaLabel: sections.hero?.ctaLabel || cmsService?.ctaLabel || 'Book a consultation',
+    ctaUrl: sections.hero?.ctaUrl || null,
+  } : null
 
   // Interactive subtle cursor movement on geometric background
   useEffect(() => {
@@ -75,6 +105,7 @@ export default function ServiceDetailPage() {
     ].filter(Boolean)
   }, [service])
 
+  if (!service && loading) return <p className="container" role="status">Loading service…</p>
   if (!service) return <Navigate to="/services" replace />
   const Icon = service.icon
   const book = () => openModal({ serviceInterest: service.title, leadSource: `service-${service.slug}` })
@@ -122,7 +153,7 @@ export default function ServiceDetailPage() {
 
             <div className="sd-actions">
               <button className="btn btn-primary" type="button" onClick={book}>
-                <span>Book a consultation</span>
+                <span>{service.ctaLabel}</span>
                 <ArrowRight size={17} aria-hidden="true" />
               </button>
               <a href="#service-includes" className="sd-action-secondary">
@@ -151,7 +182,11 @@ export default function ServiceDetailPage() {
           <header>
             <span>01</span>
             <p className="sd-label">Who it is for</p>
-            <h2>Guidance shaped around the decision in front of you.</h2>
+            <h2>{sections.audience?.headingText || 'Guidance shaped around the decision in front of you.'}</h2>
+            {service.image && <figure className="sd-service-photo">
+              <img src={resolveMediaUrl(service.image)} alt={service.alt} width="1200" height="800" loading="lazy" decoding="async" onError={(event) => { event.currentTarget.hidden = true }} />
+              <figcaption>Explore your next step with a plan shaped around you.</figcaption>
+            </figure>}
           </header>
           <ul>
             {service.audience.map((item) => (
@@ -172,7 +207,7 @@ export default function ServiceDetailPage() {
               <span>02</span>
               <p className="sd-label">What is included</p>
             </div>
-            <h2>Specific support, explained in practical terms.</h2>
+            <h2>{sections.includes?.headingText || 'Specific support, explained in practical terms.'}</h2>
           </header>
           <div className="sd-includes-list">
             {service.includes.map(([title, text], i) => (
@@ -195,8 +230,8 @@ export default function ServiceDetailPage() {
           <header>
             <span>03</span>
             <p className="sd-label">How it works</p>
-            <h2>A considered process, from context to next step.</h2>
-            <p>Every conversation starts with the student’s circumstances. The sequence stays structured without treating two students as identical.</p>
+            <h2>{sections.process?.headingText || 'A considered process, from context to next step.'}</h2>
+            <p>{sections.process?.description || 'Every conversation starts with the student’s circumstances. The sequence stays structured without treating two students as identical.'}</p>
           </header>
           <ol>
             {service.process.map(([title, text], i) => (
@@ -218,7 +253,7 @@ export default function ServiceDetailPage() {
           <header>
             <span>04</span>
             <p className="sd-label">Expected outcomes</p>
-            <h2>Move forward with a more useful sense of direction.</h2>
+            <h2>{sections.outcomes?.headingText || 'Move forward with a more useful sense of direction.'}</h2>
           </header>
           <div>
             {service.outcomes.map((item, i) => (
@@ -237,8 +272,8 @@ export default function ServiceDetailPage() {
           <header>
             <span>05</span>
             <p className="sd-label">Questions, answered</p>
-            <h2>Before you begin.</h2>
-            <p>Your consultation can cover the circumstances specific to you.</p>
+            <h2>{sections.faqs?.headingText || 'Before you begin.'}</h2>
+            <p>{sections.faqs?.description || 'Your consultation can cover the circumstances specific to you.'}</p>
           </header>
           <Faqs items={service.faqs} slug={service.slug} />
         </div>
@@ -249,10 +284,10 @@ export default function ServiceDetailPage() {
         <div className="container">
           <div>
             <p className="sd-label">A sensible next conversation</p>
-            <h2>Talk through where you are and what needs to happen next.</h2>
+            <h2>{sections.cta?.headingText || 'Talk through where you are and what needs to happen next.'}</h2>
           </div>
           <button className="btn btn-primary" type="button" onClick={book}>
-            <span>Book a consultation</span>
+            <span>{sections.cta?.ctaLabel || service.ctaLabel}</span>
             <ArrowRight size={17} aria-hidden="true" />
           </button>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, BarChart3, Brain, CheckCircle2, Download, FileText, GraduationCap, Sparkles, Users } from 'lucide-react'
+import { ArrowRight, Brain, CheckCircle2, Download, FileText, GraduationCap, Sparkles, Users } from 'lucide-react'
 import { api, parseApiError } from '../api/client.js'
 import studentApi, { getStudentSession } from '../api/studentApi.js'
 import { useCounsellingModal } from '../context/CounsellingContext.jsx'
@@ -62,8 +62,6 @@ export default function AssessmentsPage() {
     </div></section>
 
     <nav className="assessment-jump" aria-label="Assessment sections"><div className="container">{groups.map((group) => <a href={`#${group.id}`} key={group.id}>{group.label}</a>)}<a href="#sample-reports">Sample Reports</a></div></nav>
-
-    <section className="assessment-intro container" data-reveal><span className="assessment-section-mark"><BarChart3 size={22} /></span><div><p className="assessment-eyebrow">ASSESSMENTS WITH CONTEXT</p><h2>A result is a starting point—not a verdict.</h2><p>Our process helps learners and professionals understand patterns, ask better questions and discuss suitable options with a qualified guide. Results do not guarantee admission, employment or career outcomes.</p></div></section>
 
     {notice ? <div className="container"><p className="assessment-notice" role="status">{notice}</p></div> : null}
     {groups.map((group, index) => <section className={`assessment-group${index % 2 ? ' assessment-group-tint' : ''}`} id={group.id} key={group.id}><div className="container">

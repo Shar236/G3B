@@ -102,6 +102,9 @@ export function createApp() {
       fallthrough: true,
       setHeaders(res) {
         res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+        // Uploaded SVGs must remain inert when opened directly on our origin.
+        res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+        res.setHeader('X-Content-Type-Options', 'nosniff');
       },
     }),
   );

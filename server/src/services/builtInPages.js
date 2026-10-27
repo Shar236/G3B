@@ -1,6 +1,8 @@
 import { insights } from '../data/insights.js';
+import { visibleHomepageSections } from '../../../shared/publicContentPolicy.js';
 import { pagesRepository } from '../repositories/pagesRepository.js';
 import studyAbroadRepository from '../repositories/studyAbroadRepository.js';
+import { servicesRepository } from '../repositories/catalogRepository.js';
 
 // Use the public article source directly so crawler content and the React page
 // stay identical. The full repository is deployed together with client/dist.
@@ -18,6 +20,7 @@ function page(route, name, description, pageType, extra = {}) {
 export const builtInPages = [
   page('/insights', 'Study Abroad Insights', insightDescription, 'blog'),
   page('/assessments', 'Career & Student Assessments', 'Explore guided student, professional, aptitude and personality assessments with G3B Education.', 'custom'),
+  page('/services/india-admissions', 'India Admissions', 'College and university selection, eligibility, applications and document guidance for studying in India.', 'service'),
   page('/study-abroad/my-dream-college', 'Find Your Dream University Abroad', 'Explore G3B Education’s administrator-verified university catalogue and build a shortlist for your study abroad plan.', 'custom'),
   page('/study-abroad/my-dream-program', 'Discover a Program That Matches Your Ambition', 'Search and compare administrator-verified international study programs with G3B Education.', 'custom'),
   page(
@@ -59,22 +62,25 @@ export function withBuiltInDefaults(registered) {
 
 /** Explicit CMS drafts suppress defaults; published metadata takes precedence. */
 export function mergePublicPages(registered) {
-  const routes = new Set(registered.map((item) => item.route));
+  const unique = [...new Map(registered.map((item) => [item.route, item])).values()];
+  const routes = new Set(unique.map((item) => item.route));
   return [
-    ...registered.filter((item) => item.status === 'published').map(withBuiltInDefaults),
+    ...unique.filter((item) => item.status === 'published').map(withBuiltInDefaults),
     ...builtInPages.filter((item) => !routes.has(item.route)),
   ];
 }
 
 export async function listPublicPagesWithDefaults() {
-  const [registered, universities, programs] = await Promise.all([
-    pagesRepository.list(), studyAbroadRepository.universities({ perPage: 100 }), studyAbroadRepository.programs({ perPage: 100 }),
+  const [registered, universities, programs, services] = await Promise.all([
+    pagesRepository.list(), studyAbroadRepository.universities({ perPage: 100 }), studyAbroadRepository.programs({ perPage: 100 }), servicesRepository.list({ activeOnly: true }),
   ]);
   const dynamic = [
+    ...services.filter((item) => item.slug).map((item) => page(`/services/${item.slug}`, item.title, item.description || item.subtitle || item.title, 'service')),
     ...universities.items.map((item) => page(`/study-abroad/universities/${item.slug}`, item.name, item.overview || `Review verified university information for ${item.name}.`, 'custom')),
     ...programs.items.map((item) => page(`/study-abroad/programs/${item.slug}`, item.name, item.overview || `Review verified program information for ${item.name}.`, 'custom')),
   ];
-  return mergePublicPages([...registered, ...dynamic]);
+  const registeredRoutes = new Set(registered.map((item) => item.route));
+  return mergePublicPages([...registered, ...dynamic.filter((item) => !registeredRoutes.has(item.route))]);
 }
 
 export async function findPublicPageWithDefaults(route) {
@@ -82,6 +88,11 @@ export async function findPublicPageWithDefaults(route) {
   if (published) return withBuiltInDefaults(published);
   const fallback = builtInPages.find((item) => item.route === route);
   if (fallback) return await pagesRepository.findRouteOwner(route) ? null : fallback;
+  const serviceSlug = route.match(/^\/services\/([^/]+)$/)?.[1];
+  if (serviceSlug) {
+    const service = (await servicesRepository.list({ activeOnly: true })).find((item) => item.slug === serviceSlug);
+    return service ? page(route, service.title, service.description || service.subtitle || service.title, 'service') : null;
+  }
   const universitySlug = route.match(/^\/study-abroad\/universities\/([^/]+)$/)?.[1];
   if (universitySlug) {
     const item = await studyAbroadRepository.university(universitySlug);
@@ -108,7 +119,22 @@ export function renderBuiltInBody(route) {
   return `<main class="section article-page"><article class="container article-container"><a href="/insights">All insights</a><header><p>${escapeHtml(article.category)}</p><h1>${escapeHtml(article.title)}</h1><p class="article-deck">${escapeHtml(article.excerpt)}</p><p>G3B Education · <time datetime="${escapeHtml(article.date)}">${escapeHtml(article.date)}</time></p></header><div class="article-copy">${article.sections.map((section) => `<section><h2>${escapeHtml(section.heading)}</h2><p>${escapeHtml(section.text)}</p></section>`).join('')}${sources}</div></article></main>`;
 }
 
-export function injectBuiltInBody(html, route) {
-  const content = renderBuiltInBody(route);
+export function renderManagedBody(page) {
+  if (page?.template !== 'managed') return '';
+  const sections = (page.route === '/' ? visibleHomepageSections(page.sections || []) : page.sections || []).filter((section) => section.isActive !== false).sort((a, b) => a.sortOrder - b.sortOrder);
+  const hasH1 = sections.some((section) => section.headingLevel === 'h1');
+  const intro = hasH1 ? '' : `<h1>${escapeHtml(page.name)}</h1>`;
+  return `<main class="section"><div class="container article-container">${intro}${sections.map((section) => {
+    const level = ['h1', 'h2', 'h3', 'h4'].includes(section.headingLevel) ? section.headingLevel : 'h2';
+    const heading = section.headingText ? `<${level}>${escapeHtml(section.headingText)}</${level}>` : '';
+    const description = section.description ? `<p>${escapeHtml(section.description)}</p>` : '';
+    const image = section.imageUrl && /^\/|^https:\/\//i.test(section.imageUrl) ? `<img src="${escapeHtml(section.imageUrl)}" alt="${escapeHtml(section.imageAlt)}" loading="lazy" width="720" height="480" />` : '';
+    const link = section.ctaUrl && (/^\/|^#|^https:\/\//i.test(section.ctaUrl)) ? `<a href="${escapeHtml(section.ctaUrl)}">${escapeHtml(section.ctaLabel || 'Learn more')}</a>` : '';
+    return `<section>${heading}${description}${image}${link}</section>`;
+  }).join('')}</div></main>`;
+}
+
+export function injectBuiltInBody(html, route, page = null) {
+  const content = renderManagedBody(page) || renderBuiltInBody(route);
   return content ? html.replace(/(<div\b[^>]*\bid=["']root["'][^>]*>)[\s\S]*?(<\/div>)/i, (_match, open, close) => `${open}${content}${close}`) : html;
 }

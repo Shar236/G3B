@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { resolveMediaUrl } from '../api/client.js'
 import { useCounsellingModal } from '../context/CounsellingContext.jsx'
+import { isRemovedPartnerStatistic } from '../../../shared/publicContentPolicy.js'
 
 /**
  * Hero section: Centered single-column layout with glowing amber badge,
@@ -24,13 +25,9 @@ export default function Hero({ content = {}, settings = {}, stats = [] }) {
     openModal()
   }
 
-  const rawStats = stats && stats.length > 0 ? stats : []
-
-  // Normalize label so "Universities Students Sent To" renders cleanly as "Partner Universities" to match the design
-  const displayStats = rawStats.map((stat) => ({
-    ...stat,
-    label: stat.label === 'Universities Students Sent To' ? 'Partner Universities' : stat.label,
-  }))
+  const displayStats = (stats || []).filter((stat) =>
+    !isRemovedPartnerStatistic(stat) && String(stat.value).trim() !== '500+'
+  )
   const heading = content.hero?.heading || 'Study Abroad with Expert Career Guidance & Psychometric Assessment'
   const headingLines = useMemo(() => {
     if (heading === 'Study Abroad with Expert Career Guidance & Psychometric Assessment') return ['Study Abroad with Expert', 'Career Guidance &', 'Psychometric Assessment']

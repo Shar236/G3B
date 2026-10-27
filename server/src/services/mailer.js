@@ -12,6 +12,11 @@ function getTransporter() {
     host: env.mail.host,
     port: env.mail.port,
     secure: env.mail.secure,
+    requireTLS: env.mail.secure ? undefined : env.mail.requireTLS,
+    tls: { rejectUnauthorized: true, minVersion: 'TLSv1.2' },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 30000,
     auth: env.mail.user ? { user: env.mail.user, pass: env.mail.password } : undefined,
   });
 
@@ -20,6 +25,14 @@ function getTransporter() {
 
 export function isMailEnabled() {
   return env.mail.enabled;
+}
+
+/** Verify SMTP configuration without sending a message or flushing queues. */
+export async function verifyMailConnection() {
+  const activeTransporter = getTransporter();
+  if (!activeTransporter) return { configured: false, verified: false };
+  await activeTransporter.verify();
+  return { configured: true, verified: true };
 }
 
 /**

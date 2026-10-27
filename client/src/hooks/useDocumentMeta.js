@@ -71,6 +71,8 @@ export function useDocumentMeta({
   image,
   robots,
   jsonLd,
+  ogTitle,
+  ogDescription,
 } = {}) {
   useEffect(() => {
     if (title) document.title = title
@@ -82,18 +84,18 @@ export function useDocumentMeta({
     if (url) upsertLink('canonical', url)
 
     upsertMeta('property', 'og:type', 'website')
-    upsertMeta('property', 'og:title', title)
-    upsertMeta('property', 'og:description', description)
+    upsertMeta('property', 'og:title', ogTitle || title)
+    upsertMeta('property', 'og:description', ogDescription || description)
     if (url) upsertMeta('property', 'og:url', url)
     upsertMeta('property', 'og:image', image)
 
     upsertMeta('name', 'twitter:card', image ? 'summary_large_image' : 'summary')
-    upsertMeta('name', 'twitter:title', title)
-    upsertMeta('name', 'twitter:description', description)
+    upsertMeta('name', 'twitter:title', ogTitle || title)
+    upsertMeta('name', 'twitter:description', ogDescription || description)
     upsertMeta('name', 'twitter:image', image)
 
     upsertJsonLd(jsonLd)
-  }, [title, description, keywords, canonical, image, robots, jsonLd])
+  }, [title, description, keywords, canonical, image, robots, jsonLd, ogTitle, ogDescription])
 }
 
 export default useDocumentMeta

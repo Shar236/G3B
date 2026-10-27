@@ -6,7 +6,7 @@ export const hashStudentToken = (value) => crypto.createHash('sha256').update(va
 
 export const studentRepository = {
   findByEmail(email) {
-    return queryOne('SELECT * FROM students WHERE email = ? LIMIT 1', [email]);
+    return queryOne('SELECT * FROM students WHERE LOWER(email) = LOWER(?) LIMIT 1', [email]);
   },
   async create({ name, email, phone, passwordHash }) {
     const result = await query('INSERT INTO students (name, email, phone, password_hash) VALUES (?, ?, ?, ?)', [name, email, phone, passwordHash]);

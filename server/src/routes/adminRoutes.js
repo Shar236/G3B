@@ -28,11 +28,12 @@ import {
 } from '../validators/seoValidators.js';
 import { mediaUpdateRules, mediaRenameRules } from '../validators/mediaValidators.js';
 import { createRedirectRules, updateRedirectRules } from '../validators/redirectValidators.js';
-import { uploadImage, uploadMediaFile, uploadMultiplePhotos, uploadAssessmentReport } from '../middleware/upload.js';
+import { uploadImage, uploadMediaFile, uploadMultiplePhotos, uploadAssessmentReport, uploadLearningPdf } from '../middleware/upload.js';
 import * as mediaGalleryAdmin from '../controllers/adminMediaGalleryController.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import * as assessments from '../controllers/assessmentController.js';
+import * as learning from '../controllers/learningController.js';
 import { body, param } from 'express-validator';
 
 const router = Router();
@@ -47,6 +48,7 @@ router.use('/enquiries', leadRole);
 router.use('/subscribers', leadRole);
 router.use('/partner-enquiries', leadRole);
 router.use('/assessment-assignments', leadRole);
+router.use('/learning', leadRole);
 
 // --- Enquiries --------------------------------------------------------------
 router.get('/enquiries', enquiryListRules, validate, asyncHandler(enquiries.listEnquiries));
@@ -75,6 +77,49 @@ router.delete('/partner-enquiries/:id', adminRole, idParamRule, validate, asyncH
 router.get('/assessment-assignments', asyncHandler(assessments.listAssignments));
 router.patch('/assessment-assignments/:id', [param('id').isInt({ min: 1 }).toInt(), body('status').optional().isIn(['not_started','in_progress','completed']), body('progressPercent').optional().isInt({ min: 0, max: 100 }).toInt(), body('recommendation').optional({ values: 'null' }).trim().isLength({ max: 5000 })], validate, asyncHandler(assessments.updateAssignment));
 router.post('/assessment-assignments/:id/report', [param('id').isInt({ min: 1 }).toInt()], validate, uploadAssessmentReport, asyncHandler(assessments.uploadReport));
+
+const learningId = [param('id').isInt({ min: 1 }).toInt()];
+const learningFields = [
+  body('title').trim().isLength({ min: 2, max: 200 }),
+  body('description').optional().trim().isLength({ max: 10000 }),
+  body('instructions').optional().trim().isLength({ max: 20000 }),
+  body('category').optional().trim().isLength({ min: 2, max: 80 }),
+  body('dueAt').optional({ values: 'falsy' }).isISO8601(),
+  body('status').isIn(['draft', 'published', 'archived']),
+];
+router.get('/learning/students', asyncHandler(learning.listStudents));
+router.get('/learning/notifications', asyncHandler(learning.notificationStatus));
+router.post('/learning/notifications/retry', asyncHandler(learning.retryNotifications));
+router.get('/learning/assignments', asyncHandler(learning.listAssignments));
+router.post('/learning/assignments', learningFields, validate, asyncHandler(learning.createAssignment));
+router.get('/learning/assignments/:id', learningId, validate, asyncHandler(learning.getAssignment));
+router.patch('/learning/assignments/:id', [...learningId, ...learningFields], validate, asyncHandler(learning.updateAssignment));
+router.delete('/learning/assignments/:id', adminRole, learningId, validate, asyncHandler(learning.deleteAssignment));
+router.post('/learning/assignments/:id/targets', [
+  ...learningId, body('studentIds').isArray({ min: 1, max: 1000 }),
+  body('studentIds.*').isInt({ min: 1 }).toInt(),
+], validate, asyncHandler(learning.assignStudents));
+router.post('/learning/assignments/:id/files', learningId, validate, uploadLearningPdf, asyncHandler(learning.addAssignmentFile));
+router.get('/learning/assignments/:id/files/:fileId', [...learningId, param('fileId').isInt({ min: 1 }).toInt()], validate, asyncHandler(learning.downloadAdminFile));
+router.delete('/learning/assignments/:id/files/:fileId', [...learningId, param('fileId').isInt({ min: 1 }).toInt()], validate, asyncHandler(learning.deleteAssignmentFile));
+router.get('/learning/submissions/:submissionId/file', [param('submissionId').isInt({ min: 1 }).toInt()], validate, asyncHandler(learning.downloadSubmission));
+router.patch('/learning/submissions/:submissionId', [
+  param('submissionId').isInt({ min: 1 }).toInt(),
+  body('feedback').optional().trim().isLength({ max: 10000 }),
+  body('marks').optional().trim().isLength({ max: 40 }),
+], validate, asyncHandler(learning.reviewSubmission));
+router.get('/learning/announcements', asyncHandler(learning.listAnnouncements));
+router.post('/learning/announcements', [
+  body('title').trim().isLength({ min: 2, max: 200 }),
+  body('body').trim().isLength({ min: 2, max: 10000 }),
+  body('status').isIn(['draft', 'published', 'archived']),
+], validate, asyncHandler(learning.createAnnouncement));
+router.patch('/learning/announcements/:id', [
+  param('id').isInt({ min: 1 }).toInt(),
+  body('title').trim().isLength({ min: 2, max: 200 }),
+  body('body').trim().isLength({ min: 2, max: 10000 }),
+  body('status').isIn(['draft', 'published', 'archived']),
+], validate, asyncHandler(learning.updateAnnouncement));
 
 router.get('/subscribers', subscriberListRules, validate, asyncHandler(subscribers.listSubscribers));
 router.get(['/subscribers/export', '/subscribers/export.csv'], subscriberListRules, validate, asyncHandler(subscribers.exportSubscribers));
@@ -147,6 +192,7 @@ router.delete('/redirects/:id', idParamRule, validate, asyncHandler(redirects.de
 // Declared before the generic `/:resource` routes so `/pages` is never captured
 // as a content resource slug.
 router.get('/pages', asyncHandler(seo.listPages));
+router.get('/pages/catalog', asyncHandler(seo.listPageCatalog));
 router.post('/pages', pageRules.create, validate, asyncHandler(seo.createPage));
 router.get('/pages/:id', idParamRule, validate, asyncHandler(seo.getPage));
 router.patch('/pages/:id', pageRules.update, validate, asyncHandler(seo.updatePage));
@@ -212,6 +258,7 @@ const RULES_KEY = {
   'enquiry-options': 'enquiryOptions',
   'social-links': 'socialLinks',
   navigation: 'navigation',
+  'footer-links': 'footerLinks',
   faqs: 'faqs',
   assessments: 'assessments',
   universities: 'universities',

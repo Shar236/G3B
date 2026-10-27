@@ -33,7 +33,7 @@ beforeAll(async () => {
       adminSessionData = null
     }
   }
-})
+}, 40000)
 
 afterAll(async () => {
   await closePool().catch(() => {})
@@ -109,8 +109,8 @@ describe('Media Gallery & Management System API', () => {
       expect(res.status).toBe(401)
     })
 
-    it('allows authenticated admin to fetch gallery operational stats', async () => {
-      if (!adminSessionData) return
+    it('allows authenticated admin to fetch gallery operational stats', async (context) => {
+      if (!adminSessionData) return context.skip()
       const res = await request(app)
         .get('/api/admin/media-gallery/stats')
         .set('Cookie', adminSessionData.cookies)
@@ -123,8 +123,8 @@ describe('Media Gallery & Management System API', () => {
       expect(res.body.data).toHaveProperty('featuredItems')
     })
 
-    it('allows authenticated admin to create, update, and delete a media item', async () => {
-      if (!adminSessionData) return
+    it('allows authenticated admin to create, update, and delete a media item', async (context) => {
+      if (!adminSessionData) return context.skip()
 
       // 1. Create a media item (video)
       const createRes = await request(app)

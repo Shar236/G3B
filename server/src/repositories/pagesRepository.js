@@ -161,6 +161,7 @@ function withSeo(pageRow) {
     secondaryKeywords: pageRow.secondary_keywords,
     structuredData: parseJsonSafe(pageRow.structured_data, null),
     hasDraft: pageRow.draft_payload !== null && pageRow.draft_payload !== undefined,
+    draftPayload: parseJsonSafe(pageRow.draft_payload, null),
     status: pageRow.seo_status,
     updatedAt: pageRow.seo_updated_at,
   };

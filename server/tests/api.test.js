@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { pingDatabase, closePool, query } from '../src/config/db.js';
@@ -79,6 +79,9 @@ describe('admin authorisation', () => {
 });
 
 describe('database backed flows', () => {
+  beforeEach((context) => {
+    if (!dbAvailable) context.skip();
+  });
   it('serves seeded homepage content', async () => {
     if (!dbAvailable) return;
     const res = await request(app).get('/api/home');

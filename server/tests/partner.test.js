@@ -84,8 +84,8 @@ describe('Partner Enquiries API', () => {
     expect(res.status).toBe(401);
   });
 
-  it('accepts a valid partner enquiry when database is connected', async () => {
-    if (!dbAvailable) return;
+  it('accepts a valid partner enquiry when database is connected', async (context) => {
+    if (!dbAvailable) return context.skip();
 
     const testPayload = {
       fullName: 'Dr. Ramesh Sharma',

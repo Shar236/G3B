@@ -233,10 +233,13 @@ export const requestJson = (url, options = {}) => {
 /** Resolve stored upload paths against an optional separate API origin. */
 export function resolveMediaUrl(url) {
   if (!url) return ''
+  const isClientAsset = (value) => /^\/(?:images\/|fonts\/|resources\/|(?:logo|favicon)[^/]*$)/i.test(value)
+  if (isClientAsset(url)) return url
   if (!/^https?:\/\//i.test(url)) return url.startsWith('/') ? `${baseURL}${url}` : url
   try {
     const parsed = new URL(url)
     if (/(^|\.)localhost$/.test(parsed.hostname) || parsed.hostname === '127.0.0.1') {
+      if (isClientAsset(parsed.pathname)) return `${parsed.pathname}${parsed.search}`
       return `${baseURL}${parsed.pathname}${parsed.search}`
     }
   } catch { return url }

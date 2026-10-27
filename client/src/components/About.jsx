@@ -1,26 +1,5 @@
 import { resolveMediaUrl } from '../api/client.js'
 
-const DEFAULT_CERTIFICATIONS = [
-  {
-    id: 1,
-    altText: 'UCLA Extension Global Career Counselling Certification',
-    imageUrl: 'https://images.pexels.com/photos/39296651/pexels-photo-39296651.png?auto=compress&cs=tinysrgb&w=400',
-    fullUrl: 'https://images.pexels.com/photos/39296651/pexels-photo-39296651.png',
-  },
-  {
-    id: 2,
-    altText: 'Certified Career Counselling Professional',
-    imageUrl: 'https://images.pexels.com/photos/39296579/pexels-photo-39296579.png?auto=compress&cs=tinysrgb&w=400',
-    fullUrl: 'https://images.pexels.com/photos/39296579/pexels-photo-39296579.png',
-  },
-  {
-    id: 3,
-    altText: 'Professional Education Guidance Certification',
-    imageUrl: 'https://images.pexels.com/photos/39296552/pexels-photo-39296552.jpeg?auto=compress&cs=tinysrgb&w=400',
-    fullUrl: 'https://images.pexels.com/photos/39296552/pexels-photo-39296552.jpeg',
-  },
-]
-
 /**
  * Section B: "Why Choose G3B Education" & Team/Founder Profile
  * Features authentic credentials and certifications, clean founder profile without unapproved claims.
@@ -36,7 +15,7 @@ export default function About({ content = {}, settings = {}, features = [], cert
   ]
 
   const displayParagraphs = paragraphs.length > 0 ? paragraphs : defaultParagraphs
-  const certsToDisplay = certifications && certifications.length > 0 ? certifications : DEFAULT_CERTIFICATIONS
+  const certsToDisplay = certifications || []
 
   return (
     <section className="section" id="why">

@@ -90,7 +90,7 @@ export default function ServicesPage() {
         <div className="container">
           <header>
             <p className="so-kicker">Find your starting point</p>
-            <h2>Nine services. One clear academic journey.</h2>
+            <h2>{services.length} services. One clear academic journey.</h2>
             <p>Choose the decision closest to you now. Each service works independently and connects naturally with the next stage.</p>
           </header>
           <ol>

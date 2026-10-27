@@ -9,6 +9,23 @@
    - Smooth line-by-line entrance animations
    =========================================================================== */
 
+.sd-hero .sd-hero-intro,
+.sd-hero .sd-hero-notes,
+.sd-hero .sd-breadcrumb,
+.sd-hero .sd-breadcrumb a,
+.sd-hero .sd-action-secondary,
+.sd-hero .sd-hero-scroll { color: #445971; }
+.sd-hero .sd-breadcrumb-current { color: #9b451e; }
+.sd-hero .sd-action-secondary { background: #fff; border-color: #bdcbdc; box-shadow: none; }
+.sd-hero .sd-action-secondary:hover { background: #f2f6fb; }
+.sd-hero .sd-action-secondary:hover,
+.sd-hero .sd-hero-scroll:hover,
+.sd-hero .sd-breadcrumb a:hover { color: #142d50; }
+.sd-breadcrumb { flex-wrap: wrap; }
+.sd-service-photo { margin: 28px 0 0; max-width: 460px; }
+.sd-service-photo img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 16px; display: block; }
+.sd-service-photo figcaption { margin-top: 10px; font-size: .82rem; color: #536277; }
+
 .service-detail {
   color: #536277;
   background: #ffffff;
@@ -37,8 +54,8 @@
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background: radial-gradient(ellipse at 50% 20%, #0d3266 0%, #081d3d 60%, #05142b 100%);
-  color: #ffffff;
+  background: radial-gradient(ellipse at 50% 20%, #ffffff 0%, #edf4fa 65%, #e6eef7 100%);
+  color: #142d50;
   padding: clamp(64px, 7.5vw, 95px) 0 clamp(68px, 8vw, 105px);
   --hero-x: 50%;
   --hero-y: 45%;
@@ -207,7 +224,7 @@
 
 /* Large Bold White Headline */
 .sd-hero h1 {
-  color: #ffffff !important;
+  color: #142d50 !important;
   font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
   font-size: clamp(2.45rem, 5.2vw, 4.25rem);
   font-weight: 800;
