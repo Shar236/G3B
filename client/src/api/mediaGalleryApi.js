@@ -1,4 +1,5 @@
 import api from './client.js'
+import { uploadFileDirect } from './storageUpload.js'
 
 /**
  * Public Media APIs
@@ -60,17 +61,45 @@ export async function fetchAdminMediaStats() {
 }
 
 export async function createAdminMediaItem(payload) {
-  const isFormData = payload instanceof FormData
-  const res = await api.post('/api/admin/media-gallery', payload, {
-    headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
-  })
+  if (!(payload instanceof FormData)) {
+    const res = await api.post('/api/admin/media-gallery', payload)
+    return res.data
+  }
+
+  const body = {}
+  for (const [key, value] of payload.entries()) {
+    if (!(typeof File !== 'undefined' && value instanceof File)) body[key] = value
+  }
+  const file = payload.get('file')
+  if (typeof File !== 'undefined' && file instanceof File) {
+    const purpose = file.type.startsWith('video/') ? 'gallery-video' : 'gallery-photo'
+    const ticket = await uploadFileDirect(api, '/api/admin/uploads/sign', { purpose }, file)
+    body.storageKey = ticket.path
+    body.originalName = file.name
+    body.contentType = file.type
+    body.size = file.size
+  }
+  const thumbnail = payload.get('thumbnail')
+  if (typeof File !== 'undefined' && thumbnail instanceof File) {
+    const ticket = await uploadFileDirect(api, '/api/admin/uploads/sign', { purpose: 'gallery-photo' }, thumbnail)
+    body.thumbnailStorageKey = ticket.path
+  }
+  const res = await api.post('/api/admin/media-gallery', body)
   return res.data
 }
 
 export async function bulkUploadAdminPhotos(formData) {
-  const res = await api.post('/api/admin/media-gallery/bulk-photos', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  const photos = []
+  for (const file of formData.getAll('photos')) {
+    const ticket = await uploadFileDirect(api, '/api/admin/uploads/sign', { purpose: 'gallery-photo' }, file)
+    photos.push({ storageKey: ticket.path, originalName: file.name, contentType: file.type, size: file.size })
+  }
+  const payload = {
+    photos,
+    category: formData.get('category') || formData.get('category_id') || undefined,
+    status: formData.get('status') || undefined,
+  }
+  const res = await api.post('/api/admin/media-gallery/bulk-photos', payload)
   return res.data
 }
 

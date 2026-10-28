@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { mediaRepository } from '../repositories/mediaRepository.js';
 import { uploadsRoot } from '../middleware/upload.js';
@@ -7,10 +8,40 @@ import { recordAudit } from '../services/auditLog.js';
 import env from '../config/env.js';
 import ApiError from '../utils/ApiError.js';
 import logger from '../utils/logger.js';
+import { deleteObjects, downloadObject, publicObjectUrl, storageBuckets, uploadObject } from '../services/supabaseStorage.js';
 
 const URL_BASE = `/${env.uploads.dir}`;
 const OPTIMIZED_DIR = path.join(uploadsRoot, OPTIMIZED_FOLDER);
 const OPTIMIZED_URL_BASE = `${URL_BASE}/${OPTIMIZED_FOLDER}`;
+const isStorageKey = (value) => typeof value === 'string' && !path.isAbsolute(value) && !/^[a-zA-Z]:[\\/]/.test(value);
+
+async function materializeObject(key, filename) {
+  const { buffer } = await downloadObject(storageBuckets.media, key, { maxBytes: env.uploads.maxBytes });
+  const filePath = path.join(uploadsRoot, `${crypto.randomUUID()}-${path.basename(filename)}`);
+  await fs.writeFile(filePath, buffer);
+  return filePath;
+}
+
+async function persistVariants(variants) {
+  const saved = [];
+  for (const variant of variants) {
+    const key = `${OPTIMIZED_FOLDER}/${path.basename(variant.path)}`;
+    const contentType = variant.format === 'avif' ? 'image/avif' : 'image/webp';
+    await uploadObject(storageBuckets.media, key, await fs.readFile(variant.path), contentType);
+    saved.push({ ...variant, path: key, url: publicObjectUrl(storageBuckets.media, key) });
+  }
+  return saved;
+}
+
+async function removeStoredVariants(variants = []) {
+  const keys = variants.map((variant) => variant.path).filter(isStorageKey);
+  if (!keys.length) return;
+  try {
+    await deleteObjects(storageBuckets.media, keys);
+  } catch (error) {
+    logger.warn('Could not remove stale media renditions from Supabase Storage', { status: error.status || 502 });
+  }
+}
 
 const slugify = (value) =>
   String(value)
@@ -76,16 +107,46 @@ export async function mediaUsages(req, res) {
 
 /** POST /api/admin/media - multipart upload (field "image") + auto-optimisation. */
 export async function uploadMedia(req, res) {
-  if (!req.file) throw ApiError.badRequest('No image file was uploaded.');
+  let filename;
+  let originalname;
+  let mimetype;
+  let size;
+  let filePath;
+  let storedPath;
+  let variants;
+  let metadata;
 
-  const { filename, originalname, mimetype, size, path: filePath } = req.file;
-  const { metadata, variants } = await optimise(filePath, filename);
+  if (typeof req.body?.storageKey === 'string') {
+    storedPath = req.body.storageKey;
+    if (!storedPath.startsWith('content/')) throw ApiError.badRequest('The uploaded image reference is invalid.');
+    const object = await downloadObject(storageBuckets.media, storedPath, { maxBytes: env.uploads.maxBytes });
+    if (!object.contentType.startsWith('image/')) throw ApiError.badRequest('The uploaded file is not an image.');
+    filename = path.posix.basename(storedPath);
+    originalname = req.body.originalName || filename;
+    mimetype = object.contentType;
+    size = object.buffer.length;
+    filePath = path.join(uploadsRoot, `${crypto.randomUUID()}-${filename}`);
+    await fs.writeFile(filePath, object.buffer);
+    let rawVariants = [];
+    try {
+      ({ metadata, variants: rawVariants } = await optimise(filePath, filename));
+      variants = await persistVariants(rawVariants);
+    } finally {
+      await fs.rm(filePath, { force: true });
+      await removeFiles(rawVariants.map((variant) => variant.path));
+    }
+  } else {
+    if (!req.file) throw ApiError.badRequest('No image file was uploaded.');
+    ({ filename, originalname, mimetype, size } = req.file);
+    filePath = req.file.path;
+    ({ metadata, variants } = await optimise(filePath, filename));
+  }
 
   const asset = await mediaRepository.create({
     filename,
     originalName: originalname,
-    url: `${URL_BASE}/${filename}`,
-    path: filePath,
+    url: storedPath ? publicObjectUrl(storageBuckets.media, storedPath) : `${URL_BASE}/${filename}`,
+    path: storedPath || filePath,
     mimeType: mimetype,
     extension: path.extname(filename).replace('.', '').toLowerCase() || 'bin',
     sizeBytes: size,
@@ -151,6 +212,47 @@ export async function renameMedia(req, res) {
     });
   }
 
+  if (isStorageKey(existing.path)) {
+    const newPath = `${path.posix.dirname(existing.path)}/${newFilename}`;
+    const source = await downloadObject(storageBuckets.media, existing.path, { maxBytes: env.uploads.maxBytes });
+    const tempPath = path.join(uploadsRoot, `${crypto.randomUUID()}-${newFilename}`);
+    await fs.writeFile(tempPath, source.buffer);
+    let rawVariants = [];
+    try {
+      const { variants } = await optimise(tempPath, newFilename);
+      rawVariants = variants;
+      const storedVariants = await persistVariants(rawVariants);
+      await uploadObject(storageBuckets.media, newPath, source.buffer, source.contentType);
+
+      const updated = await mediaRepository.update(existing.id, {
+        filename: newFilename,
+        path: newPath,
+        url: publicObjectUrl(storageBuckets.media, newPath),
+        isOptimized: storedVariants.length > 0,
+      });
+      await mediaRepository.replaceVariants(existing.id, storedVariants);
+      try {
+        await deleteObjects(storageBuckets.media, [
+        existing.path,
+        ...existing.variants.map((variant) => variant.path).filter(isStorageKey),
+        ]);
+      } catch (error) {
+        logger.warn('Could not remove renamed media files from Supabase Storage', { status: error.status || 502 });
+      }
+      await recordAudit(req, {
+        action: 'media.rename',
+        entityType: 'media',
+        entityId: existing.id,
+        summary: `Renamed image "${existing.filename}" to "${newFilename}"`,
+      });
+      res.json({ success: true, data: updated });
+    } finally {
+      await fs.rm(tempPath, { force: true });
+      await removeFiles(rawVariants.map((variant) => variant.path));
+    }
+    return;
+  }
+
   const newPath = path.join(uploadsRoot, newFilename);
   try {
     await fs.rename(existing.path, newPath);
@@ -185,8 +287,22 @@ export async function reoptimizeMedia(req, res) {
   const existing = await mediaRepository.findById(req.params.id);
   if (!existing) throw ApiError.notFound('Image not found.');
 
-  await removeFiles(existing.variants.map((variant) => variant.path));
-  const { metadata, variants } = await optimise(existing.path, existing.filename);
+  let metadata;
+  let variants;
+  if (isStorageKey(existing.path)) {
+    const tempPath = await materializeObject(existing.path, existing.filename);
+    let rawVariants = [];
+    try {
+      ({ metadata, variants: rawVariants } = await optimise(tempPath, existing.filename));
+      variants = await persistVariants(rawVariants);
+    } finally {
+      await fs.rm(tempPath, { force: true });
+      await removeFiles(rawVariants.map((variant) => variant.path));
+    }
+  } else {
+    await removeFiles(existing.variants.map((variant) => variant.path));
+    ({ metadata, variants } = await optimise(existing.path, existing.filename));
+  }
 
   const updated = await mediaRepository.update(existing.id, {
     width: metadata.width ?? existing.width,
@@ -194,6 +310,7 @@ export async function reoptimizeMedia(req, res) {
     isOptimized: variants.length > 0,
   });
   await mediaRepository.replaceVariants(existing.id, variants);
+  if (isStorageKey(existing.path)) await removeStoredVariants(existing.variants);
 
   await recordAudit(req, {
     action: 'media.optimize',
@@ -210,8 +327,16 @@ export async function deleteMedia(req, res) {
   const existing = await mediaRepository.findById(req.params.id);
   if (!existing) throw ApiError.notFound('Image not found.');
 
+  if (isStorageKey(existing.path)) {
+    await deleteObjects(storageBuckets.media, [
+      existing.path,
+      ...existing.variants.map((variant) => variant.path).filter(isStorageKey),
+    ]);
+  }
   await mediaRepository.remove(existing.id);
-  await removeFiles([existing.path, ...existing.variants.map((variant) => variant.path)]);
+  if (!isStorageKey(existing.path)) {
+    await removeFiles([existing.path, ...existing.variants.map((variant) => variant.path)]);
+  }
 
   await recordAudit(req, {
     action: 'media.delete',

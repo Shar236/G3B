@@ -40,6 +40,12 @@ export function errorHandler(error, req, res, _next) {
     logger.warn('Request rejected', { method: req.method, url: req.originalUrl, status, error: message });
   }
 
+  // Operational errors are deliberately public; unexpected failures can contain
+  // SQL, provider credentials or internal paths and must remain server-side.
+  if (env.isProduction && status >= 500) {
+    message = status === 503 ? 'Service is currently unavailable.' : status === 502 ? 'Upstream service is currently unavailable.' : 'Internal server error';
+    details = undefined;
+  }
   const body = { success: false, error: message };
   if (details) body.details = details;
   if (!env.isProduction && status >= 500) body.stack = error.stack;

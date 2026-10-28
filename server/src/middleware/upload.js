@@ -1,14 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import multer from 'multer';
 import env from '../config/env.js';
 import ApiError from '../utils/ApiError.js';
+import { persistUpload } from './persistUpload.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const uploadsRoot = path.resolve(__dirname, '../../', env.uploads.dir);
-export const assessmentReportsRoot = path.resolve(__dirname, '../../private/assessment-reports');
+const runtimeRoot = process.env.VERCEL === '1' ? path.join(os.tmpdir(), 'g3b') : path.resolve(__dirname, '../../');
+export const uploadsRoot = path.resolve(runtimeRoot, env.uploads.dir);
+export const assessmentReportsRoot = path.resolve(runtimeRoot, env.uploads.assessmentReportsDir);
 
 if (!fs.existsSync(uploadsRoot)) {
   fs.mkdirSync(uploadsRoot, { recursive: true });
@@ -46,7 +49,7 @@ const storage = multer.diskStorage({
 });
 
 /** Image upload middleware: restricts type and size, stores under server/uploads. */
-export const uploadImage = multer({
+export const uploadImage = persistUpload(multer({
   storage,
   limits: { fileSize: env.uploads.maxBytes, files: 1 },
   fileFilter: (_req, file, cb) => {
@@ -56,10 +59,10 @@ export const uploadImage = multer({
     }
     cb(null, true);
   },
-}).single('image');
+}).single('image'), { prefix: 'content' });
 
 /** Upload multiple photos at once (up to 20 images). */
-export const uploadMultiplePhotos = multer({
+export const uploadMultiplePhotos = persistUpload(multer({
   storage,
   limits: { fileSize: env.uploads.maxBytes, files: 20 },
   fileFilter: (_req, file, cb) => {
@@ -69,7 +72,7 @@ export const uploadMultiplePhotos = multer({
     }
     cb(null, true);
   },
-}).array('photos', 20);
+}).array('photos', 20), { prefix: 'gallery', multiple: true });
 
 const ALLOWED_MEDIA_MIME = new Set([
   ...ALLOWED_MIME,
@@ -79,7 +82,7 @@ const ALLOWED_MEDIA_MIME = new Set([
 ]);
 
 /** General media upload middleware: accepts images or self-hosted video files up to 100MB. */
-export const uploadMediaFile = multer({
+export const uploadMediaFile = persistUpload(multer({
   storage,
   limits: { fileSize: 100 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => {
@@ -89,18 +92,18 @@ export const uploadMediaFile = multer({
     }
     cb(null, true);
   },
-}).single('file');
+}).single('file'), { prefix: 'gallery' });
 
 const reportStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, assessmentReportsRoot),
   filename: (_req, file, cb) => cb(null, `${Date.now()}-${crypto.randomBytes(12).toString('hex')}${path.extname(file.originalname).toLowerCase()}`),
 });
 
-export const uploadAssessmentReport = multer({
+export const uploadAssessmentReport = persistUpload(multer({
   storage: reportStorage,
   limits: { fileSize: env.uploads.maxBytes, files: 1 },
   fileFilter: (_req, file, cb) => file.mimetype === 'application/pdf' ? cb(null, true) : cb(new ApiError(400, 'Assessment reports must be PDF files.')),
-}).single('report');
+}).single('report'), { prefix: (req) => `reports/${req.params.id}`, privateFile: true });
 
 /** Private assignment PDFs are held in memory until stored in PostgreSQL. */
 export const uploadLearningPdf = multer({

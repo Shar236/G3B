@@ -14,6 +14,14 @@ export const pool = new Pool({
   ...databaseOptions,
   max: env.db.connectionLimit,
   connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 10000,
+  allowExitOnIdle: process.env.VERCEL === '1',
+});
+
+// Idle socket failures must not become an unhandled EventEmitter error. A
+// subsequent query obtains a fresh connection; never close the pool per request.
+pool.on('error', (error) => {
+  console.error('[database] Idle connection failed', { code: error.code || 'UNKNOWN' });
 });
 
 export function postgresSql(sql) {

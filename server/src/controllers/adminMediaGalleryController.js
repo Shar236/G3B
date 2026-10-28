@@ -8,6 +8,7 @@ import { recordAudit } from '../services/auditLog.js';
 import env from '../config/env.js';
 import ApiError from '../utils/ApiError.js';
 import logger from '../utils/logger.js';
+import { deleteObjects, publicObjectUrl, storageBuckets } from '../services/supabaseStorage.js';
 
 const URL_BASE = `/${env.uploads.dir}`;
 const OPTIMIZED_DIR = path.join(uploadsRoot, OPTIMIZED_FOLDER);
@@ -106,7 +107,7 @@ export async function createMedia(req, res) {
   let thumbnailUrl = body.thumbnailUrl || body.thumbnail_url || null;
   let externalVideoUrl = body.externalVideoUrl || body.external_video_url || null;
   let storageProvider = body.storageProvider || body.storage_provider || 'local';
-  let storageKey = null;
+  let storageKey = body.storageKey || null;
 
   if (req.file) {
     const { filename, originalname, mimetype, path: filePath } = req.file;
@@ -142,9 +143,29 @@ export async function createMedia(req, res) {
       const ext = path.extname(originalname);
       body.title = path.basename(originalname, ext).replace(/[-_]+/g, ' ');
     }
+  } else if (storageKey) {
+    if (!storageKey.startsWith('gallery/')) throw ApiError.badRequest('The uploaded media reference is invalid.');
+    storageProvider = 'supabase';
+    mediaUrl = publicObjectUrl(storageBuckets.media, storageKey);
+    if (body.contentType?.startsWith('video/')) {
+      mediaType = 'video';
+      thumbnailUrl = body.thumbnailStorageKey?.startsWith('gallery/')
+        ? publicObjectUrl(storageBuckets.media, body.thumbnailStorageKey)
+        : thumbnailUrl;
+    } else {
+      mediaType = 'photo';
+      thumbnailUrl = mediaUrl;
+    }
+    if (!body.title) {
+      const ext = path.extname(body.originalName || '');
+      body.title = path.basename(body.originalName || 'Photo', ext).replace(/[-_]+/g, ' ');
+    }
   } else if (externalVideoUrl) {
     mediaType = 'video';
     externalVideoUrl = externalVideoUrl.trim();
+    if (body.thumbnailStorageKey?.startsWith('gallery/')) {
+      thumbnailUrl = publicObjectUrl(storageBuckets.media, body.thumbnailStorageKey);
+    }
     const ytId = extractYoutubeId(externalVideoUrl);
     const vimeoId = extractVimeoId(externalVideoUrl);
 
@@ -202,20 +223,30 @@ export async function createMedia(req, res) {
  * Bulk upload multiple photos at once.
  */
 export async function bulkUploadPhotos(req, res) {
-  if (!req.files || !req.files.length) {
+  const uploaded = Array.isArray(req.body?.photos) ? req.body.photos : req.files;
+  if (!uploaded || !uploaded.length) {
     throw ApiError.badRequest('No photo files were uploaded.');
   }
+  if (uploaded.length > 20) throw ApiError.badRequest('Upload no more than 20 photos at once.');
 
   const category = req.body.category?.trim() || 'Events & Activities';
   const status = req.body.status || 'published';
   const createdItems = [];
 
-  for (const file of req.files) {
-    const { filename, originalname, path: filePath } = file;
-    const mediaUrl = `${URL_BASE}/${filename}`;
+  for (const file of uploaded) {
+    const isStored = !file.buffer && typeof file.storageKey === 'string';
+    if (isStored && (!file.storageKey.startsWith('gallery/') || !file.contentType?.startsWith('image/'))) {
+      throw ApiError.badRequest('One of the uploaded photo references is invalid.');
+    }
+    const filename = isStored ? path.posix.basename(file.storageKey) : file.filename;
+    const originalname = isStored ? file.originalName : file.originalname;
+    const filePath = isStored ? null : file.path;
+    const mediaUrl = isStored
+      ? publicObjectUrl(storageBuckets.media, file.storageKey)
+      : `${URL_BASE}/${filename}`;
     let thumbnailUrl = mediaUrl;
 
-    try {
+    if (!isStored) try {
       const { variants } = await generateVariants({
         filePath,
         filename,
@@ -238,8 +269,8 @@ export async function bulkUploadPhotos(req, res) {
       caption: null,
       altText: cleanTitle,
       category,
-      storageProvider: 'local',
-      storageKey: filename,
+      storageProvider: isStored ? 'supabase' : 'local',
+      storageKey: isStored ? file.storageKey : filename,
       mediaUrl,
       thumbnailUrl,
       status,
@@ -302,6 +333,16 @@ export async function updateMedia(req, res) {
 export async function deleteMedia(req, res) {
   const existing = await mediaGalleryRepository.getById(req.params.id);
   if (!existing) throw ApiError.notFound('Media item not found.');
+
+  if (existing.storageProvider === 'supabase' && existing.storageKey) {
+    const keys = [existing.storageKey];
+    if (existing.thumbnailUrl?.startsWith(publicObjectUrl(storageBuckets.media, ''))) {
+      const prefix = publicObjectUrl(storageBuckets.media, '');
+      const thumbnailKey = decodeURIComponent(existing.thumbnailUrl.slice(prefix.length));
+      if (thumbnailKey && thumbnailKey !== existing.storageKey) keys.push(thumbnailKey);
+    }
+    await deleteObjects(storageBuckets.media, keys);
+  }
 
   // Delete local file if present
   if (existing.storageProvider === 'local' && existing.storageKey) {

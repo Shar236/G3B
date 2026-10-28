@@ -1,4 +1,5 @@
 import api from './client.js'
+import { uploadFileDirect } from './storageUpload.js'
 
 /** Admin (authenticated) endpoints. */
 
@@ -62,7 +63,15 @@ export const reorderResource = (resource, ids) =>
   api.patch(`/api/admin/${resource}/reorder`, { ids }).then((r) => r.data.data)
 export const listAssessmentAssignments = () => api.get('/api/admin/assessment-assignments').then((r) => r.data.data)
 export const updateAssessmentAssignment = (id, payload) => api.patch(`/api/admin/assessment-assignments/${id}`, payload).then((r) => r.data.data)
-export async function uploadAssessmentReport(id, file) { const formData=new FormData(); formData.append('report',file); return api.post(`/api/admin/assessment-assignments/${id}/report`,formData,{headers:{'Content-Type':'multipart/form-data'}}).then((r)=>r.data.data) }
+export async function uploadAssessmentReport(id, file) {
+  const ticket = await uploadFileDirect(api, '/api/admin/uploads/sign', { purpose: 'assessment-report', assignmentId: id }, file)
+  return api.post(`/api/admin/assessment-assignments/${id}/report`, {
+    storageKey: ticket.path,
+    originalName: file.name,
+    contentType: file.type,
+    size: file.size,
+  }).then((r) => r.data.data)
+}
 
 // --- Content blocks & settings ---------------------------------------------
 export const updateContentBlock = (key, payload) =>
@@ -77,10 +86,12 @@ export const deleteUser = (id) => api.delete(`/api/admin/users/${id}`).then((r) 
 
 // --- Media upload -----------------------------------------------------------
 export async function uploadImage(file) {
-  const formData = new FormData()
-  formData.append('image', file)
-  const { data } = await api.post('/api/admin/uploads', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+  const ticket = await uploadFileDirect(api, '/api/admin/uploads/sign', { purpose: 'content-image' }, file)
+  const { data } = await api.post('/api/admin/uploads', {
+    storageKey: ticket.path,
+    originalName: file.name,
+    contentType: file.type,
+    size: file.size,
   })
   return data.data
 }
@@ -119,13 +130,13 @@ export const fetchMediaStats = () => api.get('/api/admin/media/stats').then((r) 
 export const listUnusedMedia = () => api.get('/api/admin/media/unused').then((r) => r.data.data)
 export const getMedia = (id) => api.get(`/api/admin/media/${id}`).then((r) => r.data.data)
 export async function uploadMediaAsset(file, extra = {}) {
-  const formData = new FormData()
-  formData.append('image', file)
-  for (const [key, value] of Object.entries(extra)) {
-    if (value !== undefined && value !== null && value !== '') formData.append(key, value)
-  }
-  const { data } = await api.post('/api/admin/media', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+  const ticket = await uploadFileDirect(api, '/api/admin/uploads/sign', { purpose: 'content-image' }, file)
+  const { data } = await api.post('/api/admin/media', {
+    ...extra,
+    storageKey: ticket.path,
+    originalName: file.name,
+    contentType: file.type,
+    size: file.size,
   })
   return data.data
 }

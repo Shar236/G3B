@@ -16,10 +16,11 @@ import { uploadsRoot } from './middleware/upload.js';
 import { createRedirectMiddleware } from './middleware/redirects.js';
 import { createSiteRenderer } from './middleware/siteRenderer.js';
 import logger from './utils/logger.js';
+import ApiError from './utils/ApiError.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export function createApp() {
+export function createApp({ renderSite = false, clientDistDir } = {}) {
   const app = express();
 
   // Compression for all JSON, HTML, CSS and text responses
@@ -33,7 +34,7 @@ export function createApp() {
     }),
   );
 
-  // Behind a reverse proxy (nginx, Render, Railway...) so req.ip / protocol work.
+  // Behind a reverse proxy or serverless host so req.ip / protocol work.
   app.set('trust proxy', env.isProduction ? 1 : false);
   app.disable('x-powered-by');
 
@@ -66,7 +67,7 @@ export function createApp() {
     }
 
     logger.warn('Blocked CORS origin', { origin, cleanOrigin, allowed: env.clientOrigins });
-    return callback(null, { origin: false });
+    return callback(ApiError.forbidden('Origin is not allowed.'));
   });
 
   app.use(corsMiddleware);
@@ -121,7 +122,9 @@ export function createApp() {
   // Built SPA + database-backed robots.txt, sitemap.xml and prerendered <head>.
   // Only active once `client/dist` exists; development keeps using the Vite dev
   // server, which proxies /api here.
-  const renderer = env.serveClient ? createSiteRenderer() : null;
+  // Vercel serves assets from client/dist. Its function still renders HTML and
+  // site files so CMS SEO, redirects, private noindex and real 404s survive.
+  const renderer = env.serveClient || renderSite ? createSiteRenderer({ distDir: clientDistDir }) : null;
   if (renderer) {
     // Generated robots.txt / sitemap.xml must be mounted before the static
     // handler, otherwise the build copies in client/public would shadow them.

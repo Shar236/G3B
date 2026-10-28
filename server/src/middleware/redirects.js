@@ -27,7 +27,7 @@ export function createRedirectMiddleware() {
     if (req.method !== 'GET' && req.method !== 'HEAD') return next();
 
     const pathname = req.path || '/';
-    if (pathname.startsWith('/api/') || pathname.startsWith('/uploads/')) return next();
+    if (pathname === '/api' || pathname.startsWith('/api/') || pathname === '/uploads' || pathname.startsWith('/uploads/')) return next();
 
     try {
       const routes = await loadRoutes();

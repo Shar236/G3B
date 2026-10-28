@@ -1,0 +1,12 @@
+.git
+.vercel
+node_modules
+**/node_modules
+**/.env*
+client/dist
+server/uploads
+server/private
+server/migration-reports
+server/prod-ca-2021.crt
+backups
+docs/qa-output

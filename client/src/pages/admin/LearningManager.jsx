@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import api, { parseApiError } from '../../api/client.js'
+import { uploadFileDirect } from '../../api/storageUpload.js'
 import { StateBlock } from '../../components/ui/StateBlock.jsx'
 import './learning.css'
 
@@ -78,8 +79,18 @@ export default function LearningManager() {
   const upload = (file) => {
     if (!file) return
     run(async () => {
-      const body = new FormData(); body.append('file', file)
-      await api.post(`${endpoint}/assignments/${selected.id}/files`, body, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const ticket = await uploadFileDirect(
+        api,
+        '/api/admin/uploads/sign',
+        { purpose: 'learning-file', assignmentId: selected.id },
+        file,
+      )
+      await api.post(`${endpoint}/assignments/${selected.id}/files`, {
+        storageKey: ticket.path,
+        originalName: file.name,
+        contentType: file.type,
+        size: file.size,
+      })
       await open(selected.id)
     }, 'PDF uploaded.')
   }

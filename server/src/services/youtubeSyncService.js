@@ -18,6 +18,16 @@ export function createYouTubeSyncService({ config = env.youtube, repo = youtubeR
       return { ...persisted, configured: Boolean(config.apiKey), curatedPlaylistConfigured: Boolean(config.shortsPlaylistId), channelHandle: CHANNEL_HANDLE, channelUrl: CHANNEL_URL, running: running || Boolean(lockExpiresAt && new Date(lockExpiresAt).getTime() > Date.now()), intervalMinutes: config.syncIntervalMinutes, autoSync: config.autoSync, classificationNotice: CLASSIFICATION_NOTICE, counts };
     },
     list: () => repo.list(),
+    async refreshIfDue() {
+      await repo.expireMetadata();
+      if (!config.apiKey || !config.autoSync) return { synced: false, reason: 'automatic_sync_disabled' };
+      const state = await repo.state();
+      const lastAttempt = state.lastAttemptAt ? new Date(state.lastAttemptAt).getTime() : 0;
+      if (Date.now() - lastAttempt < config.syncIntervalMinutes * 60000) {
+        return { synced: false, reason: 'not_due' };
+      }
+      return { synced: true, ...(await this.sync()) };
+    },
     async sync() {
       if (!config.apiKey) {
         const message = 'Configure YOUTUBE_API_KEY on the backend to verify channel membership and synchronize videos. Existing videos are unchanged.';
@@ -111,11 +121,7 @@ export function startYouTubeSyncScheduler() {
   const tick = async () => {
     if (stopped) return;
     try {
-      await youtubeRepository.expireMetadata();
-      if (!env.youtube.apiKey || !env.youtube.autoSync) return;
-      const state = await youtubeRepository.state();
-      const lastAttempt = state.lastAttemptAt ? new Date(state.lastAttemptAt).getTime() : 0;
-      if (Date.now() - lastAttempt >= env.youtube.syncIntervalMinutes * 60000) await youtubeSyncService.sync();
+      await youtubeSyncService.refreshIfDue();
     } catch (error) {
       // All API errors are normalized; never log request URLs or provider payloads.
       logger.warn('YouTube background refresh did not complete', { message: error instanceof ApiError ? error.message : 'Database or service unavailable.' });

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "public",
+  "functions": {
+    "src/server.js": {
+      "maxDuration": 300,
+      "includeFiles": "site-dist/**",
+      "excludeFiles": "{**/.env*,prod-ca-2021.crt,uploads/**,private/**,migration-reports/**}"
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/src/server.js" }],
+  "crons": [{ "path": "/api/cron/youtube-sync", "schedule": "0 2 * * *" }]
+}

@@ -22,6 +22,7 @@ import ApiError from '../utils/ApiError.js';
 import env from '../config/env.js';
 import { retryPendingNotifications } from '../services/notificationService.js';
 import { parseVideoUrl } from '../utils/contentUrls.js';
+import { downloadObject, publicObjectUrl, storageBuckets } from '../services/supabaseStorage.js';
 
 /**
  * Resource registry powering the admin CRUD endpoints. Each entry maps a URL
@@ -133,6 +134,27 @@ export async function deleteSiteSetting(req, res) {
 
 /** POST /api/admin/uploads - multipart image upload (single file, field "image") */
 export async function uploadImageFile(req, res) {
+  if (typeof req.body?.storageKey === 'string') {
+    const storageKey = req.body.storageKey;
+    if (!storageKey.startsWith('content/')) throw ApiError.badRequest('The uploaded image reference is invalid.');
+    const { buffer, contentType } = await downloadObject(storageBuckets.media, storageKey, {
+      maxBytes: env.uploads.maxBytes,
+    });
+    if (!contentType.startsWith('image/')) throw ApiError.badRequest('The uploaded file is not an image.');
+    const url = publicObjectUrl(storageBuckets.media, storageKey);
+    res.status(201).json({
+      success: true,
+      data: {
+        filename: storageKey.split('/').pop(),
+        size: buffer.length,
+        mimetype: contentType,
+        url,
+        relativeUrl: url,
+      },
+    });
+    return;
+  }
+
   if (!req.file) throw ApiError.badRequest('No image file was uploaded.');
 
   const relativeUrl = `/${env.uploads.dir}/${req.file.filename}`;

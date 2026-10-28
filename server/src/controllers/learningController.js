@@ -6,6 +6,11 @@ import { clearStudentCookies, STUDENT_COOKIE } from '../middleware/studentAuth.j
 import { recordAudit } from '../services/auditLog.js';
 import ApiError from '../utils/ApiError.js';
 import { queueAssignmentNotifications, retryLearningNotifications, listLearningNotifications } from '../services/learningNotifications.js';
+import crypto from 'node:crypto';
+import path from 'node:path';
+import env from '../config/env.js';
+import { createSignedUploadUrl, downloadObject, deleteObjects, storageBuckets } from '../services/supabaseStorage.js';
+import logger from '../utils/logger.js';
 
 const data = (res, value, status = 200) => res.status(status).json({ success: true, data: value });
 const required = (value, label) => value || (() => { throw ApiError.notFound(`${label} not found.`); })();
@@ -14,6 +19,30 @@ const pdf = (req) => {
   if (req.file.buffer.subarray(0, 5).toString() !== '%PDF-') throw ApiError.badRequest('The uploaded file is not a valid PDF.');
   return req.file;
 };
+async function storedPdf(body, keyPrefix) {
+  const key = body.storageKey;
+  const originalName = body.originalName;
+  if (typeof key !== 'string' || !key.startsWith(keyPrefix) || path.extname(originalName || '').toLowerCase() !== '.pdf') {
+    throw ApiError.badRequest('The uploaded PDF reference is invalid.');
+  }
+  const { buffer, contentType } = await downloadObject(storageBuckets.private, key, {
+    maxBytes: Math.min(env.uploads.maxBytes, 10 * 1024 * 1024),
+  });
+  if (contentType !== 'application/pdf' || buffer.subarray(0, 5).toString() !== '%PDF-') {
+    throw ApiError.badRequest('The uploaded file is not a valid PDF.');
+  }
+  return {
+    storageKey: key,
+    file: { buffer, originalname: originalName, mimetype: contentType, size: buffer.length },
+  };
+}
+async function removeStagedObject(key) {
+  try {
+    await deleteObjects(storageBuckets.private, [key]);
+  } catch (error) {
+    logger.warn('Could not remove a processed private upload', { status: error.status || 502 });
+  }
+}
 const sendFile = (res, file) => {
   const filename = file.filename.replace(/[\r\n"\\]/g, '_');
   res.setHeader('Content-Type', file.mime_type);
@@ -59,7 +88,11 @@ export async function assignStudents(req, res) {
 }
 export async function addAssignmentFile(req, res) {
   required(await repo.findAdmin(req.params.id), 'Assignment');
-  const file = await repo.addFile(req.params.id, pdf(req));
+  const uploaded = req.body?.storageKey
+    ? await storedPdf(req.body, `learning/${req.params.id}/`)
+    : { file: pdf(req), storageKey: null };
+  const file = await repo.addFile(req.params.id, uploaded.file);
+  if (uploaded.storageKey) await removeStagedObject(uploaded.storageKey);
   await recordAudit(req, { action: 'learning.file.upload', entityType: 'learning_assignment', entityId: req.params.id, summary: file.filename });
   data(res, file, 201);
 }
@@ -102,9 +135,34 @@ export async function downloadStudentFile(req, res) {
   sendFile(res, required(await repo.studentFile(req.params.fileId, req.student.id), 'File'));
 }
 export async function submitAssignment(req, res) {
-  const item = await repo.submit(req.params.id, req.student.id, pdf(req));
-  if (!item) throw ApiError.notFound('Assignment not found.');
+  const uploaded = req.body?.storageKey
+    ? await storedPdf(req.body, `submissions/${req.params.id}/${req.student.id}/`)
+    : { file: pdf(req), storageKey: null };
+  const item = await repo.submit(req.params.id, req.student.id, uploaded.file);
+  if (!item) {
+    if (uploaded.storageKey) await removeStagedObject(uploaded.storageKey);
+    throw ApiError.notFound('Assignment not found.');
+  }
+  if (uploaded.storageKey) await removeStagedObject(uploaded.storageKey);
   data(res, item, 201);
+}
+
+export async function createSubmissionUploadUrl(req, res) {
+  required(await repo.studentDetail(req.params.id, req.student.id), 'Assignment');
+  const originalName = req.body?.originalName;
+  const contentType = req.body?.contentType;
+  const size = Number(req.body?.size);
+  if (typeof originalName !== 'string' || path.extname(originalName).toLowerCase() !== '.pdf') {
+    throw ApiError.badRequest('Choose a PDF file.');
+  }
+  if (contentType !== 'application/pdf') throw ApiError.badRequest('Only PDF files are supported.');
+  if (!Number.isSafeInteger(size) || size < 1 || size > Math.min(env.uploads.maxBytes, 10 * 1024 * 1024)) {
+    throw ApiError.badRequest('The selected PDF exceeds the upload limit.');
+  }
+  const safeName = path.basename(originalName).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'submission.pdf';
+  const key = `submissions/${req.params.id}/${req.student.id}/${crypto.randomUUID()}-${safeName}`;
+  const ticket = await createSignedUploadUrl(storageBuckets.private, key);
+  data(res, { ...ticket, originalName, contentType, size });
 }
 export async function updateProfile(req, res) {
   const { rows } = await pool.query('UPDATE students SET name=$2,phone=$3 WHERE id=$1 RETURNING id,name,email,phone', [req.student.id, req.body.name, req.body.phone]);

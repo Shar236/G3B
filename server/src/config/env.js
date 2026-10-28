@@ -77,7 +77,9 @@ const env = {
     name: process.env.PGDATABASE || process.env.DB_NAME || dbUrl?.name || (isProduction ? '' : 'postgres'),
     user: process.env.PGUSER || process.env.DB_USER || dbUrl?.user || (isProduction ? '' : 'postgres'),
     password: process.env.PGPASSWORD || process.env.DB_PASSWORD || dbUrl?.password || '',
-    connectionLimit: toInt(process.env.DB_CONNECTION_LIMIT, 10),
+    connectionLimit: process.env.VERCEL === '1'
+      ? Math.max(1, Math.min(3, toInt(process.env.DB_CONNECTION_LIMIT, 2)))
+      : toInt(process.env.DB_CONNECTION_LIMIT, 10),
     ssl: (() => {
       if (process.env.DB_SSL !== undefined) return toBool(process.env.DB_SSL, false);
       if (process.env.PGSSLMODE) return process.env.PGSSLMODE !== 'disable';
@@ -90,6 +92,16 @@ const env = {
     // The fallback secret is only tolerated in development.
     secret: process.env.JWT_SECRET || 'g3b-development-secret-change-me',
     expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+  },
+
+  cronSecret: process.env.CRON_SECRET || '',
+
+  storage: {
+    url: process.env.SUPABASE_URL || process.env.SUPABASE_PROJECT_URL || '',
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '',
+    publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || '',
+    mediaBucket: process.env.SUPABASE_MEDIA_BUCKET || 'g3b-media',
+    privateBucket: process.env.SUPABASE_PRIVATE_BUCKET || 'g3b-private',
   },
 
   cookie: {
@@ -123,8 +135,9 @@ const env = {
   },
 
   uploads: {
-    provider: process.env.UPLOAD_STORAGE_PROVIDER || 'local',
+    provider: process.env.VERCEL === '1' ? 'supabase' : process.env.UPLOAD_STORAGE_PROVIDER || 'local',
     dir: process.env.UPLOAD_DIR || 'uploads',
+    assessmentReportsDir: process.env.ASSESSMENT_REPORTS_DIR || 'private/assessment-reports',
     maxBytes: toInt(process.env.MAX_UPLOAD_MB, 5) * 1024 * 1024,
   },
 
@@ -143,7 +156,7 @@ const env = {
   // Serve the built SPA (and the prerendered SEO tags) from Express.
   // Enabled by default in production; in development Vite serves the client and
   // proxies /api here. Set SERVE_CLIENT=true locally to verify prerendering.
-  serveClient: toBool(process.env.SERVE_CLIENT, isProduction),
+  serveClient: process.env.VERCEL === '1' ? false : toBool(process.env.SERVE_CLIENT, isProduction),
 
   rateLimit: {
     enquiryWindowMinutes: toInt(process.env.ENQUIRY_RATE_LIMIT_WINDOW_MINUTES, 15),
@@ -167,6 +180,10 @@ export function validateEnv() {
     if (!env.db.host) problems.push('DATABASE_URL (or PGHOST) is required in production.');
     if (!env.db.user) problems.push('DATABASE_URL (or PGUSER) is required in production.');
     if (!env.db.name) problems.push('DATABASE_URL (or PGDATABASE) is required in production.');
+    if (!env.storage.url) problems.push('SUPABASE_URL is required in production for durable file storage.');
+    if (!env.storage.serviceRoleKey) problems.push('SUPABASE_SERVICE_ROLE_KEY is required in production for durable file storage.');
+    if (!env.storage.publishableKey) problems.push('SUPABASE_PUBLISHABLE_KEY (or SUPABASE_ANON_KEY) is required for signed browser uploads.');
+    if (env.cronSecret.length < 32) problems.push('CRON_SECRET must be set to a random string of at least 32 characters in production.');
     if (env.cookie.sameSite === 'none' && !env.cookie.secure) {
       problems.push('COOKIE_SAMESITE=none requires COOKIE_SECURE=true in production.');
     }

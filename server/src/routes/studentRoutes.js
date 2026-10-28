@@ -26,6 +26,12 @@ router.get('/dashboard', requireStudent, asyncHandler(student.dashboard));
 router.get('/learning', requireStudent, asyncHandler(learning.studentAssignments));
 router.get('/learning/:id', requireStudent, [param('id').isInt({ min: 1 }).toInt()], validate, asyncHandler(learning.studentAssignment));
 router.get('/learning/files/:fileId', requireStudent, [param('fileId').isInt({ min: 1 }).toInt()], validate, asyncHandler(learning.downloadStudentFile));
+router.post('/learning/:id/upload-url', requireStudent, studentCsrf, [
+  param('id').isInt({ min: 1 }).toInt(),
+  body('originalName').isString().isLength({ min: 1, max: 255 }),
+  body('contentType').equals('application/pdf'),
+  body('size').isInt({ min: 1 }),
+], validate, asyncHandler(learning.createSubmissionUploadUrl));
 router.post('/learning/:id/submission', requireStudent, studentCsrf, [param('id').isInt({ min: 1 }).toInt()], validate, uploadLearningPdf, asyncHandler(learning.submitAssignment));
 router.patch('/profile', requireStudent, studentCsrf, [
   body('name').trim().isLength({ min: 2, max: 150 }),

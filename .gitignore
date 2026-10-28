@@ -37,3 +37,7 @@ coverage/
 Thumbs.db
 .idea/
 .vscode/
+
+.vercel
+server/site-dist/
+server/public/

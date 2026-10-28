@@ -29,8 +29,9 @@ export function loadDatabaseCa(caFile) {
 
 export function postgresTls(ssl, caFile = process.env.DB_SSL_CA_FILE) {
   if (!ssl) return false;
-  const loaded = loadDatabaseCa(caFile);
-  return { rejectUnauthorized: true, checkServerIdentity, minVersion: 'TLSv1.2', ...(loaded ? { ca: loaded.pem } : {}) };
+  const inlineCa = process.env.DB_SSL_CA?.replace(/\\n/g, '\n');
+  const loaded = inlineCa ? null : loadDatabaseCa(caFile);
+  return { rejectUnauthorized: true, checkServerIdentity, minVersion: 'TLSv1.2', ...(inlineCa ? { ca: inlineCa } : loaded ? { ca: loaded.pem } : {}) };
 }
 
 /** Keep TLS policy explicit: pg URL SSL parameters must not replace it. */

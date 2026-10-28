@@ -1,8 +1,15 @@
 {
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "npm ci --include=dev",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "routes": [
+    { "src": "/api(?:/(.*))?", "dest": "https://g3b-backend.vercel.app/api/$1" },
+    { "src": "/uploads(?:/(.*))?", "dest": "https://g3b-backend.vercel.app/uploads/$1" },
+    { "src": "/(robots\\.txt|sitemap\\.xml)", "dest": "https://g3b-backend.vercel.app/$1" },
+    { "src": "/", "dest": "https://g3b-backend.vercel.app/" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "https://g3b-backend.vercel.app/$1" }
   ]
 }

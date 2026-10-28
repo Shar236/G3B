@@ -53,7 +53,7 @@ G3b/
 
 | Requirement | Version used |
 | --- | --- |
-| Node.js | 18+ (20+ recommended) |
+| Node.js | 24.x (Vercel runtime) |
 | Supabase PostgreSQL | hosted project |
 | MySQL | 8.0 (migration source only) |
 | npm | 9+ |
@@ -272,25 +272,17 @@ npm run build          # outputs client/dist
 NODE_ENV=production npm start   # Express serves the API
 ```
 
-1. **API** – deploy `server/` behind a process manager (PM2, systemd) or a container.
-   Set `NODE_ENV=production`, a strong `JWT_SECRET`, the server-only `DATABASE_URL`,
-   `COOKIE_SECURE=true`, `COOKIE_SAMESITE=strict`, and your production
-   `CLIENT_ORIGINS`. Run the one-time import before cutover; normal startup never
-   mutates the schema or seeds data.
-2. **Client** – deploy `client/dist` to any static host (Nginx, Netlify, Vercel, S3).
-   Set `VITE_API_URL` to the public API origin **before building** so uploads and
-   API calls resolve correctly.
-3. **SPA routing** – rewrite unknown paths to `index.html` so `/admin/...` deep links
-   work, e.g. Nginx:
-   ```nginx
-   location / { try_files $uri $uri/ /index.html; }
-   location /uploads/ { proxy_pass http://127.0.0.1:5000; }
-   ```
-4. **Uploads** – `server/uploads` must be writable and persisted, or switch
-   `UPLOAD_STORAGE_PROVIDER` to a remote object store.
-5. **Email** – set the `MAIL_*` values to enable notifications. With `MAIL_HOST`
-   empty the API still stores enquiries and queues notifications.
-6. **HTTPS** – terminate TLS at the proxy; keep `COOKIE_SECURE=true` in production.
+Deploy **two Vercel projects** from the existing repository: `g3-b` uses Root
+Directory `client` (Vite), and `g3b-backend` uses `server` (Other preset, explicit
+Node serverless entry exporting the existing Express app). The nested
+`client/vercel.json` and `server/vercel.json` are the active configurations.
+Browser API requests remain same-origin through the frontend proxy.
+
+Follow [the two-project production runbook](docs/VERCEL_TWO_PROJECTS.md)
+for dashboard settings, private environment variables, the required database CA,
+upload prerequisites, validation results, and PowerShell deployment commands.
+Existing uploads must be inventoried and migrated separately before cutover;
+credentials, buckets, and end-to-end Storage delivery still require verification.
 
 ---
 

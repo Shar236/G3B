@@ -2,6 +2,9 @@
   "name": "g3b-education",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "description": "G3B Education - full-stack website (React + Vite client, Express + Supabase PostgreSQL API)",
   "scripts": {
     "install:all": "npm install --prefix server && npm install --prefix client",
@@ -9,7 +12,7 @@
     "dev:api": "npm run dev --prefix server",
     "dev:web": "npm run dev --prefix client",
     "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client",
-    "vercel-build": "npm install --prefix client && npm run build --prefix client",
+    "vercel-build": "npm run build --prefix client",
     "preview": "npm run preview --prefix client",
     "start": "npm start --prefix server",
     "start:web": "npm start --prefix client",

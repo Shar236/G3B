@@ -5,6 +5,9 @@ import { queryOne, pingDatabase, closePool } from './config/db.js';
 import logger from './utils/logger.js';
 import { startYouTubeSyncScheduler } from './services/youtubeSyncService.js';
 
+validateEnv();
+const app = createApp();
+
 async function waitForDatabase(maxRetries = env.isProduction ? 5 : 1, delayMs = 2000) {
   for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
     try {
@@ -22,8 +25,6 @@ async function waitForDatabase(maxRetries = env.isProduction ? 5 : 1, delayMs = 
 }
 
 async function start() {
-  validateEnv();
-
   try {
     await waitForDatabase();
     logger.info('Database connection established', { database: env.db.name, host: env.db.host });
@@ -36,7 +37,6 @@ async function start() {
     logger.warn('Starting anyway (development). Data endpoints will return 503 until the database is reachable.');
   }
 
-  const app = createApp();
   const server = app.listen(env.port, env.host, () => {
     logger.info(`G3B Education API listening on http://${env.host}:${env.port}`, {
       environment: env.nodeEnv,
@@ -66,6 +66,7 @@ async function start() {
   });
 }
 
-start();
+if (process.env.VERCEL !== '1') start();
 
-export { start };
+export { app, start };
+export default app;

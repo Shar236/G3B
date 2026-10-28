@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import studentApi from '../../api/studentApi.js'
 import { parseApiError } from '../../api/client.js'
+import { uploadFileDirect } from '../../api/storageUpload.js'
 import { useStudent } from '../../context/StudentContext.jsx'
 import useDocumentMeta from '../../hooks/useDocumentMeta.js'
 import './learning.css'
@@ -58,8 +59,18 @@ export default function StudentLearning() {
   const submit = (file) => {
     if (!file || !selected) return
     run(async () => {
-      const body = new FormData(); body.append('file', file)
-      await studentApi.post(`/api/student/learning/${selected.id}/submission`, body, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const ticket = await uploadFileDirect(
+        studentApi,
+        `/api/student/learning/${selected.id}/upload-url`,
+        {},
+        file,
+      )
+      await studentApi.post(`/api/student/learning/${selected.id}/submission`, {
+        storageKey: ticket.path,
+        originalName: file.name,
+        contentType: file.type,
+        size: file.size,
+      })
       await open(selected.id)
     }, 'Your work was submitted.')
   }

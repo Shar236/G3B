@@ -33,6 +33,10 @@ export const assessmentRepository = {
       ORDER BY sa.updated_at DESC, sa.id DESC LIMIT 500`);
     return rows.map(mapRow);
   },
+  async findAssignmentById(id) {
+    const row = await queryOne('SELECT id, report_file_name FROM student_assessments WHERE id = ? LIMIT 1', [id]);
+    return row || null;
+  },
   async updateAssignment(id, payload) {
     const fields = { status: payload.status, progress_percent: payload.progressPercent, recommendation: payload.recommendation, report_file_name: payload.reportFileName, report_original_name: payload.reportOriginalName };
     const entries = Object.entries(fields).filter(([,value]) => value !== undefined);

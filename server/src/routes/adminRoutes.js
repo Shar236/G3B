@@ -35,12 +35,14 @@ import asyncHandler from '../utils/asyncHandler.js';
 import * as assessments from '../controllers/assessmentController.js';
 import * as learning from '../controllers/learningController.js';
 import { body, param } from 'express-validator';
+import * as storageUpload from '../controllers/storageUploadController.js';
 
 const router = Router();
 
 // Every admin route requires an authenticated administrator and a valid CSRF
 // token for state-changing requests.
 router.use(requireAuth, csrfProtection);
+router.post('/uploads/sign', asyncHandler(storageUpload.createUploadUrl));
 
 const leadRole = requireRole('admin', 'staff', 'counsellor');
 const adminRole = requireRole('admin');
