@@ -2,7 +2,12 @@ import { body, param, query } from 'express-validator';
 import { idParamRule } from './enquiryValidators.js';
 
 export const loginRules = [
-  body('email').trim().notEmpty().withMessage('Email is required.').isEmail().withMessage('Enter a valid email.').normalizeEmail(),
+  body('username')
+    .if((_value, { req }) => !req.body.email)
+    .trim()
+    .notEmpty().withMessage('Username is required.')
+    .isLength({ max: 64 }).withMessage('Username must be 64 characters or fewer.'),
+  body('email').optional().trim().notEmpty().withMessage('Email is required.').isEmail().withMessage('Enter a valid email.').normalizeEmail(),
   body('password').notEmpty().withMessage('Password is required.').isLength({ min: 6 }).withMessage('Password is too short.'),
 ];
 

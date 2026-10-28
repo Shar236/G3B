@@ -10,7 +10,7 @@ export default function AdminLogin() {
   const { user, loading, login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ username: '', password: '' })
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [showPass, setShowPass] = useState(false)
@@ -26,9 +26,9 @@ export default function AdminLogin() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     if (submitting || loading) return
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || form.email.trim().length > 190) {
-      setError('Enter a valid email address.')
-      document.getElementById('admin-email')?.focus()
+    if (!form.username.trim() || form.username.trim().length > 64) {
+      setError('Enter your username (up to 64 characters).')
+      document.getElementById('admin-username')?.focus()
       return
     }
     if (!form.password || form.password.length > 128) {
@@ -39,7 +39,7 @@ export default function AdminLogin() {
     setSubmitting(true)
     setError(null)
     try {
-      await login({ email: form.email.trim(), password: form.password })
+      await login({ username: form.username.trim(), password: form.password })
       navigate(returnPath, { replace: true })
     } catch (err) {
       setError(parseApiError(err).message)
@@ -121,21 +121,21 @@ export default function AdminLogin() {
           )}
 
           <form onSubmit={handleSubmit} className="al-form" aria-busy={submitting || loading}>
-            {/* Email */}
+            {/* Username */}
             <div className="al-field">
-              <label htmlFor="admin-email">Email address</label>
+              <label htmlFor="admin-username">Username</label>
               <div className="al-input-wrap">
-                <i className="fas fa-envelope al-input-icon" aria-hidden="true" />
+                <i className="fas fa-user al-input-icon" aria-hidden="true" />
                 <input
-                  id="admin-email"
-                  type="email"
-                  maxLength={190}
+                  id="admin-username"
+                  type="text"
+                  maxLength={64}
                   disabled={submitting || loading}
                   aria-describedby={error ? 'admin-login-error' : undefined}
                   autoComplete="username"
-                  placeholder="you@g3beducation.com"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  placeholder="g3beducation"
+                  value={form.username}
+                  onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
                   required
                 />
               </div>

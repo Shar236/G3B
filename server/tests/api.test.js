@@ -62,6 +62,16 @@ describe('public content', () => {
 });
 
 describe('admin authorisation', () => {
+  it('accepts a username as the admin login identifier', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ username: env.admin.username });
+
+    expect(res.status).toBe(422);
+    expect(res.body.details.username).toBeUndefined();
+    expect(res.body.details.password).toBeTruthy();
+  });
+
   it('blocks anonymous access to enquiries', async () => {
     const res = await request(app).get('/api/admin/enquiries');
     expect(res.status).toBe(401);
@@ -137,7 +147,7 @@ describe('database backed flows', () => {
 
     const login = await request(app)
       .post('/api/auth/login')
-      .send({ email: env.admin.email, password: env.admin.password });
+      .send({ username: env.admin.username, password: env.admin.password });
 
     if (login.status !== 200) {
       // Administrator not seeded yet - nothing to assert.

@@ -99,6 +99,7 @@ const env = {
 
   admin: {
     name: process.env.ADMIN_NAME || 'G3B Administrator',
+    username: process.env.ADMIN_USERNAME?.trim() || 'g3beducation',
     email: process.env.ADMIN_EMAIL || 'admin@g3beducation.com',
     password: process.env.ADMIN_PASSWORD || 'ChangeMe123!',
     // The private dashboard base path. Keep it in sync with the client's

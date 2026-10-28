@@ -7,6 +7,7 @@ import { requestPasswordReset, resetPassword } from '../services/passwordResetSe
 import { recordAudit } from '../services/auditLog.js';
 import ApiError from '../utils/ApiError.js';
 import logger from '../utils/logger.js';
+import env from '../config/env.js';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
@@ -24,12 +25,18 @@ const publicUser = (user) => ({
 
 /** POST /api/auth/login */
 export async function login(req, res) {
-  const { email, password } = req.body;
-  const user = await usersRepository.findByEmail(email);
+  const { username, email, password } = req.body;
+  const identifier = username?.trim() || email;
+  const isUsernameLogin = Boolean(username?.trim());
+  const user = isUsernameLogin
+    ? (identifier.toLowerCase() === env.admin.username.toLowerCase()
+      ? await usersRepository.findByEmail(env.admin.email)
+      : null)
+    : await usersRepository.findByEmail(email);
 
   // A locked account is refused before the password is even compared.
   if (user?.locked_until && new Date(user.locked_until) > new Date()) {
-    logger.warn('Login attempt on a locked account', { email, ip: req.ip });
+    logger.warn('Login attempt on a locked account', { identifier, ip: req.ip });
     throw ApiError.tooManyRequests('This account is temporarily locked after too many failed attempts. Try again shortly.');
   }
 
@@ -39,8 +46,8 @@ export async function login(req, res) {
 
   if (!user || !passwordMatches) {
     if (user) await usersRepository.registerFailedLogin(user.id, { maxAttempts: MAX_FAILED_ATTEMPTS, lockMinutes: LOCK_MINUTES });
-    logger.warn('Failed login attempt', { email, ip: req.ip });
-    throw ApiError.unauthorized('Invalid email or password.');
+    logger.warn('Failed login attempt', { identifier, ip: req.ip });
+    throw ApiError.unauthorized(isUsernameLogin ? 'Invalid username or password.' : 'Invalid email or password.');
   }
 
   if (user.status !== 'active') {
